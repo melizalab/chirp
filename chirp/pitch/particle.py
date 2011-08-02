@@ -21,13 +21,12 @@ class smc(object):
     grid), and the importance weighting and proposal densities are
     rather simple.
     """
-    min_loglike = -100  # log likelihood of invalid pitch values
 
-    def __init__(self, likelihood, proposal, resample_threshold=0.5):
+    def __init__(self, likelihood, proposal, resample_threshold=0.5, min_loglike=-100, **kwargs):
         """
         Initialize the sampler.  The two main inputs are a likelihood
         array, which has a row for each pitch value, and a column for
-        each time frame (N total).  The values are the log-likelihood
+        each time frame (N total).  The values are the likelihood
         of the pitch for each frame.  The proposal array is used to
         randomly jitter particles.  It should have at most N-1
         columns, each of which contains the PDF of the proposal
@@ -47,14 +46,17 @@ class smc(object):
         """
         assert likelihood.shape[1] > proposal.shape[1], \
             "Likelihood array must have at least 1 more row than proposal array"
-        self.likelihood = likelihood
+        self.resample_threshold = resample_threshold
+        self.min_loglike = min_loglike
+
+        self.loglike  = nx.log(nx.maximum(likelihood, nx.exp(min_loglike)))
         self.nvalues = likelihood.shape[0]
         self.cproposal = nx.cumsum(proposal,axis=0)
-        self.cproposal /= self.cproposal[-1]
+        self.cproposal /= nx.where(self.cproposal[-1] > 0, self.cproposal[-1], nx.nan)
         self.nframes = self.cproposal.shape[1]
-        self.resample_threshold = resample_threshold
 
-    def initialize(self, nparticles, sampled=True, seed=3653268L):
+
+    def initialize(self, nparticles, sampled=True, seed=3653268):
         """
         Initialize the sampler.  Initial values may be chosen from a
         uniform distribution (sampled=False) or by sampling from the
@@ -64,12 +66,13 @@ class smc(object):
         """
         nx.random.seed(seed)
         if sampled:
-            csum = nx.cumsum(nx.exp(self.likelihood[:,0]))
+            csum = nx.cumsum(nx.exp(self.loglike[:,0]))
             csum /= csum[-1]
             self.particles = sample_cdf(csum, nparticles)
+            self.weights = nx.zeros(nparticles)
         else:
             self.particles = nx.random.randint(0,self.nvalues,nparticles)
-        self.weights = self.likelihood[self.particles,0]
+            self.weights = self.loglike[self.particles,0] - self.loglike[self.particles,0].max()
         self.frame = 0
         self.particle_history = []
 
@@ -110,10 +113,11 @@ class smc(object):
         """
         np = self.particles.size
         cdf = self.cproposal[:,self.frame]
-        # if not nx.isfinite(cdf.sum()):
-        #     jump =
-        jump = sample_cdf(self.cproposal[:,self.frame],np) - self.cproposal.shape[0] / 2
-        self.particles += jump
+        if not nx.isfinite(cdf.sum()):
+            if rwalk_scale > 0:
+                self.particles += nx.round(nx.random.normal(scale=rwalk_scale, size=np)).astype(self.particles.dtype)
+        else:
+            self.particles += sample_cdf(self.cproposal[:,self.frame],np) - self.cproposal.shape[0] / 2
 
     def update_weights(self):
         """
@@ -121,7 +125,7 @@ class smc(object):
         values. Invalid values get severely penalized (min_loglike).
         """
         valid = (self.particles >= 0) & (self.particles < self.nvalues)
-        self.weights[valid] += self.likelihood[self.particles[valid],self.frame+1]
+        self.weights[valid] += self.loglike[self.particles[valid],self.frame+1]
         self.weights[~valid] += self.min_loglike
 
     def rescale_and_resample(self):
@@ -147,7 +151,7 @@ class smc(object):
             # then replicate chosen particles
             self.particles = nx.repeat(self.particles, counts)
             # weights are equalized (because distribution of particles now reflects weights)
-            self.weights[:] = nx.log(1./np)
+            self.weights[:] = 0  #nx.log(1./np)
 
 
     def ess(self):
@@ -159,12 +163,35 @@ class smc(object):
         return nx.exp(2 * nx.log(s1) - nx.log(s2))
 
 
-    def density(self):
+    def density(self, particles=None, weights=None):
         """
-        Estimate density from particles.  This is an accumulated sum of weights.
+        Estimate density from particles.  This is essentially an
+        accumulated sum of the weights for each bin.
         """
-        pass
+        from itertools import izip
+        if particles is None: particles = self.particles
+        if weights is None: weights = nx.exp(self.weights)
+        pdf = nx.zeros(self.nvalues)
+        wsum = 0.0
+        for p,w in izip(particles,weights):
+            if p < 0 or p >= self.nvalues: continue
+            wsum += w
+            pdf[p] += w
+        return pdf / wsum
 
+    def integrate(self, particles=None, weights=None, func=None):
+        """
+        Evaluate an integrand over the distribution. Default is a
+        weighted sum.
+        """
+        if particles is None: particles = self.particles
+        if weights is None: weights = nx.exp(self.weights)
+        ind = (particles >= 0) & (particles < self.nvalues)
+        if func is None:
+            wsum = nx.sum(particles[ind] * weights[ind])
+        else:
+            wsum = nx.sum(func(particles[ind]) * weights[ind])
+        return wsum / nx.sum(weights[ind])
 
 def sample_cdf(cdf,N):
     """

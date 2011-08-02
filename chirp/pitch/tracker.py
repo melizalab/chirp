@@ -7,9 +7,9 @@ Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2011-07-29
 """
 import numpy as nx
-import libtfr, template, particle
+import libtfr, template, particle, vitterbi
 
-base_seed = 3653268L
+base_seed = 3653268
 
 
 class tracker(object):
@@ -47,6 +47,7 @@ class tracker(object):
     rwalk_scale  - in excluded frames, how much is pitch allowed to drift (std. dev)
     chains       - number of simulation chains to use
     btrace       - whether to use Vitterbi algorithm to backtrace best path
+    min_loglike  - floor for log likelihood (not a very important parameter)
     """
 
     options = dict(nfft=512,
@@ -67,9 +68,11 @@ class tracker(object):
                    pow_thresh=1e3,
                    rwalk_scale=2,
                    chains=3,
-                   btrace=False,)
+                   btrace=False,
+                   min_loglike=-100)
 
     def __init__(self, **kwargs):
+        self.options = self.options.copy()
         self.options.update(kwargs)
         self.template = template.harmonic(**self.options)
 
@@ -78,20 +81,41 @@ class tracker(object):
         Calculate the pitch from a spectrogram.  The spectrogram needs
         to be calculated on the same logarithmic frequency grid as the
         harmonic template.
+
+        Options:
+        chains       number of simulation chains
+        rwalk_scale  random walk in frames where power is low
+        btrace       do backwards filter to find MAP estimate?
         """
         options = self.options.copy()
         options.update(kwargs)
+        btrace = options.get('btrace',False)
+        chains = options.get('chains',1)
 
+        spec,starttime = specprocess(spec, **kwargs)
         like = self.template.xcorr(spec, **options)
-        loglike = nx.log(nx.maximum(like, nx.exp(particle.smc.min_loglike)))
-        trans = template.frame_xcorr(spec, **options)
+        proposal = template.frame_xcorr(spec, **options)
 
-        return loglike,trans
+        pitch_mmse = nx.zeros((spec.shape[1],chains))
+        if btrace:
+            pitch_map = nx.zeros((spec.shape[1],chains))
+        else:
+            pitch_map = None
+        for chain in xrange(chains):
+            # may be some use in multithreading here
+            pfilt = particle.smc(like, proposal, **options)
+            pfilt.initialize(nparticles=options['particles'], seed=base_seed + chain * 1000)
+            pitch_mmse[0,chain] = pfilt.integrate(func=lambda x : self.template.pgrid[x])
+            pitch_dist[:,0] = pfilt.density()
 
-        # for chain in xrange(nchains):
-        #     pfilt = particle.smc(loglike, proposal)
-        #     pfilt.initialize(seed=base_seed + chain * 1000)
-        #     pfilt.iterate_all(keep_history=True)
+            for f,p,w in pfilt.iterate(rwalk_scale=options['rwalk_scale'], keep_history=btrace):
+                pitch_mmse[f,chain] = pfilt.integrate(func=lambda x: self.template.pgrid[x])
+
+            if btrace:
+                particles = nx.column_stack(pfilt.particle_history)
+                pitch_map = vitterbi.filter(particles, pfilt.loglike, proposal, **kwargs)
+
+        return starttime, pitch_mmse, pitch_map
 
     def wave2pitch(self, signal, mask=None, **kwargs):
         """
@@ -108,17 +132,23 @@ class tracker(object):
         return self.spec2pitch(spec, **kwargs)
 
 
-def pitch(spec, template, **kwargs):
+def specprocess(spec, pow_thresh=1e3, **kwargs):
     """
-    Calculate the pitch from a spectrogram.  There are many options
-    for this operation.
+    Preprocess a spectrogram before running it through the pitch
+    detector.  Currently this consists of eliminating frames at the
+    beginning and end where the total power is less than pow_thresh.
+    Although inputs should be segmented carefully, this helps to deal
+    with cases where the mask may be so small at the beginning or end
+    that the spectrogram is essentially masked out.
 
-    spec:      spectrogram of signal, on a log frequency grid
-    template:  harmonic template object
+    Returns reduced spectrogram, index of first column kept
     """
-    # initialize template
-    # calculate spectrogram
-    # apply mask
+    specpow = nx.sqrt((spec**2).sum(0))
+    ind = nx.nonzero(specpow > pow_thresh)[0]
+    if ind.size<2:
+        raise ValueError, "Spectrogram is entirely below power threshold"
+    return spec[:,ind[0]:ind[-1]], ind[0]
+
 
 # Variables:
 # End:
