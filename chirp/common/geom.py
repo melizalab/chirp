@@ -26,11 +26,11 @@ class elementlist(list):
     def write(self, filename):
         with open(filename, 'wt') as fp:
             fp.write("# element list version %s\n" % self.__version__)
-            fp.write(repr(self))
+            fp.write(str(self))
 
 
-    def load_patches(self, elements):
-        """ Fill object with matplotlib objects """
+    def extend_patches(self, elements):
+        """ Add new elements to object from matplotlib patches """
         for patch in elements:
             trans = patch.get_data_transform().inverted()
             v = patch.get_verts()
@@ -39,33 +39,35 @@ class elementlist(list):
                 self.append(q)
             elif isinstance(patch, patches.Polygon):
                 q = [(x,y) for x,y in trans.transform(v)]
-                self.append(q)
+                self.append(geometry.Polygon(q))
 
-    def __repr__(self):
+
+    def __str__(self):
         out = []
         for element in self:
             etype = self.element_type(element)
             if etype=='interval':
                 out.append("INTERVAL (%s, %s)" % (str(element[0]), str(element[1])))
             elif etype=='poly':
-                element = geometry.Polygon(element)
                 out.append("%s" % element.wkt)
         return "\n".join(out)
 
-    def __str__(self):
+
+    def __repr__(self):
         return "<%s : %d element%s>" % (self.__class__.__name__, self.__len__(),
                                         "" if self.__len__()==1 else "s")
+
 
     @staticmethod
     def element_type(el):
         """ Return type of the element (currently poly or interval) """
         if isinstance(el,(tuple,list)):
-            if isinstance(el[0],tuple):
-                return 'poly'
-            else:
-                return 'interval'
+            return 'interval'
+        elif isinstance(el, geometry.Polygon):
+            return 'poly'
         else:
             return None
+
 
     @classmethod
     def read(cls, filename):
@@ -86,14 +88,14 @@ class elementlist(list):
                     out.append(eval(line[8:]))
                 elif line.startswith('POLYGON'):
                     poly = wkt.loads(line)
-                    out.append(tuple(poly.exterior.coords))
+                    out.append(poly)
             return out
 
 
-def discretize(poly,F,T):
+def rasterize(poly,F,T):
     """
     Create binary array on an arbitrary grid that's True only for
-    points inside poly.  This is slow; consider Cython.
+    points inside poly.  Uses a scanline algorithm.
 
     poly    a shapely Polygon
     F       an array of scalars defining the grid for frequency (row) coordinates
@@ -101,14 +103,20 @@ def discretize(poly,F,T):
 
     Returns a boolean len(F) by len(T) array
     """
-    from shapely import prepared
-    from itertools import product
-    polyprep = prepared.prep(poly)
-
     imask = nx.zeros((F.size,T.size,),dtype='bool')
-    for (i,t),(j,f) in product(enumerate(T),enumerate(F)):
-        p = geometry.Point(t,f)
-        if polyprep.contains(p): imask[j,i] = True
+    # use a single numpy array for the scanline to avoid creating a lot of objects
+    scanline = nx.array([[T[0],0.0],[T[-1],0.0]])
+    sl = geometry.asLineString(scanline)
+    for i,f in enumerate(F):
+        scanline[:,1] = f
+        ml = poly.intersection(sl)
+        # several different types of objects may be returned from this
+        if ml.geom_type == 'LineString': ml = [ml]
+        for el in ml:
+            # single points are tangents, drop them
+            if el.geom_type != 'LineString': continue
+            idx = slice(*T.searchsorted(el.xy[0]))
+            imask[i,idx] = True
     return imask
 
 
