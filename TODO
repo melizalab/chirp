@@ -1,8 +1,8 @@
 
-* TODO cpitch (pitch tracker) [0/3]
+* TODO cpitch (pitch tracker) [1/4]
 
-** DEFERRED finish front-end, write config file
-** TODO test on pitch files
+** DONE finish front-end, write config file
+** STARTED test on pitch files
 ** TODO eliminate weave dependency
 ** TODO profiling/optimization of masking and vitterbi filter
 

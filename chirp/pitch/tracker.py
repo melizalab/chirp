@@ -308,34 +308,40 @@ configuration file details.
     print >> cout, pt.particle_options_str()
     if maskfile is not None:
         print >> cout, "* Mask file:", maskfile
-        from ..common.geom import elementlist, discretize, geometry
+        from ..common.geom import elementlist, rasterize, geometry
         elems = elementlist.read(maskfile)
         boxmask = config.getboolean('boxmask',False)
 
         enum = 0
         for elem in elems:
-            if elems.element_type(elem) != 'poly': continue
-            poly = geometry.Polygon(elem)
-            bounds = poly.bounds
-            print >> cout, "** Element %d, polygon bounds %s" % (enum, bounds)
-            if boxmask:
-                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
-                print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
-                mspec = spec
+            etype = elems.element_type(elem)
+            mspec = spec
+            if etype == 'interval':
+                bounds = elem[:]
+                print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
+                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[1]))[0]
             else:
-                mask = discretize(poly, pt.template.fgrid * samplerate / 1000., tgrid)
-                print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
-                cols = nx.nonzero(mask.sum(0))[0]
-                mspec = (spec * mask)
+                bounds = elem.bounds
+                if boxmask:
+                    print >> cout, "** Element %d, polygon interval (%.2f, %.2f)" % (enum, bounds[0], bounds[2])
+                    cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
+                else:
+                    print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
+                    mask = rasterize(elem, pt.template.fgrid * samplerate / 1000., tgrid)
+                    print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
+                    cols = nx.nonzero(mask.sum(0))[0]
+                    mspec = (spec * mask)
+            print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
             print >> cout, "*** Pitch for element %d:" % (enum)
+            return mspec
             starttime, specpow, pitch_mmse, pitch_map = pt.track(mspec[:,cols], cout=cout, **options)
-            return mspec[:,cols], pitch_mmse, pitch_map
             summarize_stats(cout, starttime+cols[0], specpow, pitch_mmse, pitch_map,
                             tgrid, pt.template.pgrid, samplerate / 1000.)
             enum += 1
 
     else:
-        print >> cout, "* Pitch from entire signal:"
+        print >> cout, "* No mask file; calculating pitch for entire signal"
+        print >> cout, "** Element 0, interval (tgrid[0],tgrid[-1])"
         starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout, **options)
         summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
                         tgrid, pt.template.pgrid, samplerate / 1000.)
