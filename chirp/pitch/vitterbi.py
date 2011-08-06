@@ -19,8 +19,8 @@ code = """
 
 	int i,j,k;
 	int x_i,x_j;  // state values
-	int N = particles.rows();
-	int K = particles.cols();
+	int N = particle_values.rows();
+	int K = particle_values.cols();
         int njumps = proposal.rows();
         int npitch = likelihood.rows();
 
@@ -30,16 +30,16 @@ code = """
 
 	// initialization
 	for (i = 0; i < N; i++) {
-		x_i = particles(i,0);
+		x_i = particle_values(i,0);
 		delta(i,0) = likelihood(x_i,0);  // guaranteed to be in bounds
 	}
 	// recursion
 	for (k = 1; k < K; k++) {
 		for (j = 0; j < N; j++) {
-			x_j = particles(j,k);
+			x_j = particle_values(j,k);
 			for (i = 0; i < N; i++) {
 				arg(i) = delta(i,k-1);
-				x_i = particles(i,k-1);
+				x_i = particle_values(i,k-1);
 				int jump = x_j - x_i + njumps / 2;
                                 if ((jump < 0) || (jump >= njumps))
 					arg(i) += min_loglike;
@@ -65,17 +65,17 @@ code = """
 	for (k = K-2; k >= 0; --k)
 		particle_idx(k) = phi(particle_idx(k+1),k+1);
 	for (k = 0; k < K; ++k)
-		pitch(k) = particles(particle_idx(k),k);
+		pitch(k) = particle_values(particle_idx(k),k);
 """
 
-def filter(particles, likelihood, proposal, rwalk_scale=1e-2, min_loglike=-100, **kwargs):
+def filter(particle_values, likelihood, proposal, rwalk_scale=1e-2, min_loglike=-100, **kwargs):
     """
-    Run the Vitterbi reverse filter. This requires the particles for
-    each time frame, the likelihood function, and the proposal
+    Run the Vitterbi reverse filter. This requires the particle values
+    for each time frame, the likelihood function, and the proposal
     function.
     """
-    pitch = nx.zeros(particles.shape[1])
-    weave.inline(code, ['particles','likelihood','proposal','rwalk_scale','min_loglike','pitch'],
+    pitch = nx.zeros(particle_values.shape[1],dtype=particle_values.dtype)
+    weave.inline(code, ['particle_values','likelihood','proposal','rwalk_scale','min_loglike','pitch'],
                  type_converters=weave.converters.blitz)
     return pitch
 

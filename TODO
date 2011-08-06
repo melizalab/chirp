@@ -1,0 +1,31 @@
+
+* TODO cpitch (pitch tracker) [0/3]
+
+** DEFERRED finish front-end, write config file
+** TODO test on pitch files
+** TODO eliminate weave dependency
+** TODO profiling/optimization of masking and vitterbi filter
+
+* TODO ccompare (recording comparisons) [0/3]
+
+** TODO revamp front-end
+
+*** TODO do pitch and spectrogram in same script
+
+*** TODO flat file output
+
+*** TODO config file for front-end
+
+** TODO test
+
+* TODO chirp (main gui) [0/3]
+
+** TODO propagate any changes to backend code
+
+** DEFERRED more efficient spectrogram display, eliminate matplotlib dependency
+
+* DEFERRED cfilter (znote) [/]
+
+* TODO release checking
+
+** TODO check numpy dependency for versions

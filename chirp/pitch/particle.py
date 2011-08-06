@@ -95,6 +95,8 @@ class smc(object):
             self.rescale_and_resample()
             self.frame += 1
             yield self.frame, self.particles, self.weights
+        if keep_history:
+            self.particle_history.append(self.particles.copy())
         raise StopIteration, "End of proposal densities"
 
     def iterate_all(self, *args, **kwargs):
