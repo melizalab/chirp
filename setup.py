@@ -29,6 +29,7 @@ Topic :: Scientific/Engineering
 Operating System :: Unix
 Operating System :: POSIX :: Linux
 Operating System :: MacOS :: MacOS X
+Natural Language :: English
 """
 
 short_desc = "Analyze and compare bioacoustic recordings"

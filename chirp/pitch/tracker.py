@@ -7,7 +7,7 @@ Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2011-07-29
 """
 import numpy as nx
-import libtfr, template, particle, vitterbi
+import os, libtfr, template, particle, vitterbi
 
 base_seed = 3653268
 
@@ -131,15 +131,17 @@ class tracker(object):
 
         return starttime, specpow, pitch_mmse, pitch_map
 
-    def matched_spectrogram(self, signal):
+    def matched_spectrogram(self, signal, Fs):
         """
         Calculate a spectrogram of a signal using the same parameters
-        as the template.
+        as the template.  Returns spectrogram, time grid, and freq grid.
         """
         options = self.options
-        return libtfr.tfr_spec(signal, options['nfft'], options['shift'], options['winsize'],
+        spec = libtfr.tfr_spec(signal, options['nfft'], options['shift'], options['winsize'],
                                options['tfr_order'], options['tfr_tm'], options['tfr_flock'],
                                options['tfr_tlock'], fgrid=self.template.fgrid)
+        return spec, nx.linspace(0, float(signal.size) / Fs, spec.shape[1]), self.template.fgrid * Fs
+
 
     def spectrogram_options_str(self):
         out = """\
@@ -204,6 +206,44 @@ def hz2rel(freqs, samplerate):
     """
     fun = lambda x : float(x)/samplerate if x > 1.0 else x
     return tuple(fun(f) for f in freqs)
+
+def split_spectrogram(spec, elems, tgrid, fgrid, cout=None, **options):
+    """
+    Use a mask file to split a spectrogram into components. Each
+    component is returned as a spectrogram with all the parts outside
+    the mask set to zero, and the spectrogram trimmed so that no
+    columns are all zeros.
+
+    Yields the starting column, the spectrogram
+    """
+    from ..common.geom import rasterize, geometry
+    boxmask = options.get('boxmask',False)
+
+    enum = 0
+    for elem in elems:
+        etype = elems.element_type(elem)
+        mspec = spec
+        if etype == 'interval':
+            bounds = elem[:]
+            print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
+            cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[1]))[0]
+        else:
+            bounds = elem.bounds
+            if boxmask:
+                print >> cout, "** Element %d, polygon interval (%.2f, %.2f)" % (enum, bounds[0], bounds[2])
+                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
+            else:
+                print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
+                mask = rasterize(elem, fgrid, tgrid)
+                print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
+                cols = nx.nonzero(mask.sum(0))[0]
+                mspec = (spec * mask)
+        if cols.size < 3:
+            print >> cout, "*** Element is too short; skipping"
+        else:
+            print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
+            yield cols[0], mspec[:,cols]
+        enum += 1
 
 def summarize_stats(cout, offset,power,pmmse,pmap, tgrid, pgrid, samplerate):
     """
@@ -287,64 +327,41 @@ configuration file details.
         return -2
 
     pcm = fp.read()
-    samplerate = fp.sampling_rate
+    samplerate = fp.sampling_rate / 1000.
     print >> cout, "** Samples:", pcm.size
-    print >> cout, "** Samplerate:", samplerate
+    print >> cout, "** Samplerate: %.2f (kHz)" % samplerate
 
 
     # adjust frequencies to relative units
-    options['freq_range'] = hz2rel(options['freq_range'], samplerate)
-    options['pitch_range'] = hz2rel(options['pitch_range'], samplerate)
+    options['freq_range'] = hz2rel(options['freq_range'], samplerate * 1000)
+    options['pitch_range'] = hz2rel(options['pitch_range'], samplerate * 1000)
 
     pt = tracker(**options)
     print >> cout, pt.spectrogram_options_str()
     print >> cout, pt.template_options_str()
 
     print >> cout, "* DLFT spectrogram:"
-    spec = pt.matched_spectrogram(pcm)
-    tgrid = nx.linspace(0, float(pcm.size) / samplerate * 1000, spec.shape[1])
+    spec,tgrid,fgrid = pt.matched_spectrogram(pcm, samplerate)
     print >> cout, "** Dimensions:", spec.shape
 
     print >> cout, pt.particle_options_str()
-    if maskfile is not None:
+    if maskfile is not None and os.path.exists(maskfile):
+        from ..common.geom import elementlist
         print >> cout, "* Mask file:", maskfile
-        from ..common.geom import elementlist, rasterize, geometry
         elems = elementlist.read(maskfile)
-        boxmask = config.getboolean('boxmask',False)
-
-        enum = 0
-        for elem in elems:
-            etype = elems.element_type(elem)
-            mspec = spec
-            if etype == 'interval':
-                bounds = elem[:]
-                print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
-                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[1]))[0]
-            else:
-                bounds = elem.bounds
-                if boxmask:
-                    print >> cout, "** Element %d, polygon interval (%.2f, %.2f)" % (enum, bounds[0], bounds[2])
-                    cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
-                else:
-                    print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
-                    mask = rasterize(elem, pt.template.fgrid * samplerate / 1000., tgrid)
-                    print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
-                    cols = nx.nonzero(mask.sum(0))[0]
-                    mspec = (spec * mask)
-            print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
-            print >> cout, "*** Pitch for element %d:" % (enum)
-            return mspec
-            starttime, specpow, pitch_mmse, pitch_map = pt.track(mspec[:,cols], cout=cout, **options)
-            summarize_stats(cout, starttime+cols[0], specpow, pitch_mmse, pitch_map,
-                            tgrid, pt.template.pgrid, samplerate / 1000.)
-            enum += 1
+        for startcol, mspec in split_spectrogram(spec, elems, tgrid, fgrid,
+                                                 cout=cout, boxmask=config.getboolean('boxmask',False)):
+            print >> cout, "*** Pitch calculations:"
+            startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout, **options)
+            summarize_stats(cout, startframe+startcol, specpow, pitch_mmse, pitch_map,
+                            tgrid, pt.template.pgrid, samplerate)
 
     else:
         print >> cout, "* No mask file; calculating pitch for entire signal"
         print >> cout, "** Element 0, interval (tgrid[0],tgrid[-1])"
         starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout, **options)
         summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
-                        tgrid, pt.template.pgrid, samplerate / 1000.)
+                        tgrid, pt.template.pgrid, samplerate)
 
     return 0
 

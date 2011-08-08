@@ -14,6 +14,7 @@ import os,sys
 import wx
 import numpy as nx
 from ..common import geom, audio, plg
+from ..pitch import tracker as ptracker
 from .wxcommon import *
 from .TSViewer import RubberbandPainter
 from .SpecViewer import SpecViewer
@@ -74,7 +75,7 @@ class SpecPicker(SpecViewer, DrawMask):
         super(SpecPicker, self).__init__(parent, id, figure)
         self.list = parent.GetParent().list
         self.selections = []
-        self.trace_h = None
+        self.trace_h = []
 
     def on_key(self, event):
         """
@@ -86,7 +87,7 @@ class SpecPicker(SpecViewer, DrawMask):
             if isinstance(painter, RubberbandPainter):
                 self.add_interval(painter.value)
             elif isinstance(painter, PolygonPainter):
-                self.add_polygon(painter.value)
+                self.add_polygon(geom.vertices_to_polygon(painter.value))
         elif event.key=='p' and self.handler.signal is not None and hasattr(io,'play_wave'):
             if isinstance(self.selected, RubberbandPainter):
                 tlim = self.selected.value
@@ -106,14 +107,17 @@ class SpecPicker(SpecViewer, DrawMask):
         self.axes.add_patch(r)
         return self.list.add_selection('','interval','%3.2f' % t1, '%3.2f' % t2)
 
-    def add_polygon(self, value):
-        p = Polygon(nx.asarray(geom.fix_polygon(value)), closed=True,
+    def add_polygon(self, poly):
+        """
+        Add a polygon patch to the spectrogram.  Only the exterior of
+        the polygon is used (for now).
+        """
+        p = Polygon(nx.asarray(poly.exterior.coords), closed=True,
                     ec='k', lw=self._element_lw_unselected, fc=self.element_color, alpha=0.3)
         self.selections.append(p)
         self.axes.add_patch(p)
-        mn = min(x[0] for x in value)
-        mx = max(x[0] for x in value)
-        return self.list.add_selection('','spectrotemporal',"%3.2f" % mn, "%3.2f" % mx,)
+        bounds = poly.bounds
+        return self.list.add_selection('','spectrotemporal',"%3.2f" % bounds[0], "%3.2f" % bounds[2],)
 
     def delete_selection(self, *index):
         """ Removes elements from the underlying list, since we have access to it """
@@ -122,17 +126,21 @@ class SpecPicker(SpecViewer, DrawMask):
             p.remove()
             self.list.DeleteItem(i)
 
-    def add_trace(self, t, f):
-        """ Add a trace (typically pitch) to the plot. Removes previous plot """
-        if self.trace_h: self.trace_h.remove()
-        self.trace_h = Line2D(t, f, color='w', linestyle='none', marker='o', alpha=0.2)
-        self.axes.add_line(self.trace_h)
+    def add_trace(self, t, f, clear=True):
+        """ Add a trace (typically pitch) to the plot. Removes previous plot if clear is True """
+        if clear: self.remove_trace()
+        def pfun(x):
+            h = Line2D(t, x, color='w', linestyle='none', marker='o', alpha=0.2)
+            self.axes.add_line(h)
+            self.trace_h.append(h)
+        if f.ndim==1: pfun(f)
+        else:
+            for c in xrange(f.shape[1]): pfun(f[:,c])
         self.draw()
 
     def remove_trace(self):
-        if self.trace_h:
-            self.trace_h.remove()
-            self.trace_h = None
+        for h in self.trace_h: h.remove()
+        self.trace_h = []
         self.draw()
 
     def get_selected(self):
@@ -165,7 +173,7 @@ class SpecPicker(SpecViewer, DrawMask):
 
     def clear(self):
         self.selections = []
-        self.trace_h = None
+        self.remove_trace()
         self.axes.clear()
         self.handler.image = None
 
@@ -373,7 +381,7 @@ class ChirpGui(wx.Frame):
             el = geom.elementlist.read(elfilename)
         if el:
             for elm in el:
-                if isinstance(elm[0], tuple):
+                if isinstance(elm, geom.Polygon):
                     self.spec.add_polygon(elm)
                 else:
                     self.spec.add_interval(elm)
@@ -429,7 +437,7 @@ class ChirpGui(wx.Frame):
                 self.spec.delete_selection(i)
             self.spec.delete_selection(i1)
             # if polygons are disjoint, may return a multipolygon; split into separate segments
-            new_elem = [self.spec.add_polygon(p) for p in geom.convert_polygon(p1)]
+            new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(p1)]
             self.spec.draw()
             self.status.SetStatusText("Merged elements %s into %s" % (list(i for i,p in polys), new_elem))
 
@@ -442,7 +450,7 @@ class ChirpGui(wx.Frame):
             ind,patches = zip(*polys)
             ipoly,new_poly = geom.subtract_polygons(patches)
             self.spec.delete_selection(*ind)
-            new_elem = [self.spec.add_polygon(p) for p in geom.convert_polygon(new_poly)]
+            new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(new_poly)]
             self.status.SetStatusText("Subtracted %d elements from element %d" % (len(ind)-1,ind[ipoly]))
 
 
@@ -456,7 +464,7 @@ class ChirpGui(wx.Frame):
                 self.status.SetStatusText("Segments do not intersect.")
             else:
                 new_polys = geom.split_polygons(p1,p2)
-                new_elem = [self.spec.add_polygon(p) for p in geom.convert_polygon(*new_polys)]
+                new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(*new_polys)]
                 self.spec.delete_selection(polys[1][0],polys[0][0])
                 self.spec.draw()
                 self.status.SetStatusText("Split elements %s into %s" % (list(i for i,p in polys), new_elem))
@@ -522,8 +530,7 @@ class ChirpGui(wx.Frame):
     def on_save(self, event):
         """ save elements to a file """
         # all of the patches are going to have 2D vertices
-        el = geom.elementlist()
-        el.extend_patches(self.spec.selections)
+        el = patches_to_elist(self.spec.selections)
         if el:
             outfile = os.path.splitext(self.filename)[0] + _el_ext
             el.write(outfile)
@@ -562,13 +569,26 @@ class ChirpGui(wx.Frame):
         wx.TheClipboard.Close()
 
     def on_calc_pitch(self, event):
+        """
+        This function takes all the selected elements, or all of them
+        if none are selected, and calculates the pitch for each.
+        """
+        elems = self.get_selected()
+        if len(elems) < 1: elems = self.spec.selections
+        elems = patches_to_elist(elems)
         try:
+            self.spec.remove_trace()
             self.status.SetStatusText("Calculating pitch...")
             wx.BeginBusyCursor()
-            el = geom.elementlist()
-            el.extend_patches(self.spec.selections)
-            pest = pitch.ptrack(self.filename, el, pitch.default_params)
-            self.spec.add_trace(pest['time'],pest['p.map'])
+            pt = ptracker.tracker() # need to get options from config file
+            sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
+            spec,tgrid,fgrid = pt.matched_spectrogram(sig,Fs)
+            for startcol, mspec in ptracker.split_spectrogram(spec, elems, tgrid, fgrid, cout=sys.stdout):
+                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=sys.stdout) # need options
+                startframe += startcol
+                t = tgrid[startframe:startframe+specpow.size]
+                # use map if user requests
+                self.spec.add_trace(t, pitch_mmse*Fs, clear=False)
             self.status.SetStatusText("Calculating pitch...done")
         except Exception, e:
             self.status.SetStatusText("Error calculating pitch: %s" % e)
@@ -591,6 +611,20 @@ class ChirpGui(wx.Frame):
 
     def on_exit(self, event):
         self.Destroy()
+
+def patches_to_elist(elements):
+    elist = geom.elementlist()
+    for patch in elements:
+        trans = patch.get_data_transform().inverted()
+        v = patch.get_verts()
+        if isinstance(patch, Rectangle):
+            q = [x[0] for x in trans.transform(v[:2])]
+            elist.append(q)
+        elif isinstance(patch, Polygon):
+            q = [(x,y) for x,y in trans.transform(v)]
+            elist.append(geom.Polygon(q))
+    return elist
+
 
 def main(argv=None):
     import sys

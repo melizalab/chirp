@@ -11,6 +11,7 @@ Created 2010-02-02
 """
 import numpy as nx
 from shapely import geometry,wkt
+from shapely.geometry import Polygon  # for convenience
 
 class elementlist(list):
     """
@@ -29,19 +30,6 @@ class elementlist(list):
             fp.write(str(self))
 
 
-    def extend_patches(self, elements):
-        """ Add new elements to object from matplotlib patches """
-        for patch in elements:
-            trans = patch.get_data_transform().inverted()
-            v = patch.get_verts()
-            if isinstance(patch, patches.Rectangle):
-                q = [x[0] for x in trans.transform(v[:2])]
-                self.append(q)
-            elif isinstance(patch, patches.Polygon):
-                q = [(x,y) for x,y in trans.transform(v)]
-                self.append(geometry.Polygon(q))
-
-
     def __str__(self):
         out = []
         for element in self:
@@ -56,7 +44,6 @@ class elementlist(list):
     def __repr__(self):
         return "<%s : %d element%s>" % (self.__class__.__name__, self.__len__(),
                                         "" if self.__len__()==1 else "s")
-
 
     @staticmethod
     def element_type(el):
@@ -122,7 +109,14 @@ def rasterize(poly,F,T):
 
 def rescale(points, bounds=None):
     """
-    Rescale or move a geometry """
+    Rescale or move a collection of points.  If bounds is None,
+    calculates boundaries of existing polygon, rescales to a unit
+    square, and returns rescaled points.  If bounds is not None, it
+    does the same thing except that it rescales the points to the new
+    bounds.
+
+    Returns scaled points, old bounds
+    """
     X = nx.asarray(points)
     x1,y1 = X.min(0)
     x2,y2 = X.max(0)
@@ -136,18 +130,18 @@ def rescale(points, bounds=None):
 
 _tol_values = nx.arange(0.01,1,0.01)
 
-def fix_polygon(vertices):
-    """ Fix an invalid (i.e. intersecting) polygon """
+def vertices_to_polygon(vertices):
+    """ Convert a a list of vertices to a (valid) shapely Polygon """
     # need to scale so that the tolerance values are matched across dimensions
     X,bounds = rescale(vertices)
     poly = geometry.Polygon(X)
     if poly.is_valid:
-        return vertices
+        return geometry.Polygon(vertices)
     print "Trying to simplify polygon"
     for tol in _tol_values:
         poly2 = poly.buffer(tol)
         if poly2.geom_type=='Polygon' and poly2.is_valid:
-            return rescale(poly2.exterior.coords,bounds)[0]
+            return geometry.Polygon(rescale(poly2.exterior.coords,bounds)[0])
     raise Exception, "Couldn't simplify polygon"
 
 def convert_patch(patch):
@@ -155,17 +149,17 @@ def convert_patch(patch):
     v = patch.get_verts()
     return geometry.Polygon([(x,y) for x,y in trans.transform(v)])
 
-def convert_polygon(*polys):
+def polygon_components(*polys):
     """
-    Generator yields exterior coordinates of poly; if poly is a
-    MultiPolygon, yields exteriors of component polygons.
+    Generator to split a heterogeneous list of Polygons and
+    MultiPolygons into their component Polygons.
     """
     for poly in polys:
         if poly.geom_type=='Polygon':
-            yield list(poly.exterior.coords)
+            yield poly
         elif poly.geom_type=='MultiPolygon':
             for geom in poly.geoms:
-                yield list(geom.exterior.coords)
+                yield geom
         else:
             raise ValueError, "Object %s is not a polygon or multipolygon", poly
 
