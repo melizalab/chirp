@@ -324,17 +324,24 @@ configuration file details.
         elems = elementlist.read(maskfile)
         mask = masker(configfile=config, **kwargs)
         for startcol, mspec in mask.split(spec, elems, tgrid, fgrid, cout=cout):
-            print >> cout, "*** Pitch calculations:"
-            startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout)
-            summarize_stats(cout, startframe+startcol, specpow, pitch_mmse, pitch_map,
-                            tgrid, pt.template.pgrid, samplerate)
+            try:
+                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout)
+                print >> cout, "*** Pitch calculations:"
+                summarize_stats(cout, startframe+startcol, specpow, pitch_mmse, pitch_map,
+                                tgrid, pt.template.pgrid, samplerate)
+            except ValueError, e:
+                print >> cout, "*** Pitch calculation error: %s" % e
+                continue
 
     else:
         print >> cout, "* No mask file; calculating pitch for entire signal"
         print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
-        starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout)
-        summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
-                        tgrid, pt.template.pgrid, samplerate)
+        try:
+            starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout)
+            summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
+                            tgrid, pt.template.pgrid, samplerate)
+        except ValueError, e:
+            print >> cout, "*** Pitch calculation error: %s" % e
 
     return 0
 
