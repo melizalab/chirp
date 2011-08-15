@@ -68,7 +68,7 @@ class DrawMask(FigCanvas):
     again to close the polygon.
     """
 
-    def __init__(self, parent, id=-1, figure=None):
+    def __init__(self, parent, id=-1, figure=None, configfile=None):
         super(DrawMask,self).__init__(parent, id, figure)
         # state variables
         self.drawing = False

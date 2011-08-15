@@ -4,7 +4,7 @@
 """
 Define spectrographic elements of acoustic signals
 
-chirp [<input.wav>]
+chirp [-c chirp.cfg] [<input.wav>]
 
 Copyright (C) 2009-2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 """
@@ -13,7 +13,7 @@ from __future__ import division
 import os,sys
 import wx
 import numpy as nx
-from ..common import geom, audio, plg
+from ..common import geom, audio, plg, config
 from ..pitch import tracker as ptracker
 from .wxcommon import *
 from .TSViewer import RubberbandPainter
@@ -31,6 +31,8 @@ spec_methods = ['hanning','tfr']
 colormaps = ['jet','Greys','hot']
 _el_ext = '.ebl'
 _pitch_ext = '.plg'
+
+default_cfg = os.path.join(os.environ['HOME'],".chirp.cfg")
 
 # checklist control
 from wx.lib.mixins.listctrl import CheckListCtrlMixin, ListCtrlAutoWidthMixin
@@ -71,11 +73,12 @@ class SpecPicker(SpecViewer, DrawMask):
     _element_lw_unselected = 1
     _element_lw_selected = 5
 
-    def __init__(self, parent, id, figure=None):
-        super(SpecPicker, self).__init__(parent, id, figure)
+    def __init__(self, parent, id, figure=None, configfile=None):
+        super(SpecPicker, self).__init__(parent, id, figure, configfile)
         self.list = parent.GetParent().list
         self.selections = []
         self.trace_h = []
+        self.set_colormap(self.handler.colormap)
 
     def on_key(self, event):
         """
@@ -162,14 +165,13 @@ class SpecPicker(SpecViewer, DrawMask):
     element_color = property(get_element_color, set_element_color)
 
     def set_colormap(self, value):
-        cmap = getattr(cm, value)
         if value=='Greys':
             self.polygon.PEN = wx.BLACK_PEN
             self.element_color = 'g'
         elif value in ('hot','jet'):
             self.polygon.PEN = wx.WHITE_PEN
             self.element_color = 'w'
-        self.handler.colormap = cmap
+        self.handler.colormap = value
 
     def clear(self):
         self.selections = []
@@ -182,9 +184,10 @@ class ChirpGui(wx.Frame):
     """ The main frame of the application """
     dpi = 100
 
-    def __init__(self, title='chirp', size=(1000,350)):
+    def __init__(self, title='chirp', size=(1000,350), configfile=None):
         super(ChirpGui, self).__init__(None, -1, title, size=size)
-
+        # load configuration file if one's supplied
+        self.configfile = config.configoptions(configfile)
         self.create_menu()
         self.create_main_panel()
         self.filename = None
@@ -198,7 +201,6 @@ class ChirpGui(wx.Frame):
         m_prev_file = menu_file.Append(-1, "Previous File\tCtrl-B", "Previous File")
         m_save = menu_file.Append(-1, "&Save Elements\tCtrl-S", "Save Elements")
         m_save_params = menu_file.Append(-1, "Save Parameters", "Save Params")
-        m_export_intervals = menu_file.Append(-1,"Export &Intervals\tCtrl-I", "Export Intervals")
         m_exit = menu_file.Append(-1, "E&xit\tCtrl-X", "Exit")
         self.Bind(wx.EVT_MENU, self.on_open, m_open)
         self.Bind(wx.EVT_MENU, self.on_next_file, m_next_file)
@@ -206,7 +208,6 @@ class ChirpGui(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.on_save, m_save)
         self.Bind(wx.EVT_MENU, self.on_save_params, m_save_params)
-        self.Bind(wx.EVT_MENU, self.on_export_intervals, m_export_intervals)
         self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
         menu_edit = wx.Menu()
@@ -242,10 +243,7 @@ class ChirpGui(wx.Frame):
 
         # Create the mpl Figure and FigCanvas objects.
         fig = Figure((8.0, 3.0), dpi=self.dpi)
-        self.spec = SpecPicker(mainPanel, -1, fig)
-
-        # load configuration so values get propagated to controls
-        self.load_configuration()
+        self.spec = SpecPicker(mainPanel, -1, fig, configfile=self.configfile)
 
         spec_controls = self.create_spec_controls(mainPanel)
 
@@ -339,7 +337,7 @@ class ChirpGui(wx.Frame):
         txt.SetFont(font)
         hbox.Add(txt, 0, wx.RIGHT | wx.LEFT, 5)
         self.cmap = wx.ComboBox(controls, -1, choices=colormaps, style=wx.CB_READONLY)
-        self.cmap.SetValue(self.spec.handler.colormap.name)
+        self.cmap.SetValue(self.spec.handler.colormap)
         hbox.Add(self.cmap, 1)
 
         controls.Bind(wx.EVT_COMBOBOX, self.OnSpecMethod, self.spec_method)
@@ -348,19 +346,6 @@ class ChirpGui(wx.Frame):
 
         controls.SetSizer(hbox)
         return controls
-
-    def load_configuration(self):
-        self.cfg = wx.Config('songchop')
-        if self.cfg.Exists('f_low'):
-            self.spec.handler.fpass = (self.cfg.ReadFloat('f_low'),self.cfg.ReadFloat('f_high'))
-        if self.cfg.Exists('window_len'):
-            self.spec.handler.window_len = self.cfg.ReadFloat('window_len')
-        if self.cfg.Exists('shift'):
-            self.spec.handler.shift = self.cfg.ReadFloat('shift')
-        if self.cfg.Exists('dynrange'):
-            self.spec.handler.dynrange = self.cfg.ReadFloat('dynrange')
-        if self.cfg.Exists('colormap'):
-            self.spec.set_colormap(self.cfg.Read('colormap'))
 
     def load_file(self, fname):
         fp = audio.wavfile(fname)
@@ -539,24 +524,17 @@ class ChirpGui(wx.Frame):
 
     def on_save_params(self, event):
         try:
-            self.cfg.WriteFloat("f_low", float(self.f_low.GetValue()))
-            self.cfg.WriteFloat("f_high", float(self.f_high.GetValue()))
-            self.cfg.WriteFloat("window_len", float(self.win_size.GetValue()))
-            self.cfg.WriteFloat("shift", float(self.shift_size.GetValue()))
-            self.cfg.WriteFloat("dynrange", float(self.dynrange.GetValue()))
-            self.cfg.Write("colormap", self.cmap.GetValue())
-            self.status.SetStatusText("Saved configuration data")
+            self.configfile.update('spectrogram',
+                                   freq_range=(float(self.f_low.GetValue()), float(self.f_high.GetValue())),
+                                   window_len=float(self.win_size.GetValue()),
+                                   window_shift=float(self.shift_size.GetValue()),
+                                   dynrange=float(self.dynrange.GetValue()),
+                                   spec_method=self.spec_method.GetValue(),
+                                   colormap=self.cmap.GetValue())
+            self.configfile.write(default_cfg)
+            self.status.SetStatusText("Saved default configuration to %s" % default_cfg)
         except Exception, e:
             self.status.SetStatusText("Error saving configuration: %s" % e)
-            raise e
-
-    def on_export_intervals(self, event):
-        try:
-            n = io.write_intervals(self.filename, self.spec.selections,
-                                  self.spec.handler.signal, self.spec.handler.Fs)
-            self.status.SetStatusText("Wrote %d intervals to disk" % n)
-        except Exception, e:
-            self.status.SetStatusText("Error writing wave files: %s" % e)
             raise e
 
     def on_copy_name(self, event):
@@ -580,15 +558,19 @@ class ChirpGui(wx.Frame):
             self.spec.remove_trace()
             self.status.SetStatusText("Calculating pitch...")
             wx.BeginBusyCursor()
-            pt = ptracker.tracker() # need to get options from config file
             sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
+            pt = ptracker.tracker(configfile=self.configfile, samplerate=Fs*1000)
+            mask = geom.masker(configfile=self.configfile)
             spec,tgrid,fgrid = pt.matched_spectrogram(sig,Fs)
-            for startcol, mspec in ptracker.split_spectrogram(spec, elems, tgrid, fgrid, cout=sys.stdout):
-                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=sys.stdout) # need options
+            for startcol, mspec in mask.split(spec, elems, tgrid, fgrid):
+                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec)
                 startframe += startcol
                 t = tgrid[startframe:startframe+specpow.size]
-                # use map if user requests
-                self.spec.add_trace(t, pitch_mmse*Fs, clear=False)
+                if pitch_map is not None:
+                    pitch_map = nx.take(pt.template.pgrid, pitch_map) * Fs
+                    self.spec.add_trace(t, pitch_map, clear=False)
+                else:
+                    self.spec.add_trace(t, pitch_mmse*Fs, clear=False)
             self.status.SetStatusText("Calculating pitch...done")
         except Exception, e:
             self.status.SetStatusText("Error calculating pitch: %s" % e)
@@ -601,7 +583,10 @@ class ChirpGui(wx.Frame):
         pitchfile = os.path.splitext(self.filename)[0] + _pitch_ext
         if os.path.exists(pitchfile):
             pest = plg.read(pitchfile)
-            self.spec.add_trace(pest['time'],pest['p.map'])
+            if "p.map" in pest.dtype.names:
+                self.spec.add_trace(pest['time'],pest['p.map'])
+            else:
+                self.spec.add_trace(pest['time'],pest['p.mmse'])
             self.status.SetStatusText("Loaded pitch data from %s" % pitchfile)
         else:
             self.status.SetStatusText("No pitch data for %s" % self.filename)
@@ -627,17 +612,26 @@ def patches_to_elist(elements):
 
 
 def main(argv=None):
-    import sys
+    import sys, getopt
     from ..version import version
     if argv is None:
         argv = sys.argv[1:]
 
+    # this is the default location for the chirp config file
+    configfile = default_cfg
+    opts,args = getopt.getopt(argv,'hc:')
+    for o,a in opts:
+        if o =='-h':
+            print __doc__
+            return 0
+        elif o =='-c':
+            configfile=a
+
     print "Starting chirp version", version
     app = wx.PySimpleApp()
-    app.frame = ChirpGui()
-    if len(argv) > 0:
-        infile = argv[0]
-        app.frame.load_file(infile)
+    app.frame = ChirpGui(configfile=configfile)
+    if len(args) > 0:
+        app.frame.load_file(args[0])
     app.frame.Show()
     app.MainLoop()
 

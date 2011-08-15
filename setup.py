@@ -65,7 +65,8 @@ setup(
   package_data = {'': ['*.pyx']},
   #ext_modules = EXTENSIONS,
   install_requires=['distribute', 'numpy>=1.3'],   # check this
-  entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch'],
+  entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
+                                       'cplotpitch = chirp.misc.plotpitch:main'],
                   'gui_scripts' : ['chirp = chirp.gui.chirpgui:main']},
   #cmdclass = {'build_ext': build_ext}
 )

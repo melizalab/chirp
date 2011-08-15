@@ -48,7 +48,9 @@ class TSDataHandler(object):
     implementation just stores the data in the axes and uses builtin
     mpl commands to change the viewport.
     """
-    def __init__(self, axes):
+
+    def set_axes(self, axes):
+        """ Set the location where the handler will draw the data """
         self.axes = axes
         self.canvas = axes.figure.canvas
 
@@ -107,15 +109,18 @@ class TSViewer(FigCanvas):
     * up-down keys to zoom and unzoom
     * left-right keys to navigate a zoomed time series
 
-    A separate class is used for data handling; by default this is
-    TSDataHandler, which just pushes data to the underlying axes
-    object.
+    A separate object is used for data handling; by default this is a
+    TSDataHandler instance, which just pushes data to the underlying
+    axes object.
     """
     def __init__(self, parent, id=-1, figure=None, handler=TSDataHandler):
         super(TSViewer, self).__init__(parent, id, figure)
 
         # data handler
-        self.handler = handler(self.axes)
+        if isinstance(handler,type):
+            handler = handler()
+        self.handler = handler
+        self.handler.set_axes(self.axes)
 
         # 1D rubberband
         self.select_start = None

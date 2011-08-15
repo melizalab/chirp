@@ -4,7 +4,9 @@
 geometry manipulation and input/output
 
 elementlist:           a collection of intervals and/or polygons
-discretize():          convert a polygon to a binary array on a grid
+masker:                uses an elementlist to split up a spectrogram
+
+rasterize():          convert a polygon to a binary array on a grid
 
 Copyright (C) 2010 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2010-02-02
@@ -12,6 +14,7 @@ Created 2010-02-02
 import numpy as nx
 from shapely import geometry,wkt
 from shapely.geometry import Polygon  # for convenience
+from .config import _configurable
 
 class elementlist(list):
     """
@@ -77,6 +80,61 @@ class elementlist(list):
                     poly = wkt.loads(line)
                     out.append(poly)
             return out
+
+
+class masker(_configurable):
+    """
+    Use a mask file to split a spectrogram into components. Each
+    component is returned as a spectrogram with all the parts outside
+    the mask set to zero, and the spectrogram trimmed so that no
+    columns are all zeros.
+    """
+    options = dict(boxmask = False)
+
+    def __init__(self, configfile=None, **kwargs):
+        """
+        Initialize the splitter, setting options:
+
+        boxmask:  treat polygons as intervals and cut out all frequencies
+        """
+        self.readconfig(configfile, ('masker',))
+        self.options.update(kwargs)
+
+    def split(self, spec, elems, tgrid, fgrid, cout=None):
+        """
+        For each element in elems, mask out the appropriate part of
+        the spectrogram, yielding (starting column, spectrogram)
+
+        spec:   any 2D array to be masked
+        elems:  a list of elements understood by geom.elementlist.element_type()
+        tgrid,fgrid:  the time/frequency grid of the spectrogram
+        cout:   outputs diagnostic to this stream (default is stdout)
+        """
+        enum = 0
+        for elem in elems:
+            etype = elementlist.element_type(elem)
+            mspec = spec
+            if etype == 'interval':
+                bounds = elem[:]
+                print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
+                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[1]))[0]
+            else:
+                bounds = elem.bounds
+                if self.options['boxmask']:
+                    print >> cout, "** Element %d, polygon interval (%.2f, %.2f)" % (enum, bounds[0], bounds[2])
+                    cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
+                else:
+                    print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
+                    mask = rasterize(elem, fgrid, tgrid)
+                    print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
+                    cols = nx.nonzero(mask.sum(0))[0]
+                    mspec = (spec * mask)
+            if cols.size < 3:
+                print >> cout, "*** Element is too short; skipping"
+            else:
+                print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
+                yield cols[0], mspec[:,cols]
+            enum += 1
 
 
 def rasterize(poly,F,T):

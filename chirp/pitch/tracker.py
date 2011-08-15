@@ -8,10 +8,11 @@ Created 2011-07-29
 """
 import numpy as nx
 import os, libtfr, template, particle, vitterbi
+from ..common.config import _configurable
 
 base_seed = 3653268
 
-class tracker(object):
+class tracker(_configurable):
     """
     This class is the front-end programming interface to the pitch
     tracker.  It will calculate pitch as a function of time from a
@@ -31,8 +32,8 @@ class tracker(object):
 
     pitch template parameters
     =========================
-    pitch_range - range of possible pitch hypotheses (in relative freq. units)
-    freq_range  - range of frequencies to analyze  (in relative freq. units)
+    pitch_range - range of possible pitch hypotheses (in Hz or relative freq. units)
+    freq_range  - range of frequencies to analyze  (in Hz or relative freq. units)
     lobes       - number of harmonic lobes in template
     lobe_decay  - exponential decay factor for harmonic lobes
     neg_ampl    - size of negative lobes in template
@@ -42,7 +43,7 @@ class tracker(object):
     ==========================
     max_jump     - maximum amount pitch can change between frames
     particles    - number of particles
-    pow_thresh   - exclude frames where total power is below this
+    pow_thresh   - exclude frames where total power is below this (in linear units)
     rwalk_scale  - in excluded frames, how much is pitch allowed to drift (std. dev)
     chains       - number of simulation chains to use
     btrace       - whether to use Vitterbi algorithm to backtrace best path
@@ -70,9 +71,24 @@ class tracker(object):
                    btrace=False,
                    min_loglike=-100)
 
-    def __init__(self, **kwargs):
-        self.options = self.options.copy()
+    def __init__(self, configfile=None, samplerate=None, **kwargs):
+        """
+        Initialize the pitch tracker. Options are resolved in the
+        following order:
+
+        class.options, configfile, **kwargs
+
+        If samplerate is supplied, and pitch/freq values are in
+        absolute units, will rescale the values by the sampling rate.
+        Otherwise the ranges need to be specified in relative units.
+        """
+        self.readconfig(configfile,('spectrogram','cpitch'))
         self.options.update(kwargs)
+        try:
+            self.options['freq_range'] = hz2rel(self.options['freq_range'], samplerate)
+            self.options['pitch_range'] = hz2rel(self.options['pitch_range'], samplerate)
+        except TypeError:
+            raise ValueError, "A frequency value was specified in Hz: samplerate is required"
         self.template = template.harmonic(**self.options)
 
     def track(self, signal, cout=None, **kwargs):
@@ -83,12 +99,15 @@ class tracker(object):
         Waveforms are converted to spectrograms using the stored
         parameters for the template.
 
-        Options:
+        Selected options:
         particles    number of particles in filter
         chains       number of simulation chains
         rwalk_scale  random walk in frames where power is low
         btrace       do backwards filter to find MAP estimate?
-        cout         output some status info to this stream if not None
+        cout         output some status info to this stream (default stdout)
+        pow_thresh   minimum power in a frame for it to be included
+
+        Returns first good frame, power in each frame, mean of particles, MAP estimate (or None)
         """
         options = self.options.copy()
         options.update(kwargs)
@@ -181,7 +200,6 @@ class tracker(object):
         return out
 
 
-
 def specprocess(spec, pow_thresh=1e3, **kwargs):
     """
     Preprocess a spectrogram before running it through the pitch
@@ -207,45 +225,8 @@ def hz2rel(freqs, samplerate):
     fun = lambda x : float(x)/samplerate if x > 1.0 else x
     return tuple(fun(f) for f in freqs)
 
-def split_spectrogram(spec, elems, tgrid, fgrid, cout=None, **options):
-    """
-    Use a mask file to split a spectrogram into components. Each
-    component is returned as a spectrogram with all the parts outside
-    the mask set to zero, and the spectrogram trimmed so that no
-    columns are all zeros.
 
-    Yields the starting column, the spectrogram
-    """
-    from ..common.geom import rasterize, geometry
-    boxmask = options.get('boxmask',False)
-
-    enum = 0
-    for elem in elems:
-        etype = elems.element_type(elem)
-        mspec = spec
-        if etype == 'interval':
-            bounds = elem[:]
-            print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
-            cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[1]))[0]
-        else:
-            bounds = elem.bounds
-            if boxmask:
-                print >> cout, "** Element %d, polygon interval (%.2f, %.2f)" % (enum, bounds[0], bounds[2])
-                cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
-            else:
-                print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
-                mask = rasterize(elem, fgrid, tgrid)
-                print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
-                cols = nx.nonzero(mask.sum(0))[0]
-                mspec = (spec * mask)
-        if cols.size < 3:
-            print >> cout, "*** Element is too short; skipping"
-        else:
-            print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
-            yield cols[0], mspec[:,cols]
-        enum += 1
-
-def summarize_stats(cout, offset,power,pmmse,pmap, tgrid, pgrid, samplerate):
+def summarize_stats(cout, offset, power, pmmse, pmap, tgrid, pgrid, samplerate):
     """
     Print average pitch and variance for each of the estimators.
     Assumes <stats> is a sequence with the following four components:
@@ -261,7 +242,7 @@ def summarize_stats(cout, offset,power,pmmse,pmap, tgrid, pgrid, samplerate):
     for i in xrange(power.size):
         cout.write("%6.2f\t%6.2f\t%6.4f\t%6.4f" % \
                        (tgrid[i+offset],
-                        nx.log10(power[i])*10,
+                        nx.log10(power[i])*10 if power[i] >= 1 else nx.nan,
                         nx.mean(pmmse[i,:]), nx.std(pmmse[i,:]),))
 
         if pmap is not None:
@@ -288,13 +269,15 @@ configuration file details.
 
     import getopt
     from ..common.config import configoptions
-    defaults = tracker.options.copy()
-    defaults.update(kwargs)
-    config = configoptions(defaults,'cpitch')
+    config = configoptions()
 
     maskfile = None
 
     opts,args = getopt.getopt(argv, 'hvc:m:')
+    if len(args) < 1:
+        print cpitch.__doc__
+        return -1
+
     for o,a in opts:
         if o == '-h':
             print cpitch.__doc__
@@ -306,11 +289,6 @@ configuration file details.
             config.read(a)
         elif o == '-m':
             maskfile = a
-
-    options = config.items()
-    if len(args) < 1:
-        print cpitch.__doc__
-        return -1
 
     print >> cout, "* Program: cpitch"
     print >> cout, "** Version: %s" % version
@@ -331,12 +309,7 @@ configuration file details.
     print >> cout, "** Samples:", pcm.size
     print >> cout, "** Samplerate: %.2f (kHz)" % samplerate
 
-
-    # adjust frequencies to relative units
-    options['freq_range'] = hz2rel(options['freq_range'], samplerate * 1000)
-    options['pitch_range'] = hz2rel(options['pitch_range'], samplerate * 1000)
-
-    pt = tracker(**options)
+    pt = tracker(configfile=config, samplerate=samplerate*1000, **kwargs)
     print >> cout, pt.spectrogram_options_str()
     print >> cout, pt.template_options_str()
 
@@ -346,20 +319,20 @@ configuration file details.
 
     print >> cout, pt.particle_options_str()
     if maskfile is not None and os.path.exists(maskfile):
-        from ..common.geom import elementlist
+        from ..common.geom import elementlist, masker
         print >> cout, "* Mask file:", maskfile
         elems = elementlist.read(maskfile)
-        for startcol, mspec in split_spectrogram(spec, elems, tgrid, fgrid,
-                                                 cout=cout, boxmask=config.getboolean('boxmask',False)):
+        mask = masker(configfile=config, **kwargs)
+        for startcol, mspec in mask.split(spec, elems, tgrid, fgrid, cout=cout):
             print >> cout, "*** Pitch calculations:"
-            startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout, **options)
+            startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout)
             summarize_stats(cout, startframe+startcol, specpow, pitch_mmse, pitch_map,
                             tgrid, pt.template.pgrid, samplerate)
 
     else:
         print >> cout, "* No mask file; calculating pitch for entire signal"
-        print >> cout, "** Element 0, interval (tgrid[0],tgrid[-1])"
-        starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout, **options)
+        print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
+        starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout)
         summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
                         tgrid, pt.template.pgrid, samplerate)
 
