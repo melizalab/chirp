@@ -574,7 +574,6 @@ class ChirpGui(wx.Frame):
             self.status.SetStatusText("Calculating pitch...done")
         except Exception, e:
             self.status.SetStatusText("Error calculating pitch: %s" % e)
-            raise e
         finally:
             wx.EndBusyCursor()
 
