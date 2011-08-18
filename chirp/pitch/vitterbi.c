@@ -5,6 +5,8 @@
  * A[i*N+j] where N is the number of columns in A.
  */
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 void
 filter(int * map, int const * particles, double const * loglikelihood,
@@ -29,7 +31,7 @@ filter(int * map, int const * particles, double const * loglikelihood,
 	for (k = 1; k < K; k++) {
 		for (j = 0; j < N; j++) {
 			x_j = particles[j*K+k];
-			maxarg = minlog-1;
+			maxarg = 0;
 			maxi = 0;
 			for (i = 0; i < N; i++) {
 				arg = delta[i*K+k-1];
@@ -38,13 +40,13 @@ filter(int * map, int const * particles, double const * loglikelihood,
 				if ((jump < 0) || (jump >= nP))
 					arg += minlog;
 				else {
-					lp = logproposal[jump*nP+k-1];
+					lp = logproposal[jump*(K-1)+k-1];
 					if (lp <= minlog)
 						arg += lognormal[jump];
 					else
 						arg += lp;
 				}
-				if (arg > maxarg) {
+				if ((arg > maxarg) || (i==0)) {
 					maxarg = arg;
 					maxi = i;
 				}
@@ -59,10 +61,10 @@ filter(int * map, int const * particles, double const * loglikelihood,
 	}
 
 	// backtrace
-	maxarg = minlog-1;
+	maxarg = 0;
 	maxi = 0;
 	for (i = 0; i < N; ++i) {
-		if (delta[i*K+K-1] > maxarg) {
+		if ((i==0) || (delta[i*K+K-1] > maxarg)) {
 			maxarg = delta[i*K+K-1];
 			maxi = i;
 		}
