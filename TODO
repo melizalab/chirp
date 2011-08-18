@@ -4,6 +4,15 @@
 ** DONE finish front-end, write config file
 ** STARTED test on pitch files
 ** TODO eliminate weave dependency
+
+Start with the weave code, rewrite into pure python, and cython.
+Profile along the way with -n1 -r3
+
++ weave :: 1.86 s
++ pure python :: 785 s!
++ cython, no typing :: 747 s
++ cython, some typing :: 202 s
+
 ** TODO profiling/optimization of vitterbi filter
 
 * TODO ccompare (recording comparisons) [0/3]

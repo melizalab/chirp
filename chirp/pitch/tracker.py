@@ -7,7 +7,8 @@ Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2011-07-29
 """
 import numpy as nx
-import os, libtfr, template, particle, vitterbi
+import os, libtfr
+from . import template, particle, vitterbi
 from ..common.config import _configurable
 
 base_seed = 3653268
@@ -141,6 +142,7 @@ class tracker(_configurable):
             if btrace:
                 if cout: cout.write("+ Chain %d: reverse Vitterbi filter\n" % chain)
                 particle_values = nx.column_stack(pfilt.particle_history)
+                return pfilt.loglike,proposal,particle_values
                 pitch_map.append(vitterbi.filter(particle_values, pfilt.loglike, proposal, **kwargs))
 
         if btrace:

@@ -3,17 +3,22 @@
 # -*- mode: python -*-
 from setuptools import setup, find_packages
 from distutils.extension import Extension
+from numpy.distutils.core import setup,Extension
 import sys, os
 import os.path as op
 
-try:
-    from Cython.Distutils import build_ext
-    SUFFIX = '.pyx'
-except ImportError:
-    from distutils.command.build_ext import build_ext
-    SUFFIX = '.c'
+# try:
+#     from Cython.Distutils import build_ext
+#     SUFFIX = '.pyx'
+# except ImportError:
+#     from distutils.command.build_ext import build_ext
+#     SUFFIX = '.c'
 
-import numpy
+# import numpy
+
+# COMPILER_SETTINGS = {
+#     'include_dirs' : [numpy.get_include()]
+#     }
 
 # --- Distutils setup and metadata --------------------------------------------
 
@@ -49,6 +54,10 @@ of the following programs:
 + cfilter :: extract sounds corresponding to specific spectrotemporal regions
 """
 
+_vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
+#pyxfiles = ['chirp/pitch/vitterbi']
+#extensions = [Extension(m.replace('/','.'), [m+SUFFIX], **COMPILER_SETTINGS) for m in pyxfiles]
+
 setup(
   name = 'chirp',
   version = VERSION,
@@ -63,12 +72,11 @@ setup(
   download_url = 'https://github.com/dmeliza/chirp',
   packages= find_packages(exclude=["*test*"]),
   package_data = {'': ['*.pyx']},
-  #ext_modules = EXTENSIONS,
+  ext_modules = [_vitterbi],
   install_requires=['distribute', 'numpy>=1.3'],   # check this
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main'],
                   'gui_scripts' : ['chirp = chirp.gui.chirpgui:main']},
-  #cmdclass = {'build_ext': build_ext}
 )
 
 
