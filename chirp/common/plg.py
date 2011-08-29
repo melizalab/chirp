@@ -8,7 +8,7 @@ Created 2011-08-06
 """
 
 import re
-_el_rx = re.compile(r"\*+ Pitch for element ([0-9]+)")
+_el_rx = re.compile(r"\*+ .*lement ([0-9]+)")
 
 def read(filename):
     """
@@ -29,7 +29,7 @@ def read(filename):
                 current_element = int(m.group(1))
             elif line.startswith("time"):
                 field_names = line.split()
-            elif line[0] not in ('*','+'):
+            elif line[0] not in ('*','+','-'):
                 values = (current_element,) + tuple(float(x) for x in line.split())
                 records.append(values)
 

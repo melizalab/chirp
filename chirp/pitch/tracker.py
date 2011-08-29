@@ -142,7 +142,6 @@ class tracker(_configurable):
             if btrace:
                 if cout: cout.write("+ Chain %d: reverse Vitterbi filter\n" % chain)
                 particle_values = nx.column_stack(pfilt.particle_history)
-                return pfilt.loglike,proposal,particle_values
                 pitch_map.append(vitterbi.filter(particle_values, pfilt.loglike, proposal, **kwargs))
 
         if btrace:
