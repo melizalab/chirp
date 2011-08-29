@@ -17,6 +17,10 @@ def _decibels(x, mindB=0.0):
 
 decibels = frompyfunc(_decibels, 1, 1)
 
+def nandecibels(x):
+    """ Converts linear scale to decibels, without raising errors """
+    from numpy import where,log10,nan
+    return where(x>0,log10(x)*10,nan)
 
 # Variables:
 # End:

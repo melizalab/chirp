@@ -9,7 +9,9 @@ Created 2011-07-29
 import numpy as nx
 import os, libtfr
 from . import template, particle, vitterbi
+from ..common.plg import pitchtrace
 from ..common.config import _configurable
+from ..common.math import nandecibels
 
 base_seed = 3653268
 
@@ -92,7 +94,7 @@ class tracker(_configurable):
             raise ValueError, "A frequency value was specified in Hz: samplerate is required"
         self.template = template.harmonic(**self.options)
 
-    def track(self, signal, cout=None, **kwargs):
+    def track(self, signal, cout=None, raw=False, **kwargs):
         """
         Calculate the pitch from a spectrogram or signal waveform.  If
         the input is a spectrogram, it needs to be calculated on the
@@ -108,7 +110,8 @@ class tracker(_configurable):
         cout         output some status info to this stream (default stdout)
         pow_thresh   minimum power in a frame for it to be included
 
-        Returns first good frame, power in each frame, mean of particles, MAP estimate (or None)
+        Returns first good frame, power in each frame (linear), mean of particles,
+                variance of particles, MAP estimate (or None). Frequency units are rel.
         """
         options = self.options.copy()
         options.update(kwargs)
@@ -127,6 +130,9 @@ class tracker(_configurable):
         proposal = template.frame_xcorr(spec, **options)
 
         pitch_mmse = nx.zeros((spec.shape[1],chains))
+        pitch_var = nx.zeros((spec.shape[1],chains))
+        f_mean = lambda x : self.template.pgrid[x]
+        f_msq  = lambda x : self.template.pgrid[x]**2
         if btrace:
             pitch_map = []
         for chain in xrange(chains):
@@ -134,10 +140,15 @@ class tracker(_configurable):
             if cout: cout.write("+ Chain %d: forward particle filter\n" % chain)
             pfilt = particle.smc(like, proposal, **options)
             pfilt.initialize(nparticles=options['particles'], seed=base_seed + chain * 1000)
-            pitch_mmse[0,chain] = pfilt.integrate(func=lambda x : self.template.pgrid[x])
+            pitch_mmse[0,chain] = pfilt.integrate(func=f_mean)
+            pitch_var[0,chain] = pfilt.integrate(func=f_msq)
 
-            for f,p,w in pfilt.iterate(rwalk_scale=options['rwalk_scale'], keep_history=btrace):
-                pitch_mmse[f,chain] = pfilt.integrate(func=lambda x: self.template.pgrid[x])
+            for f,p,w in pfilt.iterate(rwalk_scale=options['rwalk_scale'], keep_history=btrace or raw):
+                pitch_mmse[f,chain] = pfilt.integrate(func=f_mean)
+                pitch_var[f,chain] = pfilt.integrate(func=f_msq)
+
+            if raw:
+                return nx.column_stack(pfilt.particle_history), pfilt.loglike, proposal
 
             if btrace:
                 if cout: cout.write("+ Chain %d: reverse Vitterbi filter\n" % chain)
@@ -145,11 +156,12 @@ class tracker(_configurable):
                 pitch_map.append(vitterbi.filter(particle_values, pfilt.loglike, proposal, **kwargs))
 
         if btrace:
-            pitch_map = nx.column_stack(pitch_map)
+            pitch_map = nx.take(self.template.pgrid, nx.column_stack(pitch_map))
         else:
             pitch_map = None
 
-        return starttime, specpow, pitch_mmse, pitch_map
+        pitch_var -= pitch_mmse**2
+        return starttime, specpow, pitch_mmse, pitch_var, pitch_map
 
     def matched_spectrogram(self, signal, Fs):
         """
@@ -227,30 +239,6 @@ def hz2rel(freqs, samplerate):
     return tuple(fun(f) for f in freqs)
 
 
-def summarize_stats(cout, offset, power, pmmse, pmap, tgrid, pgrid, samplerate):
-    """
-    Print average pitch and variance for each of the estimators.
-    Assumes <stats> is a sequence with the following four components:
-    offset of first frame, power(frame), mmse(frame,chain),
-    map(frame,chain) [last may be None].
-    """
-    fields = ['time','power','p.mmse','p.mmse.sd']
-    if pmap is not None:
-        fields += ['p.map','p.map.sd']
-        pmap = nx.take(pgrid, pmap) * samplerate
-    print >> cout, "\t".join(fields)
-    pmmse *= samplerate
-    for i in xrange(power.size):
-        cout.write("%6.2f\t%6.2f\t%6.4f\t%6.4f" % \
-                       (tgrid[i+offset],
-                        nx.log10(power[i])*10 if power[i] >= 1 else nx.nan,
-                        nx.mean(pmmse[i,:]), nx.std(pmmse[i,:]),))
-
-        if pmap is not None:
-            cout.write("\t%6.4f\t%6.4f" % (nx.mean(pmap[i,:]), nx.std(pmap[i,:])))
-        cout.write("\n")
-
-
 def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     """
 Usage: cpitch [-c <config.cfg>] [-m <mask.ebl>] <signal.wav>
@@ -326,10 +314,13 @@ configuration file details.
         mask = masker(configfile=config, **kwargs)
         for startcol, mspec in mask.split(spec, elems, tgrid, fgrid, cout=cout):
             try:
-                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec, cout=cout)
+                startframe, specpow, pitch_mmse, pitch_var, pitch_map = pt.track(mspec, cout=cout)
+                ptrace = pitchtrace(tgrid[startframe+startcol:startframe+startcol+specpow.size],
+                                    pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
+                                    **{'p.map' : None if pitch_map is None else pitch_map * samplerate,
+                                     'stim.pow' : nandecibels(specpow)})
                 print >> cout, "*** Pitch calculations:"
-                summarize_stats(cout, startframe+startcol, specpow, pitch_mmse, pitch_map,
-                                tgrid, pt.template.pgrid, samplerate)
+                ptrace.write(cout)
             except ValueError, e:
                 print >> cout, "*** Pitch calculation error: %s" % e
                 continue
@@ -339,8 +330,12 @@ configuration file details.
         print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
         try:
             starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout)
-            summarize_stats(cout, starttime, specpow, pitch_mmse, pitch_map,
-                            tgrid, pt.template.pgrid, samplerate)
+            ptrace = pitchtrace(tgrid,
+                                pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
+                                **{'p.map' : None if pitch_map is None else pitch_map * samplerate,
+                                 'stim.pow' : nandecibels(specpow)})
+            print >> cout, "*** Pitch calculations:"
+            ptrace.write(cout)
         except ValueError, e:
             print >> cout, "*** Pitch calculation error: %s" % e
 
