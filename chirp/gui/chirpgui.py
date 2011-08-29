@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
@@ -13,16 +12,15 @@ from __future__ import division
 import os,sys
 import wx
 import numpy as nx
-from ..common import geom, audio, plg, config
-from ..pitch import tracker as ptracker
+from ..common import geom, audio, config
 from .wxcommon import *
 from .TSViewer import RubberbandPainter
 from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
+from .PitchOverlayMixin import PitchOverlayMixin
 
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle, Polygon
-from matplotlib.lines import Line2D
 from matplotlib import cm
 
 from glob import glob
@@ -66,7 +64,7 @@ class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
         self.frame.OnCheckItem(index, flag)
 
 
-class SpecPicker(SpecViewer, DrawMask):
+class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
     """ Combines TSViewer and DrawMask into a super magical class """
 
     _element_color = 'g'
@@ -75,6 +73,7 @@ class SpecPicker(SpecViewer, DrawMask):
 
     def __init__(self, parent, id, figure=None, configfile=None):
         super(SpecPicker, self).__init__(parent, id, figure, configfile)
+        PitchOverlayMixin.__init__(self, configfile)
         self.list = parent.GetParent().list
         self.selections = []
         self.trace_h = []
@@ -128,23 +127,6 @@ class SpecPicker(SpecViewer, DrawMask):
             p = self.selections.pop(i)
             p.remove()
             self.list.DeleteItem(i)
-
-    def add_trace(self, t, f, clear=True):
-        """ Add a trace (typically pitch) to the plot. Removes previous plot if clear is True """
-        if clear: self.remove_trace()
-        def pfun(x):
-            h = Line2D(t, x, color='w', linestyle='none', marker='o', alpha=0.2)
-            self.axes.add_line(h)
-            self.trace_h.append(h)
-        if f.ndim==1: pfun(f)
-        else:
-            for c in xrange(f.shape[1]): pfun(f[:,c])
-        self.draw()
-
-    def remove_trace(self):
-        for h in self.trace_h: h.remove()
-        self.trace_h = []
-        self.draw()
 
     def get_selected(self):
         return list(i for i,p in enumerate(self.selections) if p.get_lw() > self._element_lw_unselected)
@@ -483,9 +465,11 @@ class ChirpGui(wx.Frame):
                 el = self.load_elements(infile)
                 if el: self.status.SetStatusText("Loaded %d elements from %s" % (len(el), infile))
             elif file_type==_pitch_ext:
-                pest = plg.read(infile)
-                self.spec.add_trace(pest['time'],pest['p.map'])
-                self.status.SetStatusText("Loaded pitch data from %s" % infile)
+                try:
+                    self.read_plg(infile)
+                    self.status.SetStatusText("Loaded pitch data from %s" % infile)
+                except Exception:
+                    self.status.SetStatusText("Error reading pitch data from %s" % infile)
             else:
                 self.load_file(infile)
 
@@ -553,24 +537,13 @@ class ChirpGui(wx.Frame):
         """
         elems = self.get_selected()
         if len(elems) < 1: elems = self.spec.selections
-        elems = patches_to_elist(elems)
+        if len(elems) < 1: elems = None
+        else: elems = patches_to_elist(elems)
         try:
-            self.spec.remove_trace()
             self.status.SetStatusText("Calculating pitch...")
             wx.BeginBusyCursor()
             sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
-            pt = ptracker.tracker(configfile=self.configfile, samplerate=Fs*1000)
-            mask = geom.masker(configfile=self.configfile)
-            spec,tgrid,fgrid = pt.matched_spectrogram(sig,Fs)
-            for startcol, mspec in mask.split(spec, elems, tgrid, fgrid):
-                startframe, specpow, pitch_mmse, pitch_map = pt.track(mspec)
-                startframe += startcol
-                t = tgrid[startframe:startframe+specpow.size]
-                if pitch_map is not None:
-                    pitch_map = nx.take(pt.template.pgrid, pitch_map) * Fs
-                    self.spec.add_trace(t, pitch_map, clear=False)
-                else:
-                    self.spec.add_trace(t, pitch_mmse*Fs, clear=False)
+            self.spec.plot_calcd_pitch(sig, Fs, elems)
             self.status.SetStatusText("Calculating pitch...done")
         except Exception, e:
             self.status.SetStatusText("Error calculating pitch: %s" % e)
@@ -581,11 +554,7 @@ class ChirpGui(wx.Frame):
         if self.filename is None: return
         pitchfile = os.path.splitext(self.filename)[0] + _pitch_ext
         if os.path.exists(pitchfile):
-            pest = plg.read(pitchfile)
-            if "p.map" in pest.dtype.names:
-                self.spec.add_trace(pest['time'],pest['p.map'])
-            else:
-                self.spec.add_trace(pest['time'],pest['p.mmse'])
+            self.spec.plot_plg(pitchfile)
             self.status.SetStatusText("Loaded pitch data from %s" % pitchfile)
         else:
             self.status.SetStatusText("No pitch data for %s" % self.filename)

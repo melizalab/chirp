@@ -15,6 +15,8 @@ Copyright (C) 2010 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2010-03-15
 """
 
+_scriptname = "cplotpitch"
+
 import os
 import numpy as nx
 import matplotlib
@@ -90,18 +92,18 @@ def main(argv=None, cout=None):
 
     config = configoptions()
     opts,args = getopt.getopt(sys.argv[1:], 'c:hv')
-    if len(args) < 1:
-        print __doc__
-        sys.exit(-1)
     for o,a in opts:
         if o == '-h':
             print __doc__
             return -1
         elif o == '-v':
-            print "cpitch version %s" % version
+            print "%s version %s" % (_scriptname, version)
             return -1
         elif o == '-c':
             config.read(a)
+    if len(args) < 1:
+        print __doc__
+        sys.exit(-1)
 
     def gridfun(**kwargs):
         from matplotlib.pyplot import subplots
