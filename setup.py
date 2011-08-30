@@ -75,8 +75,11 @@ setup(
   ext_modules = [_vitterbi],
   install_requires=['distribute', 'numpy>=1.3'],   # check this
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
-                                       'cplotpitch = chirp.misc.plotpitch:main'],
-                  'gui_scripts' : ['chirp = chirp.gui.chirpgui:main']},
+                                       'cplotpitch = chirp.misc.plotpitch:main',
+                                       'ccompare = chirp.compare.ccompare:main'],
+                  'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],
+                  'chirp.compare.method' : ['spcc = chirp.compare.spcc:spcc',
+                                             'masked_spcc = chirp.compare.masked_spcc:masked_spcc']},
 )
 
 

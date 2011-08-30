@@ -16,6 +16,7 @@ Created 2011-08-06
 import re
 _el_rx = re.compile(r"\*+ .*lement ([0-9]+)")
 
+_default_extension = '.plg'
 
 class pitchtrace(object):
     """

@@ -13,6 +13,7 @@ Created 2010-02-02
 """
 import numpy as nx
 from shapely import geometry,wkt
+from shapely.ops import cascaded_union
 from shapely.geometry import Polygon  # for convenience
 from .config import _configurable
 
@@ -26,6 +27,7 @@ class elementlist(list):
     basically collections of WKT strings)
     """
     __version__ = "1.2"
+    default_extension = '.ebl'
 
     def write(self, filename):
         with open(filename, 'wt') as fp:
@@ -48,6 +50,21 @@ class elementlist(list):
         return "<%s : %d element%s>" % (self.__class__.__name__, self.__len__(),
                                         "" if self.__len__()==1 else "s")
 
+    @property
+    def polys(self):
+        """ Return a list of the polygons in the elementlist """
+        return [p for p in self if self.element_type(p)=='poly']
+
+    @property
+    def multipolygon(self):
+        """ Return a multipolygon with all the component polygons """
+        return cascaded_union(self.polys)
+
+    @property
+    def intervals(self):
+        """ Return a list of all the intervals in the elementlist """
+        return [p for p in self if self.element_type(p)=='interval']
+    
     @staticmethod
     def element_type(el):
         """ Return type of the element (currently poly or interval) """
@@ -62,17 +79,22 @@ class elementlist(list):
     @classmethod
     def read(cls, filename):
         """ Read a file containing geometric elements """
+        from distutils.version import StrictVersion
         with open(filename, 'rt') as fp:
             # check version number
             line = fp.readline()
             if line.startswith('#'):
                 try:
-                    version = float(line.split()[-1])
-                    if version == 1.1: return cls.read_11(fp)
+                    fileversion = line.split()[-1]
                 except ValueError, e:
                     raise ValueError, "Unable to parse version number of %s" % filename
+            else:
+                raise ValueError, "Unable to parse version number of %s" % filename
+            if fileversion is None or StrictVersion(cls.__version__) != StrictVersion(fileversion):
+                raise ValueError, \
+                    "File version (%s) doesn't match class version (%s) " % (cls.__version__, fileversion)
+
             out = cls()
-            out.version = cls.__version__
             for line in fp:
                 if line.startswith('INTERVAL'):
                     out.append(eval(line[8:]))
@@ -99,6 +121,25 @@ class masker(_configurable):
         """
         self.readconfig(configfile, ('masker',))
         self.options.update(kwargs)
+
+    def mask(self, elems, tgrid, fgrid, cout=None):
+        """
+        Construct a mask composed of all the elements in an
+        elementlist.
+        """
+        intervals = elems.intervals
+        if self.options['boxmask']:
+            imask = nx.zeros((fgrid.size,tgrid.size,),dtype='bool')
+            intervals.extend((elem.bounds[0],elem.bounds[2]) for elem in elems.polys)
+        else:
+            imask = rasterize(elems.multipolygon, fgrid, tgrid)
+
+        cols = nx.zeros(tgrid.size,dtype='bool')
+        for i0,i1 in intervals:
+            cols |= (tgrid >= i0) & (tgrid <= i1)
+        imask[:,cols] = True
+        print >> cout, "*** Mask size: %d/%d points" % (imask.sum(),imask.size)
+        return imask
 
     def split(self, spec, elems, tgrid, fgrid, cout=None):
         """
@@ -224,7 +265,7 @@ def polygon_components(*polys):
 def split_polygons(p1, p2):
     return p1.difference(p2), p2.difference(p1), p1.intersection(p2)
 
-def subtract_polygons(patches):
+def subtract_patches(patches):
     polys = [convert_patch(p) for p in patches]
     largest = nx.argmax([p.area for p in polys])
     plargest = polys[largest]
@@ -232,6 +273,9 @@ def subtract_polygons(patches):
         if i==largest: continue
         plargest = plargest.difference(p)
     return largest,plargest # might be multipolygon
+
+def merge_patches(patches):
+    return cascaded_union([convert_patch(p) for p in patches])
 
 def poly_in_interval(interval, poly):
     y = poly.centroid.y

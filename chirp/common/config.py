@@ -104,6 +104,7 @@ class _configurable(object):
     options = dict()
 
     def readconfig(self, cfg, sections=('DEFAULT',)):
+        self.options = self.options.copy()
         if cfg is None: return
         if isinstance(cfg, basestring):
             cfg = configoptions(configfile=cfg)

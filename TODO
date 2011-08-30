@@ -1,5 +1,5 @@
 
-* TODO cpitch (pitch tracker) [2/4]
+* TODO cpitch (pitch tracker) [1/2]
 
 ** DONE finish front-end, write config file
 ** STARTED test on pitch files
@@ -8,10 +8,12 @@ Looks pretty good, and I think the algorithm even works a bit
 better. However, I'm getting some big outliers in the last frames of a
 few motifs.  Need to track this down.
 
-** DONE eliminate weave dependency
+* TODO eliminate weave dependencies [1/2]
 
 Start with the weave code, rewrite into pure python, and cython.
 Profile along the way with -n1 -r3
+
+*** DONE vitterbi filter
 
 + weave :: 1.86 s
 + pure python :: 785 s!
@@ -21,9 +23,10 @@ Profile along the way with -n1 -r3
 
 Some additional improvements could be realized by eliminating extra
 calculations - many of the particles have the same value, so there's a
-lot of useless calculations.
+lot of useless calculations.  However, this means the arrays become
+ragged which introduces a lot more programming.
 
-** TODO profiling/optimization of vitterbi filter
+*** TODO dynamic time warping
 
 * TODO ccompare (recording comparisons) [0/3]
 

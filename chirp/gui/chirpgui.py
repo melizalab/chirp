@@ -12,7 +12,7 @@ from __future__ import division
 import os,sys
 import wx
 import numpy as nx
-from ..common import geom, audio, config
+from ..common import geom, audio, config, plg
 from .wxcommon import *
 from .TSViewer import RubberbandPainter
 from .SpecViewer import SpecViewer
@@ -27,8 +27,8 @@ from glob import glob
 
 spec_methods = ['hanning','tfr']
 colormaps = ['jet','Greys','hot']
-_el_ext = '.ebl'
-_pitch_ext = '.plg'
+_el_ext = geom.elementlist.default_extension
+_pitch_ext = plg._default_extension
 
 default_cfg = os.path.join(os.environ['HOME'],".chirp.cfg")
 
@@ -397,12 +397,9 @@ class ChirpGui(wx.Frame):
         if len(polys) < 2:
             self.status.SetStatusText("Select at least 2 spectrotemporal segments to merge.")
         else:
-            i1,p1 = polys[0]
-            p1 = geom.convert_patch(p1)
-            for i,p in polys[:0:-1]:
-                p1 = p1.union(geom.convert_patch(p))
-                self.spec.delete_selection(i)
-            self.spec.delete_selection(i1)
+            i,p = zip(*polys)
+            p1 = geom.merge_patches(p)
+            self.spec.delete_selection(*i)
             # if polygons are disjoint, may return a multipolygon; split into separate segments
             new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(p1)]
             self.spec.draw()
@@ -415,7 +412,7 @@ class ChirpGui(wx.Frame):
             self.status.SetStatusText("Select at least 2 spectrotemporal segments.")
         else:
             ind,patches = zip(*polys)
-            ipoly,new_poly = geom.subtract_polygons(patches)
+            ipoly,new_poly = geom.subtract_patches(patches)
             self.spec.delete_selection(*ind)
             new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(new_poly)]
             self.status.SetStatusText("Subtracted %d elements from element %d" % (len(ind)-1,ind[ipoly]))
