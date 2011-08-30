@@ -14,7 +14,7 @@ from .wxcommon import *
 from . import TSViewer
 
 import numpy as nx
-from ..common.graphics import spectrogram
+from ..common.signal import spectrogram
 from ..common.config import _configurable
 from matplotlib import cm
 
