@@ -83,7 +83,8 @@ def main(argv=None, cout=None):
     from matplotlib.backends.backend_pdf import PdfPages as multipdf
     from matplotlib.pyplot import close as close_figure
     from ..version import version
-    from ..common.graphics import axgriditer, spectrogram
+    from ..common.graphics import axgriditer
+    from ..common.signal import spectrogram
 
     if argv is None:
         argv = sys.argv[1:]

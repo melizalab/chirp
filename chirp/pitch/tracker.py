@@ -335,7 +335,7 @@ configuration file details.
         print >> cout, "* No mask file; calculating pitch for entire signal"
         print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
         try:
-            starttime, pitch_mmse, pitch_map, stats = pt.track(spec, cout=cout)
+            startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(spec, cout=cout)
             stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
             ptrace = pitchtrace(tgrid[startframe:startframe+pitch_mmse.shape[0]],
                                 pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
