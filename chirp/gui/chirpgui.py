@@ -30,8 +30,6 @@ colormaps = ['jet','Greys','hot']
 _el_ext = geom.elementlist.default_extension
 _pitch_ext = plg._default_extension
 
-default_cfg = os.path.join(os.environ['HOME'],".chirp.cfg")
-
 # checklist control
 from wx.lib.mixins.listctrl import CheckListCtrlMixin, ListCtrlAutoWidthMixin
 class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
@@ -90,7 +88,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 self.add_interval(painter.value)
             elif isinstance(painter, PolygonPainter):
                 self.add_polygon(geom.vertices_to_polygon(painter.value))
-        elif event.key=='p' and self.handler.signal is not None and hasattr(io,'play_wave'):
+        elif event.key=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
             if isinstance(self.selected, RubberbandPainter):
                 tlim = self.selected.value
             else:
@@ -504,6 +502,12 @@ class ChirpGui(wx.Frame):
 
 
     def on_save_params(self, event):
+        fdlg = wx.FileDialog(self, "Select a destination file",
+                             wildcard="Config files (*.cfg)|*.cfg",
+                             style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        val = fdlg.ShowModal()
+        if not val==wx.ID_OK: return
+        outfile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
         try:
             self.configfile.update('spectrogram',
                                    freq_range=(float(self.f_low.GetValue()), float(self.f_high.GetValue())),
@@ -512,8 +516,9 @@ class ChirpGui(wx.Frame):
                                    dynrange=float(self.dynrange.GetValue()),
                                    spec_method=self.spec_method.GetValue(),
                                    colormap=self.cmap.GetValue())
-            self.configfile.write(default_cfg)
-            self.status.SetStatusText("Saved default configuration to %s" % default_cfg)
+            
+            self.configfile.write(outfile)
+            self.status.SetStatusText("Saved default configuration to %s" % outfile)
         except Exception, e:
             self.status.SetStatusText("Error saving configuration: %s" % e)
             raise e
@@ -582,8 +587,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    # this is the default location for the chirp config file
-    configfile = default_cfg
+    configfile = None
     opts,args = getopt.getopt(argv,'hc:')
     for o,a in opts:
         if o =='-h':

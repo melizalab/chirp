@@ -59,28 +59,28 @@ class PitchOverlayMixin(_configurable):
         Calculate the pitch and plot it. Plots a separate trace for
         each chain.
         """
-        from numpy import sqrt
+        from numpy import sqrt, maximum
         self.remove_trace()
         pt = ptracker.tracker(configfile=self.configfile, samplerate=Fs*1000)
         spec,tgrid,fgrid = pt.matched_spectrogram(signal,Fs)
 
         def _plot(t,var,est):
-            ind = self.filter({'p.sd' : sqrt(var) * Fs})
+            ind = self.filter({'p.sd' : sqrt(maximum(0,var)) * Fs})
             for i in xrange(est.shape[1]):
                 self.add_trace(t[ind[:,i]], est[ind[:,i],i])
                 self.add_trace(t[~ind[:,i]], est[~ind[:,i],i], color='k')
         if masks is not None:
             for startcol, mspec in self.masker.split(spec, masks, tgrid, fgrid):
-                startframe, specpow, pitch_mmse, pitch_var, pitch_map = pt.track(mspec)
+                startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(mspec)
                 startframe += startcol
-                t = tgrid[startframe:startframe+specpow.size]
+                t = tgrid[startframe:startframe+pitch_mmse.shape[0]]
                 if pitch_map is not None:
                     _plot(t, pitch_var, pitch_map * Fs)
                 else:
                     _plot(t, pitch_var, pitch_mmse * Fs)
         else:
-            startframe, specpow, pitch_mmse, pitch_var, pitch_map = pt.track(spec)
-            t = tgrid[startframe:startframe+specpow.size]
+            startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(spec)
+            t = tgrid[startframe:startframe+pitch_mmse.shape[0]]
             if pitch_map is not None:
                 _plot(t, pitch_var, pitch_map * Fs)
             else:

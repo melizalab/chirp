@@ -69,6 +69,7 @@ class tracker(_configurable):
                    max_jump=20,
                    particles=200,
                    pow_thresh=1e3,
+                   row_thresh=0.02,
                    rwalk_scale=2,
                    chains=3,
                    btrace=False,
@@ -125,7 +126,7 @@ class tracker(_configurable):
         else:
             raise ValueError, "Can't process arrays with more than 2 dimensions"
 
-        specpow,spec,starttime = specprocess(spec, **kwargs)
+        specpow,spec,starttime = specprocess(spec, **options)
         like = self.template.xcorr(spec, **options)
         proposal = template.frame_xcorr(spec, **options)
 
@@ -161,7 +162,7 @@ class tracker(_configurable):
             pitch_map = None
 
         pitch_var -= pitch_mmse**2
-        return starttime, specpow, pitch_mmse, pitch_var, pitch_map
+        return starttime, pitch_mmse, pitch_var, pitch_map, {'stim.pow' : nandecibels(specpow)}
 
     def matched_spectrogram(self, signal, Fs):
         """
@@ -213,19 +214,24 @@ class tracker(_configurable):
         return out
 
 
-def specprocess(spec, pow_thresh=1e3, **kwargs):
+def specprocess(spec, pow_thresh=1e3, row_thresh=0.02, **kwargs):
     """
     Preprocess a spectrogram before running it through the pitch
     detector.  Currently this consists of eliminating frames at the
-    beginning and end where the total power is less than pow_thresh.
+    beginning and end where the total power is less than pow_thresh,
+    or the proportion of nonzero rows is less than row_thresh.
+    
     Although inputs should be segmented carefully, this helps to deal
     with cases where the mask may be so small at the beginning or end
     that the spectrogram is essentially masked out.
 
     Returns reduced spectrogram, index of first column kept
     """
-    specpow = nx.sqrt((spec**2).sum(0))
-    ind = nx.nonzero(specpow > pow_thresh)[0]
+    psd = spec**2
+    specpow = nx.sqrt(psd.sum(0))
+    nrows = (psd > 0).sum(0)
+    ind = (specpow > pow_thresh) & (nrows > (row_thresh * psd.shape[0]))
+    ind = nx.nonzero(ind)[0]
     if ind.size<2:
         raise ValueError, "Spectrogram is entirely below power threshold"
     return specpow[ind[0]:ind[-1]+1], spec[:,ind[0]:ind[-1]+1], ind[0]
@@ -314,11 +320,11 @@ configuration file details.
         mask = masker(configfile=config, **kwargs)
         for startcol, mspec in mask.split(spec, elems, tgrid, fgrid, cout=cout):
             try:
-                startframe, specpow, pitch_mmse, pitch_var, pitch_map = pt.track(mspec, cout=cout)
-                ptrace = pitchtrace(tgrid[startframe+startcol:startframe+startcol+specpow.size],
+                startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, cout=cout)
+                stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
+                ptrace = pitchtrace(tgrid[startframe+startcol:startframe+startcol+pitch_mmse.shape[0]],
                                     pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
-                                    **{'p.map' : None if pitch_map is None else pitch_map * samplerate,
-                                     'stim.pow' : nandecibels(specpow)})
+                                    **stats)
                 print >> cout, "*** Pitch calculations:"
                 ptrace.write(cout)
             except ValueError, e:
@@ -329,11 +335,11 @@ configuration file details.
         print >> cout, "* No mask file; calculating pitch for entire signal"
         print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
         try:
-            starttime, specpow, pitch_mmse, pitch_map = pt.track(spec, cout=cout)
-            ptrace = pitchtrace(tgrid,
+            starttime, pitch_mmse, pitch_map, stats = pt.track(spec, cout=cout)
+            stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
+            ptrace = pitchtrace(tgrid[startframe:startframe+pitch_mmse.shape[0]],
                                 pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
-                                **{'p.map' : None if pitch_map is None else pitch_map * samplerate,
-                                 'stim.pow' : nandecibels(specpow)})
+                                **stats)
             print >> cout, "*** Pitch calculations:"
             ptrace.write(cout)
         except ValueError, e:
