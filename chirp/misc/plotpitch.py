@@ -21,6 +21,7 @@ import os
 import numpy as nx
 import matplotlib
 from ..common.config import configoptions,_configurable
+from ..common import postfilter
 
 figparams = { 'dpi' : 300 }
 matplotlib.rc('font', size=10)
@@ -35,13 +36,20 @@ _figsize = (11,6)
 _nrows = 6
 _ncols = 3
 
-def load_data(basename):
+def load_data(basename, filterer=None):
+    """
+    Load data from wav and plg files. If filterer is not None, filters
+    pitch trace.
+    """
     from ..common.audio import wavfile
     from ..common import plg
     fp = wavfile(basename + ".wav")
     signal,Fs = fp.read(), fp.sampling_rate
     if os.path.exists(basename + '.plg'):
         pitch = plg.read(basename + '.plg')
+        if filterer is not None:
+            ind = postfilter.ind_endpoints(filterer(pitch))
+            pitch = pitch[ind[0]:ind[1]+1]
         t = pitch['time']
         if 'p.map' in pitch.dtype.names:
             p = pitch['p.map']
@@ -112,8 +120,6 @@ def main(argv=None, cout=None):
 
     def figfun(fig):
         ax = fig.axes[0]
-        #ax.set_xlim((0,maxt))
-        #ax.set_ylim(data[2])
         ax.set_xticklabels('')
         ax.set_yticklabels('')
         fig.subplots_adjust(left=0.05, right=0.95, wspace=0)
@@ -130,12 +136,15 @@ def main(argv=None, cout=None):
     print >> cout, "** Version: %s" % version
     print >> cout, "* Plotting files in directory: %s" % os.getcwd()
 
-    for fname in glob.iglob("*.wav"):
+    filt = postfilter.pitchfilter(configfile=config)
+    print >> cout, filt.options_str()
+    
+    for fname in sorted(glob.iglob("*.wav")):
         basename = os.path.splitext(fname)[0]
         print "** %s" % basename
         ax = axg.next()
 
-        signal,Fs,t,p = load_data(basename)
+        signal,Fs,t,p = load_data(basename, filt)
         spec,extent = spectrogram.dbspect(signal,Fs)
         plt.plot_spectrogram(ax, spec, extent)
         if t is not None:

@@ -49,9 +49,11 @@ class pitchfilter(_configurable):
         """
         if isinstance(pitch, nx.recarray):
             fields = pitch.dtype.names
+            ind = nx.ones(pitch.size,dtype='bool')
         else:
             fields = pitch.keys()
-        ind = nx.ones(pitch['p.sd'].shape,dtype='bool')
+            # should be guaranteed a p.sd field with current version of library
+            ind = nx.ones(pitch['p.sd'].shape,dtype='bool')
 
         if 'p.sd' in fields and self.options['max_particle_sd'] > 0:
             ind &= pitch['p.sd'] < (0.001 * self.options['max_particle_sd'])
@@ -61,6 +63,12 @@ class pitchfilter(_configurable):
                 sd = nx.amax(sd, axis=0)
                 ind &= sd[:,nx.newaxis] < (0.001 * self.options['max_chain_sd'])
         return ind
+
+    def options_str(self):
+        return """\
+* Postfilter parameters:
+** Max particle SD: %(max_particle_sd)f
+** Max chain SD: %(max_chain_sd)f """ % self.options
 
 def ind_endpoints(ind):
     """
