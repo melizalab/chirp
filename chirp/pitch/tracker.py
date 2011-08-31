@@ -41,6 +41,7 @@ class tracker(_configurable):
     lobe_decay  - exponential decay factor for harmonic lobes
     neg_ampl    - size of negative lobes in template
     neg_width   - width of negative lobes in template
+    remask_likelihood - if True, remask the likelihood (really helps with pitch halving)
 
     particle filter parameters
     ==========================
@@ -66,6 +67,7 @@ class tracker(_configurable):
                    lobe_decay=0.85,
                    neg_ampl=0.35,
                    neg_width=9,
+                   remask_likelihood=True,
                    max_jump=20,
                    particles=200,
                    pow_thresh=1e3,
@@ -95,7 +97,8 @@ class tracker(_configurable):
             raise ValueError, "A frequency value was specified in Hz: samplerate is required"
         self.template = template.harmonic(**self.options)
 
-    def track(self, signal, cout=None, raw=False, **kwargs):
+
+    def track(self, signal, mask=None, cout=None, raw=False, **kwargs):
         """
         Calculate the pitch from a spectrogram or signal waveform.  If
         the input is a spectrogram, it needs to be calculated on the
@@ -103,6 +106,9 @@ class tracker(_configurable):
         Waveforms are converted to spectrograms using the stored
         parameters for the template.
 
+        mask: a logical array, nfreq by nframes.  Only used if
+              'remask_likelihood' option is set.
+        
         Selected options:
         particles    number of particles in filter
         chains       number of simulation chains
@@ -128,6 +134,14 @@ class tracker(_configurable):
 
         specpow,spec,starttime = specprocess(spec, **options)
         like = self.template.xcorr(spec, **options)
+        if options['remask_likelihood'] and mask is not None:
+            # the pgrid is a subset of the fgrid, so we can use this
+            # relationship to pull out the rows we need
+            assert mask.shape[0]==spec.shape[0], "Mask must have same # rows as spectrogram"
+            rows = (self.template.fgrid >= self.template.pgrid[0]) & \
+                (self.template.fgrid <= self.template.pgrid[-1])
+            like[~mask[rows,starttime:starttime+spec.shape[1]]] = 0
+            
         proposal = template.frame_xcorr(spec, **options)
 
         pitch_mmse = nx.zeros((spec.shape[1],chains))
@@ -208,6 +222,7 @@ class tracker(_configurable):
 ** Lobe decay = %(lobe_decay)f
 ** Negative lobe amplitude = %(neg_ampl)f
 ** Negative lobe width = %(neg_width)f
+** Remask likelihood = %(remask_likelihood)s
 ** Frequency range: %(freq_range)s (rel)""" % self.options
         out += "\n** Pitch range: (%.3f, %.3f) (rel)" % (self.template.pgrid[0],self.template.pgrid[-1])
         out += "\n** Candidate pitch count: %d" % self.template.pgrid.size
@@ -318,9 +333,9 @@ configuration file details.
         print >> cout, "* Mask file:", maskfile
         elems = elementlist.read(maskfile)
         mask = masker(configfile=config, **kwargs)
-        for startcol, mspec in mask.split(spec, elems, tgrid, fgrid, cout=cout):
+        for startcol, mspec, imask in mask.split(spec, elems, tgrid, fgrid, cout=cout):
             try:
-                startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, cout=cout)
+                startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, cout=cout, mask=imask)
                 stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
                 ptrace = pitchtrace(tgrid[startframe+startcol:startframe+startcol+pitch_mmse.shape[0]],
                                     pitch_mmse * samplerate, pitch_var * samplerate * samplerate,

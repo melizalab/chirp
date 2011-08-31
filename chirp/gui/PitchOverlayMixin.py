@@ -70,8 +70,8 @@ class PitchOverlayMixin(_configurable):
                 self.add_trace(t[ind[:,i]], est[ind[:,i],i])
                 self.add_trace(t[~ind[:,i]], est[~ind[:,i],i], color='k')
         if masks is not None:
-            for startcol, mspec in self.masker.split(spec, masks, tgrid, fgrid):
-                startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(mspec)
+            for startcol, mspec, imask in self.masker.split(spec, masks, tgrid, fgrid):
+                startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(mspec, mask=imask)
                 startframe += startcol
                 t = tgrid[startframe:startframe+pitch_mmse.shape[0]]
                 if pitch_map is not None:

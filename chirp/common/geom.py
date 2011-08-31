@@ -142,7 +142,7 @@ class masker(_configurable):
     def split(self, spec, elems, tgrid, fgrid, cout=None):
         """
         For each element in elems, mask out the appropriate part of
-        the spectrogram, yielding (starting column, spectrogram)
+        the spectrogram, yielding (starting column, spectrogram, imask)
 
         spec:   any 2D array to be masked
         elems:  a list of elements understood by geom.elementlist.element_type()
@@ -153,6 +153,7 @@ class masker(_configurable):
         for elem in elems:
             etype = elementlist.element_type(elem)
             mspec = spec
+            imask = None
             if etype == 'interval':
                 bounds = elem[:]
                 print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (enum, bounds[0], bounds[1])
@@ -164,15 +165,16 @@ class masker(_configurable):
                     cols = nx.nonzero((tgrid >= bounds[0]) & (tgrid <= bounds[2]))[0]
                 else:
                     print >> cout, "** Element %d, polygon mask with bounds %s" % (enum, bounds)
-                    mask = rasterize(elem, fgrid, tgrid)
-                    print >> cout, "*** Mask size: %d/%d points" % (mask.sum(),mask.size)
-                    cols = nx.nonzero(mask.sum(0))[0]
-                    mspec = (spec * mask)
+                    imask = rasterize(elem, fgrid, tgrid)
+                    print >> cout, "*** Mask size: %d/%d points" % (imask.sum(),imask.size)
+                    cols = nx.nonzero(imask.sum(0))[0]
+                    mspec = (spec * imask)
+                    imask = imask[:,cols]
             if cols.size < 3:
                 print >> cout, "*** Element is too short; skipping"
             else:
                 print >> cout, "*** Using spectrogram frames from %d to %d" % (cols[0], cols[-1])
-                yield cols[0], mspec[:,cols]
+                yield cols[0], mspec[:,cols], imask
             enum += 1
 
 
