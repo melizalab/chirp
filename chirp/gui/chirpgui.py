@@ -14,13 +14,13 @@ import wx
 import numpy as nx
 from ..common import geom, audio, config, plg
 from .wxcommon import *
+from . import wxgeom
 from .TSViewer import RubberbandPainter
 from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
 
 from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle, Polygon
 from matplotlib import cm
 
 from glob import glob
@@ -85,9 +85,9 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         if event.key=='s':
             painter = self.selected
             if isinstance(painter, RubberbandPainter):
-                self.add_interval(painter.value)
+                self.add_geometry(painter.value)
             elif isinstance(painter, PolygonPainter):
-                self.add_polygon(geom.vertices_to_polygon(painter.value))
+                self.add_geometry(geom.vertices_to_polygon(painter.value))
         elif event.key=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
             if isinstance(self.selected, RubberbandPainter):
                 tlim = self.selected.value
@@ -98,26 +98,20 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         else:
             super(SpecPicker, self).on_key(event)
 
-    def add_interval(self, value):
-        """ Plot an interval using a rectangle """
-        t1,t2 = min(value),max(value)
-        r = Rectangle((t1, self.axes.dataLim.ymin), t2-t1, self.axes.dataLim.height,
-                      ec='k', lw=self._element_lw_unselected, fc=self.element_color, alpha=0.3)
-        self.selections.append(r)
-        self.axes.add_patch(r)
-        return self.list.add_selection('','interval','%3.2f' % t1, '%3.2f' % t2)
-
-    def add_polygon(self, poly):
-        """
-        Add a polygon patch to the spectrogram.  Only the exterior of
-        the polygon is used (for now).
-        """
-        p = Polygon(nx.asarray(poly.exterior.coords), closed=True,
-                    ec='k', lw=self._element_lw_unselected, fc=self.element_color, alpha=0.3)
+    def add_geometry(self, obj):
+        """  Add a geometry (polygon or interval) to the spectrogram """
+        opts = dict(ec='k', lw=self._element_lw_unselected, fc=self.element_color, alpha=0.3)
+        if isinstance(obj, geom.Polygon):
+            p = wxgeom.poly_to_path(obj, **opts)
+            bounds = obj.bounds[0:3:2]
+            ptype = 'spectrotemporal'
+        else:
+            p = wxgeom.interval_to_rect(obj[0], obj[1], self.axes.dataLim.ymin, self.axes.dataLim.ymax, **opts)
+            bounds = min(obj), max(obj)
+            ptype = 'interval'
         self.selections.append(p)
         self.axes.add_patch(p)
-        bounds = poly.bounds
-        return self.list.add_selection('','spectrotemporal',"%3.2f" % bounds[0], "%3.2f" % bounds[2],)
+        return self.list.add_selection('',ptype,"%3.2f" % bounds[0], "%3.2f" % bounds[1],)
 
     def delete_selection(self, *index):
         """ Removes elements from the underlying list, since we have access to it """
@@ -345,11 +339,7 @@ class ChirpGui(wx.Frame):
         if os.path.exists(elfilename):
             el = geom.elementlist.read(elfilename)
         if el:
-            for elm in el:
-                if isinstance(elm, geom.Polygon):
-                    self.spec.add_polygon(elm)
-                else:
-                    self.spec.add_interval(elm)
+            for elm in el: self.spec.add_geometry(elm)
             self.spec.draw()
         return el
 
@@ -391,42 +381,41 @@ class ChirpGui(wx.Frame):
             self.status.SetStatusText("Deleted " + ', '.join(str(i+1) for i in x))
 
     def OnMerge(self, event):
-        polys = self.get_selected(Polygon)
+        polys = self.get_selected(wxgeom.polypatch)
         if len(polys) < 2:
             self.status.SetStatusText("Select at least 2 spectrotemporal segments to merge.")
         else:
-            i,p = zip(*polys)
-            p1 = geom.merge_patches(p)
+            i,p1 = zip(*polys)
+            p2 = geom.merge_polygons([wxgeom.path_to_poly(p) for p in p1])
             self.spec.delete_selection(*i)
             # if polygons are disjoint, may return a multipolygon; split into separate segments
-            new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(p1)]
+            new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(p2)]
             self.spec.draw()
             self.status.SetStatusText("Merged elements %s into %s" % (list(i for i,p in polys), new_elem))
 
     def OnSubtract(self, event):
         """ Subtract smaller polygon(s) from larger """
-        polys = self.get_selected(Polygon)
+        polys = self.get_selected(wxgeom.polypatch)
         if len(polys) < 2:
             self.status.SetStatusText("Select at least 2 spectrotemporal segments.")
         else:
-            ind,patches = zip(*polys)
-            ipoly,new_poly = geom.subtract_patches(patches)
-            self.spec.delete_selection(*ind)
-            new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(new_poly)]
-            self.status.SetStatusText("Subtracted %d elements from element %d" % (len(ind)-1,ind[ipoly]))
-
+            i1,p1 = zip(*polys)
+            i2,p2 = geom.subtract_polygons([wxgeom.path_to_poly(p) for p in p1])
+            self.spec.delete_selection(*i1)
+            new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(p2)]
+            self.status.SetStatusText("Subtracted %d elements from element %d" % (len(i1)-1,i1[i2]))
 
     def OnSplit(self, event):
-        polys = self.get_selected(Polygon)
+        polys = self.get_selected(wxgeom.polypatch)
         if len(polys) != 2:
             self.status.SetStatusText("Select two spectrotemporal segments to split.")
         else:
-            p1,p2 = (geom.convert_patch(p) for i,p in polys)
+            p1,p2 = (wxgeom.path_to_poly(p) for i,p in polys)
             if p1.disjoint(p2):
                 self.status.SetStatusText("Segments do not intersect.")
             else:
                 new_polys = geom.split_polygons(p1,p2)
-                new_elem = [self.spec.add_polygon(p) for p in geom.polygon_components(*new_polys)]
+                new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(*new_polys)]
                 self.spec.delete_selection(polys[1][0],polys[0][0])
                 self.spec.draw()
                 self.status.SetStatusText("Split elements %s into %s" % (list(i for i,p in polys), new_elem))
@@ -471,7 +460,7 @@ class ChirpGui(wx.Frame):
     def _next_file(self, step=1):
         if self.filename is None: return
         pn,fn = os.path.split(self.filename)
-        files = sorted(glob(pn + "/*.wav"))
+        files = sorted(glob(os.path.join(pn, "*.wav")))
         try:
             idx = files.index(self.filename)
         except ValueError:
@@ -494,7 +483,7 @@ class ChirpGui(wx.Frame):
     def on_save(self, event):
         """ save elements to a file """
         # all of the patches are going to have 2D vertices
-        el = patches_to_elist(self.spec.selections)
+        el = wxgeom.patches_to_elist(self.spec.selections)
         if el:
             outfile = os.path.splitext(self.filename)[0] + _el_ext
             el.write(outfile)
@@ -540,7 +529,7 @@ class ChirpGui(wx.Frame):
         elems = self.get_selected()
         if len(elems) < 1: elems = self.spec.selections
         if len(elems) < 1: elems = None
-        else: elems = patches_to_elist(elems)
+        else: elems = wxgeom.patches_to_elist(elems)
         try:
             self.status.SetStatusText("Calculating pitch...")
             wx.BeginBusyCursor()
@@ -566,19 +555,6 @@ class ChirpGui(wx.Frame):
 
     def on_exit(self, event):
         self.Destroy()
-
-def patches_to_elist(elements):
-    elist = geom.elementlist()
-    for patch in elements:
-        trans = patch.get_data_transform().inverted()
-        v = patch.get_verts()
-        if isinstance(patch, Rectangle):
-            q = [x[0] for x in trans.transform(v[:2])]
-            elist.append(q)
-        elif isinstance(patch, Polygon):
-            q = [(x,y) for x,y in trans.transform(v)]
-            elist.append(geom.Polygon(q))
-    return elist
 
 
 def main(argv=None):

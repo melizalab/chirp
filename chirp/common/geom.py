@@ -1,11 +1,10 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-geometry manipulation and input/output
+Geometry manipulation and input/output.
 
-elementlist:           a collection of intervals and/or polygons
-masker:                uses an elementlist to split up a spectrogram
-
+elementlist:          a collection of intervals and/or polygons
+masker:               uses an elementlist to generate masks and split up a spectrogram
 rasterize():          convert a polygon to a binary array on a grid
 
 Copyright (C) 2010 Daniel Meliza <dmeliza@dylan.uchicago.edu>
@@ -242,10 +241,6 @@ def vertices_to_polygon(vertices):
             return geometry.Polygon(rescale(poly2.exterior.coords,bounds)[0])
     raise Exception, "Couldn't simplify polygon"
 
-def convert_patch(patch):
-    trans = patch.get_data_transform().inverted()
-    v = patch.get_verts()
-    return geometry.Polygon([(x,y) for x,y in trans.transform(v)])
 
 def polygon_components(*polys):
     """
@@ -264,8 +259,7 @@ def polygon_components(*polys):
 def split_polygons(p1, p2):
     return p1.difference(p2), p2.difference(p1), p1.intersection(p2)
 
-def subtract_patches(patches):
-    polys = [convert_patch(p) for p in patches]
+def subtract_polygons(polys):
     largest = nx.argmax([p.area for p in polys])
     plargest = polys[largest]
     for i,p in enumerate(polys):
@@ -273,8 +267,8 @@ def subtract_patches(patches):
         plargest = plargest.difference(p)
     return largest,plargest # might be multipolygon
 
-def merge_patches(patches):
-    return cascaded_union([convert_patch(p) for p in patches])
+def merge_polygons(polys):
+    return cascaded_union(polys)
 
 def poly_in_interval(interval, poly):
     y = poly.centroid.y
