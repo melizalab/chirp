@@ -51,7 +51,7 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
     Additional arguments (e.g. base location) are passed to
     iterate_signals()
 
-    Returns a dictionary proxy keyed by id
+    Returns a dictionary proxy keyed by id, and a list of id, locator tuples
     """
     tq = shm_manager.Queue()
     dq = shm_manager.Queue()
@@ -59,7 +59,7 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
 
     def _load(tq,dq):
         for id,loc in iter(tq.get,None):
-            d[id] = comparator.load_signal(id,loc,cout=cout)
+            d[id] = comparator.load_signal(id,loc)
             dq.put(id)
 
     for i in xrange(nworkers):
@@ -67,19 +67,18 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
         p.daemon = True
         p.start()
 
-    nq = 0
-    for id,loc in comparator.list_signals(*args, **kwargs):
+    signals = comparator.list_signals(*args, **kwargs)
+    for id,loc in signals:
         tq.put((id,loc))
-        nq += 1
 
     for i in xrange(nworkers):
         tq.put(None)
 
     progress = progbar('Loading signals: ')
-    for i in progress(range(nq)):
+    for i in progress(xrange(len(signals))):
         dq.get()
 
-    return d
+    return d, signals
 
 
 def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
@@ -109,12 +108,12 @@ def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
         p.daemon = True
         p.start()
 
-    print >> cout, "* Comparison is symmetric: %s" % comparator.symmetric
+    print >> cout, "** Comparison is symmetric: %s" % comparator.symmetric
     nq = 0
     for ref,tgt in pairs(shm_dict.keys(), comparator.symmetric):
         task_queue.put((ref,tgt))
         nq +=1
-    print >> cout, "* Number of jobs: %d " % nq
+    print >> cout, "** Number of jobs: %d " % nq
     for i in xrange(nworkers):
         task_queue.put(None)
 
@@ -122,9 +121,19 @@ def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
     if cout is None:
         return [done_queue.get() for i in progress(range(nq))]
     else:
-        print >> cout, "* Results:"
+        print >> cout, "** Results:"
+        print >> cout, "ref\ttgt\t" + "\t".join(comparator.compare_stat_fields)
         for i in progress(range(nq)):
             print >> cout, "\t".join(("%s" % x) for x in done_queue.get())
+
+
+def signal_table(signals):
+    """ Generate a table of the id/locator assignments """
+    out = "id\tlocation"
+    for id,loc in signals:
+        out += "\n%s\t%s" % (id,loc)
+    return out
+
 
 def main(argv=None, cout=None):
     import sys,os
@@ -177,7 +186,9 @@ def main(argv=None, cout=None):
 
     print >> cout, "* Loading signals:"
     mgr = multiprocessing.Manager()
-    data = load_data(comparator, mgr, nworkers=nworkers, cout=cout)
+    data,signals = load_data(comparator, mgr, nworkers=nworkers, cout=cout)
+    print >> cout, signal_table(signals)
+    print >> cout, "* Running comparisons:"
     run_comparisons(comparator,data,mgr,nworkers=nworkers, cout=cout)
     
 # Variables:

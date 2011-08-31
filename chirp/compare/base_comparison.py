@@ -28,14 +28,13 @@ class base_comparison():
         """
         Given some base location, returns list of (id, locator) tuples
         for each signal to be compared.  The locator is usually a
-        path.  Default implementation scans location directory for a
-        glob pattern.
+        path.  The id can be anything but it's recommended to use
+        integer codes to reduce the size of the output file.  Default
+        implementation scans location directory for a glob pattern.
         """
         import os.path
         from glob import iglob
-        return [(os.path.splitext(os.path.split(f)[-1])[0], f) for \
-                    f in iglob(os.path.join(location,extension))]
-
+        return [(i, f) for i,f in enumerate(iglob(os.path.join(location,extension)))]
 
     def load_signal(self, id, locator):
         """
@@ -52,6 +51,10 @@ class base_comparison():
         """
         pass
 
+    @property
+    def compare_stat_fields(self):
+        """ Return a tuple of the names for the statistics returned by compare() """
+        pass
 
 # Variables:
 # End:

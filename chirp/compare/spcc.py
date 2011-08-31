@@ -39,7 +39,7 @@ class spcc(base_comparison, _configurable):
         The ID for the signal is the name of the file, with the
         extension stripped.
         """
-        return base_comparison.list_signals(location, '*.wav')
+        return base_comparison.list_signals(self, location, '*.wav')
 
     def load_signal(self, id, locator, dtype='d'):
         """
@@ -59,6 +59,11 @@ class spcc(base_comparison, _configurable):
     def compare(self, ref, tgt):
         cc = spectcc(ref, tgt, self.options['biased_norm'])
         return (cc.sum(0).max(),)
+
+    @property
+    def compare_stat_fields(self):
+        """ Return a tuple of the names for the statistics returned by compare() """
+        return ("spcc",)
 
     def options_str(self):
         out = """\
