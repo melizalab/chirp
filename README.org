@@ -1,0 +1,435 @@
+#-*- mode: org -*-
+#+OPTIONS:    H:3 num:nil toc:2 \n:nil @:t ::t |:t ^:{} -:t f:t *:t TeX:t LaTeX:t skip:t d:(HIDE) tags:not-in-toc
+#+STARTUP:    align fold nodlcheck hidestars oddeven
+#+TITLE:    Chirp: Analysis and Comparison of Bioacoustic Recordings
+#+AUTHOR:    C Daniel Meliza
+#+LANGUAGE:   en
+#+BABEL: :exports code
+#+LaTeX_CLASS: koma-article
+#+LATEX_HEADER: \usepackage{amsmath,graphicx,hyperref}
+
+* Installation instructions
+
+** Prerequisites
+
+Chirp is written almost entirely in Python, but it requires some
+external packages to calculate spectrograms and geometric
+transformation.  The minimum requirements are:
+
+1. Python (VERSIONS)
+2. Numpy (VERSION)
+3. Shapely (VERSION); requires GEOS (VERSION)
+4. libtfr (https://github.com/dmeliza/libtfrspec); requires fftw
+   (http://www.fftw.org/; version 3.2+)
+5. Scipy (try to eliminate)
+
+To run the chirp GUI, these packages are also required:
+
+1. wxPython (version)
+2. matplotlib
+3. pyaudio (optional; allows audio playback)
+
+*** OS X (MacPorts)
+
+It's fairly straightfoward to install the dependencies on an OS X
+machine using MacPorts.  After installing MacPorts, run the shell
+following shell commands (as root, or using sudo):
+
+#+begin_src sh
+port install python26 py26-shapely fftw-3
+port install py26-numpy -atlas
+easy_install libtfr
+#+end_src
+
+Replace python26 with python27 if desired. For the optional
+dependencies:
+
+#+begin_src sh
+port install py26-wxpython +carbon -gtk py26-matplotlib +wxpython portaudio
+CFLAGS="-I/opt/local/include" easy_install \
+ http://people.csail.mit.edu/hubert/pyaudio/packages/pyaudio-0.2.4.tar.gz
+#+end_src
+
+(note that the location/version of pyaudio may change; check
+http://people.csail.mit.edu/hubert/pyaudio/ if the above link doesn't work)
+
+*** Linux
+
+* Components
+
+Chirp consists of a number of interlinked programs that perform
+specific tasks.  This modular design makes it easier to set up batch
+processing jobs and to add new functionality.
+
+** chirp
+
+*** Overview
+
+The /chirp/ program is a graphical interface for examining
+spectrograms of vocalizations and identifying regions of interest.
+Regions may be temporal, defined by a start and stop time, or they may
+be spectrotemporal, defined by a two-dimensional polygonal mask.
+
+The interface for drawing masks is highly flexible.  Masks can be
+combined, split, and trimmed.  Pitch calculations can be run in the
+GUI to iteratively refine mask shapes.  Masks and intervals are stored
+in /ebl/ files, a flexible format based on GIS's "Well Known Text".
+
+*** Basic usage
+
+To start /chirp/, run it from the command-line, optionally specifying
+a wave file to inspect. The following examples will use files from the
+/examples/ subdirectory.
+
+#+begin_src sh
+chirp KENB_MZ000162_sono_1_124570_134767_m12.wav
+#+end_src
+
+If a file called 'chirp.cfg' is in the current directory, /chirp/ will
+load configuration data from this file.  An example config file is
+provided in the root of the source directory (see [[*Configuration%20file][Configuration file]]
+for more information on this file).
+
+When a new file is opened, /chirp/ will calculate the spectrogram. If
+a file with a corresponding name and the /ebl/ extension exists, this
+will also be loaded.  
+
+
+**** Spectrogram display and navigation
+
+On loading a wave file, the interface will probably look something
+like this:
+
+***** TODO screenshot of unmasked signal
+
+Immediately beneath the spectrogram are controls that manipulate the
+appearance of the spectrogram.  Adjust these until the signal appears
+clear.
+
++ spectrogram type :: can be 'tfr' or 'hanning'. TFR spectrograms
+     provide much sharper images but take longer to calculate. The
+     pitch-tracking algorithm uses TFR spectrograms under the hood
++ window size :: controls the time-frequency resolution of the
+                 spectrogram. Longer windows give better frequency
+                 resolution at the expense of lower temporal
+                 resolution.
++ shift :: controls the amount that the analysis window is shifted
+           between frames.  Smaller numbers give more finely-spaced
+           frames, which may help in visualizing time-varying signals.
++ freq range :: set what frequencies are displayed in the
+                window. Only values between 0 and half the sampling
+                frequency make any sense.
++ color range :: set the dynamic range of the spectrogram, relative to
+                 the maximum power of the signal. Smaller values
+                 restrict the display to more intense spectrotemporal
+                 regions.
++ colormap :: select the system of mapping power to color.  Different
+              people prefer different colors.
+
+Initially /chirp/ will display the entire duration of the signal.
+Longer signals take longer to analyze, and opening a file more than a
+few seconds in length can take quite a while.  To speed things up, use
+the hanning method, and increase the shift parameter.  Future versions
+of /chirp/ will dynamically adjust the shift value depending on the
+duration of the signal.
+
+To zoom in on a segment of the signal, select a temporal interval by
+clicking on the spectrogram with the middle mouse button and drag.
+Vertical bars will indicate the selected region.  Pressing the down
+arrow key will zoom in on the selected segment.  Pressing up will zoom
+back to the previous viewpoint.  When zoomed, pressing left and right
+arrow keys will pan the viewport across the spectrogram.
+
+**** Selecting temporal and spectrotemporal sements
+
+Segments identify regions of interest in the signal.  They can be
+temporal or spectrotemporal. 
+
+Temporal elements are defined by their stop and starting times, and
+include all the frequencies present in the original recording.
+Acoustic objects that can be segmented this way include words,
+syllables, songs, and calls.  Because all frequencies are included, a
+temporal segment will also include any backgroud noise present during
+the recording.
+
+To create a temporal segment, click on the spectrogram with the middle
+mouse button and drag to the other endpoint.  Press 's' to save the segment.
+
+Spectrotemporal elements are defined by a region in time-frequency
+space. The shape of this region can be arbitrarily complex.  It can be
+narrow to include only a few frequencies, and then broaden to include
+many frequencies at a later point in the signal.  If two signals are
+produced cotemporaneously, but are spectrotemporally disjoint (i.e. do
+not have power at the same frequencies at the same times), they can be
+uniquely specified using a spectrotemporal mask.  By carefully
+defining these masks it's possible to eliminate or reduce interference
+from background noise.  It may also be possible to separate the
+signals produced by different sources, such as the two sides of a
+bird's syrinx.
+
+To create a spectrotemporal segment, click on the spectrogram with the
+left mouse button, then move the mouse to create an outline around the
+region of interest.  Click the left mouse button to close the polygon.
+Press 's' to save the segment.
+
+**** Manipulating segments
+
+When a segment is saved with the 's' key, an entry will appear in the
+listbox below the spectrogram, and the area associated with the
+segment will be overlaid on the spectrogram.  The visibility of each
+segment can be controlled by clicking the associated check box, or by
+using the "Show All" and "Hide All" buttons.  Segments selected in
+the listbox will appear with a thicker outline.
+
+To delete one or more segments, select them in the list by clicking
+(shift-click to select multiple segments), then click the Delete
+button.
+
+To merge two or more segments, select them in the list and click
+Merge.  Only spectrotemporal segments can be merged, and if segments
+don't overlap it's not possible to merge them.
+
+Segments can be trimmed and split in a variety of ways to produce
+complex masks.  Under the hood, the segments are defined by polygons
+that can be simple or complex (i.e. with interior rings).  To remove a
+region from a segment, draw another region with the left mouse button
+and press the 'x' key.  The drawn region will be subtracted from all
+the segments in the spectrogram.  Segments can also be directly
+subtracted from each other.  Select two or more segments and press the
+Subtract button.  The smaller segments will all be extracted from the
+largest one.  Finally, you can select two segments and use the Split
+button to divide the two polygons into mutually disjoint regions.
+
+See [[*Mask%20design%20considerations][Mask design considerations]] for further notes on making good masks.
+
+**** File operations
+
+Elements can be stored to disk for further editing and for use in
+later analysis steps.  Both interval and spectrotemporal elements are
+stored in an /enhanced label/ (/ebl/) file. Select "Save Elements"
+from the File menu, or type Ctrl-S (Open-Apple-S on Mac).  The current
+display parameters can also be saved from the File menu ("Save
+Parameters").  Note that the comments in the configuration file are
+lost in this process, so you may prefer to edit the file by hand.
+
+To facilitate analyzing large libraries of recordings, shortcuts are
+provided for iterating through the files in a directory.  Use Ctrl-N
+and Ctrl-B to move to the next or previous file in the current
+directory.
+
+*** Pitch calculation
+
+You can run the pitch tracking algorithm from within /chirp/ using the
+"Calculate Pitch" menu item under "Analysis".  This is a
+computationally intensive operation and the program will be
+nonresponsive until it's finished.  On completion, the results will be
+overlaid on the spectrogram as a series of white markers.  A separate
+series of markers is shown for each analysis chain (see [[*Pitch%20tracking%20parameters][Pitch tracking
+parameters]] for more information).  You can also load the results of a
+pitch calculation from a /plg/ file using the "Open File" menu item,
+or, if the /plg/ file has the same base name as the wave file, with
+"Load Pitch Data".  In this case only a single set of markers will be shown.
+
+**** Mask design considerations
+
+For recordings with exceptional quality it may not be necessary to do
+any masking.  Near-field recordings, obtained by placing a microphone
+close to a nest or perch site,will tend to have less noise than
+recordings obtained with a shotgun or parabolic microphone, but some
+degree of masking may still be desirable if there is reverb or strong
+stationary noise (i.e. with relatively constant spectrum).
+
+Drawing good outlines is a bit of an art form, and you should expect
+to spend a good amount of time ascending the learning curve. Each
+species and recording setup will present its own challenges. It's also
+important to fine-tune the parameters of the tracker, which are
+discussed in [[*Pitch%20tracking%20parameters][Pitch tracking parameters]].  It may help to first read
+[[*Pitch%20tracking%20theory][Pitch tracking theory]] for a fuller discussion of how the algorithm
+works.
+
+Generally speaking, the algorithm will have the most problems when
+there are multiple ways of tracking through the spectrogram.  Imagine
+starting at the beginning of your signal and trying to stay on top of
+the ridge defined by the fundamental frequency of the signal.  If
+there's noise in the signal that creates shortcuts, the algorithm
+can't tell which is the true path and which isn't.  Broadband noise is
+less of a problem than narrowband noise, which has a well-defined
+pitch and represents a serious "temptation" for the tracker.  There
+can also be issues when the pitch is being rapidly modulated, because
+physical reverb and the inevitable limits in time-frequency resolution
+can smear the power between closely spaced components.  
+
+For example, in the recording we opened above, there's a rapid
+downmodulation of the pitch that occurs around 110 ms.  The signal
+reverberates slightly, leading to interference between the fundamental
+frequency and the first overtone.  The lower frequency is stronger, and
+a better fit to the harmonic template.  In many cases the tracker will
+be able to find its way through correctly, but given the probabilistic
+nature of the algorithm it may need some help.  And the lower the
+signal to noise ratio of the recording, the more help it needs.
+
+It's a good idea to start with a fairly large mask and trim it down.
+The more harmonics included in the mask, the stronger the evidence for
+the fundamental frequency (FF).  Even harmonics you can't see in the
+spectrogram may be powerful enough to contribute positively.  On the
+other hand, frequencies lower than the fundamental are only going to
+interfere.  I usually follow closely below the FF and then take the
+mask well above the highest visible harmonic, as shown below:
+
+***** TODO screenshot of starting mask
+
+Unfortunately, for this signal the tracker gets off the FF at a number
+of points.  Several of the chains jump up to the higher harmonic, and
+the variance of the estimate is high (indicated by the black symbols).
+The first step I'll take is to subtract out the areas between the
+harmonics where the tracker first makes an error.  It's easy to do
+this by drawing out that region with the mouse and then using the 'x'
+key to subtract. As shown in the next figure, these regions can be
+entirely enclosed within the mask, and it often doesn't take a lot to
+keep the algorithm on track.  The variance is still a little bad in
+the middle hairpin, but the central moment (see [[*Pitch%20tracking%20theory][Pitch tracking theory]])
+is still pretty much right on.
+
+***** TODO screenshot of ending mask
+
+More examples showing how masks can deal with other kinds of
+interference are in the examples directory.  Sometimes no amount of
+masking can produce a good pitch trace, or the mask may have to be
+drawn so tightly that you might as well have traced the pitch
+yourself.  Standard will vary depending on the application, but a good
+general rule is that if you can't see the fundamental frequency
+clearly, the recording probably needs to be excluded.
+
+** cpitch
+
+Although it's possible to calculate pitch traces in /chirp/, the
+/cpitch/ program is much more convenient for batch processing, and it
+generates an output file that can be used as input to other programs,
+including third-party analysis software.  Uses the mask files generated by
+/chirp/.
+
+*** Pitch tracking theory
+
+*** Pitch tracking parameters
+
+** ccompare
+
+Compares recordings against each other. Several different methods of
+comparison are supplied with /ccompare/.  The pitch traces calculated
+by /cpitch/ can be used as the basis for a dynamic time warping
+algorithm that provides excellent performance for tonal signals.  A
+spectrographic cross-correlation (SPCC) method is supplied, with
+an option for denoising the signals using the masks created in /chirp/.
+
+/Ccompare/ uses a plugin-based architecture, allowing users to extend
+existing algorithms and write new ones.
+
+** csplitter
+
+The /ebl/ files generated by /chirp/ can be used to extract signals of
+interest from primary recordings.  Recordings can be rapidly split
+using temporal intervals, and 2D spectrotemporal masks can be used to
+extract the signals associated with those regions.  This is an
+extremely effective method of filtering out noise from recordings,
+because the masks provide much finer-grained control than traditional
+bandpass filters.
+
+** Utility programs
+
++ cplotpitch :: generate a PDF file with spectrograms and overlaid
+                pitch traces, for rapid inspection of signals and
+                the performance of the pitch tracking algorithm
+
+* Configuration file
+
+* Running the pitch analysis
+
+** Setup and masking
+
+
+** Computing the pitch
+
+The pitch tracking analysis is automated with scons.  It will
+determine which source files (wav and ebl) have changed and run the
+tracker as needed.  The parameters for the tracker are set in the
+SConstruct file.  Multiple processes can be run simultaneously, e.g.
+
+$ scons -Q -j4 -i pitch
+
+Sometimes the pitch tracker will segfault; this usually occurs when
+there's an "orphan" element in the mask (see below).
+
+** Initializing the database
+
+The metadata for each motif is stored in a mysql database table;
+subsequent operations will use this table.  These data are stored in a
+set of files under tables.  There is a custom script that will import
+all the data from these files into the database.
+
+$ scripts/db_import_motifs.py tables
+
+This command will scan through the table files, and for each entry
+that has a corresponding file, add it to the superb_motifs table.  The
+pitch has to be calculated first, because this determines the motif
+duration stored in the database.
+
+** Validating the pitch analysis
+
+Making sure the pitch estimates are good is an iterative
+process. After running the analysis there are several validation
+steps.
+
+*** Pitch stats
+
+Generate pitch statistics with 'scons -Q pitch-stats' Check the
+generated file (pitch_stats.tbl).  Some lines may contain something
+along the lines of "NO PITCH DATA" which means that after filtering
+the estimated pitch there were no valid points. Also check for lines
+where nelements (second field) is greater than 1.  Sometimes small
+"orphan" mask elements will get created accidentally; these are
+usually a problem for later analysis steps.
+
+If it's not obvious why the pitch analysis is failing for a motif,
+it's probably because the variance of the estimate is too high.  That
+means one or more of the estimation chains is giving a very different
+answer from the others. Open the motif in songchopper, and look at the
+pitch.  If it's failing to follow the fundamental frequency, edit the
+mask until it behaves better.  Usually this requires some very careful
+trimming of the mask.  This sort of error can be detected by looking
+at dropped.points, which indicates how many points had bad variance or
+power statistics.
+
+*** Pitch plots:
+
+Generate a plot of the motif spectrograms with the pitch overlaid on
+each with 'scons -Q pitch-plot'.  Adjust masks as needed.  If the
+variance of the estimator is too high, the pitch trace will be
+missing, so keep an eye out for motifs where the trace doesn't cover
+the entire motif.
+
+* Comparing motifs
+
+** Dynamic time warp
+
+One method of comparing motifs is to match their pitch contours
+against each other, using dynamic time warping to allow some
+stretching and compression. This is a fairly quick operation but there
+can be a lot of comparisons to make.  Run the following command:
+
+$ python scripts/compare_pitch.py -n 4 pitch
+
+The -n flag controls how many processes run simultaneously.
+
+** Spectrographic cross-correlation
+
+The code to do this is modeled on compare_pitch.py.  Rather than set
+up a whole bunch of new tables, I just update records in the existing
+superb_distance table.  I'm also running the analysis separately for
+masked and unmasked spectrograms, even though this means calculating
+the spectrograms twice.
+
+** Measured features
+
+* Future directions
+
+* Acknowledgements
