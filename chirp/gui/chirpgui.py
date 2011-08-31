@@ -81,6 +81,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         """
         's': mark current selection
         'p': play current selection
+        'x': subtract current region from all polygons
         """
         if event.key=='s':
             painter = self.selected
@@ -95,6 +96,16 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 tlim = self.axes.get_xlim()
             i0,i1 = (int(x*self.handler.Fs) for x in tlim)
             audio.play_wave(self.handler.signal[i0:i1], self.handler.Fs)
+        elif event.key=='x':
+            painter = self.selected
+            if not isinstance(painter, PolygonPainter): return
+            p1 = geom.vertices_to_polygon(painter.value)
+            newgeoms = []
+            for p in self.selections:
+                p2 = wxgeom.path_to_poly(p).difference(p1)
+                if not p2.is_empty: newgeoms.extend(geom.polygon_components(p2))
+            self.delete_selections()
+            for p in newgeoms: self.add_geometry(p)
         else:
             super(SpecPicker, self).on_key(event)
 
@@ -120,6 +131,10 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
             p.remove()
             self.list.DeleteItem(i)
 
+    def delete_selections(self):
+        """ Remove all selections """
+        self.delete_selection(*range(len(self.selections)))
+        
     def get_selected(self):
         return list(i for i,p in enumerate(self.selections) if p.get_lw() > self._element_lw_unselected)
     def set_selected(self, selections):
@@ -563,7 +578,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    configfile = None
+    configfile = "chirp.cfg"  # load in current directory if it exists
     opts,args = getopt.getopt(argv,'hc:')
     for o,a in opts:
         if o =='-h':
