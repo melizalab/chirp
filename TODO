@@ -1,12 +1,8 @@
 
-* TODO cpitch (pitch tracker) [1/2]
+* TODO cpitch (pitch tracker) [2/2]
 
 ** DONE finish front-end, write config file
-** STARTED test on pitch files
-
-Looks pretty good, and I think the algorithm even works a bit
-better. However, I'm getting some big outliers in the last frames of a
-few motifs.  Need to track this down.
+** DONE test on pitch files
 
 * TODO eliminate weave dependencies [1/2]
 
@@ -28,9 +24,9 @@ ragged which introduces a lot more programming.
 
 *** TODO dynamic time warping
 
-* TODO ccompare (recording comparisons) [0/3]
+* TODO ccompare (recording comparisons) [2/3]
 
-** TODO revamp front-end
+** DONE revamp front-end
 
 *** DONE do pitch and spectrogram in same script
 
@@ -40,15 +36,23 @@ ragged which introduces a lot more programming.
 
 ** TODO test
 
-** TODO fix race condition in output while loading files
+** DONE fix race condition in output while loading files
 
-* TODO chirp (main gui) [3/5]
+* TODO chirp (main gui) [6/9]
 
 ** DONE propagate any changes to backend code
 
 ** DONE calculate pitch in GUI
 
 ** DONE config file using my backend instead of wx.Config
+
+** TODO add dialog to set pitch parameters
+
+** DONE allow holes in polygons?
+
+** DONE fix next/previous
+
+** DONE shortcut key for subtracting off regions
 
 ** DEFERRED log spectrogram display?
 
@@ -60,7 +64,7 @@ ragged which introduces a lot more programming.
 
 ** DEFERRED interval splitter
 
-* TODO auxiliary programs [1/1]
+* DONE auxiliary programs [1/1]
 
 ** DONE cplotpitch (plot spectrograms and pitch overlay)
 

@@ -22,7 +22,7 @@ except ImportError:
             import sys
             sys.stderr.write("[ %s: completed 0 ]" % self.title)
             for i,v in enumerate(iterable):
-                if i % 10 == 0: sys.stdout.write("\r[ %s: completed %d ]" % (self.title,i+1))
+                if i % 10 == 0: sys.stderr.write("\r[ %s: completed %d ]" % (self.title,i+1))
                 yield v
             sys.stderr.write("\r[ %s: completed %d ]\n" % (self.title,i+1))
 
@@ -113,7 +113,7 @@ def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
     for ref,tgt in pairs(shm_dict.keys(), comparator.symmetric):
         task_queue.put((ref,tgt))
         nq +=1
-    print >> cout, "** Number of jobs: %d " % nq
+    print >> cout, "** Number of comparisons: %d " % nq
     for i in xrange(nworkers):
         task_queue.put(None)
 
