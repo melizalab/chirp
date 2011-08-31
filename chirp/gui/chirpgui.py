@@ -307,7 +307,7 @@ class ChirpGui(wx.Frame):
         self.shift_size = wx.TextCtrl(controls, -1, str(self.spec.handler.shift), style=wx.TE_PROCESS_ENTER)
         hbox.Add(self.shift_size, 1)
 
-        txt = wx.StaticText(controls, -1, 'Freq Range:')
+        txt = wx.StaticText(controls, -1, 'Freq Range (Hz):')
         txt.SetFont(font)
         hbox.Add(txt, 0, wx.RIGHT | wx.LEFT, 5)
         frange = self.spec.handler.fpass

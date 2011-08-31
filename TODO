@@ -1,8 +1,14 @@
 
-* TODO cpitch (pitch tracker) [2/2]
+* DONE cpitch (pitch tracker) [2/3]
 
 ** DONE finish front-end, write config file
 ** DONE test on pitch files
+** TODO try to fix pitch halving errors a bit by remasking
+
+Masks could be used more effectively, I think.  If the user masks out
+frequencies, this could/should be taken to exclude those values as
+possible pitches.  This means masking the likelihood, not the
+spectrogram (or in addition to it)
 
 * TODO eliminate weave dependencies [1/2]
 
@@ -24,7 +30,7 @@ ragged which introduces a lot more programming.
 
 *** TODO dynamic time warping
 
-* TODO ccompare (recording comparisons) [2/3]
+* TODO ccompare (recording comparisons) [2/4]
 
 ** DONE revamp front-end
 
@@ -36,7 +42,13 @@ ragged which introduces a lot more programming.
 
 ** TODO test
 
+some slight differences between these distances and the previous ones,
+even when running on same plg files; may reflect differences in
+filtering.  Will need to run entire analysis to know for sure
+
 ** DONE fix race condition in output while loading files
+
+** TODO write database import script
 
 * TODO chirp (main gui) [6/9]
 
@@ -68,6 +80,8 @@ ragged which introduces a lot more programming.
 
 ** DONE cplotpitch (plot spectrograms and pitch overlay)
 
-* TODO release checking
+* TODO release checking [0/2]
 
 ** TODO check numpy dependency for versions
+
+** TODO documentation

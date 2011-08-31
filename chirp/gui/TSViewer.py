@@ -14,6 +14,7 @@ Created 2009-07-06
 
 import wx
 from .wxcommon import *
+from ..common.config import _configurable
 
 class RubberbandPainter(Painter):
     """
@@ -100,7 +101,7 @@ class TSDataHandler(object):
     tlim = property(get_tlim, set_tlim)
 
 
-class TSViewer(FigCanvas):
+class TSViewer(FigCanvas, _configurable):
     """
     The TSViewer subclasses FigureCanvasWxAgg and contains a single
     axes which supports the following interactions:
@@ -113,8 +114,11 @@ class TSViewer(FigCanvas):
     TSDataHandler instance, which just pushes data to the underlying
     axes object.
     """
-    def __init__(self, parent, id=-1, figure=None, handler=TSDataHandler):
+    options = dict(pan_proportion = 0.8)
+    
+    def __init__(self, parent, id=-1, figure=None, handler=TSDataHandler, configfile=None):
         super(TSViewer, self).__init__(parent, id, figure)
+        self.readconfig(configfile,('spectrogram',))
 
         # data handler
         if isinstance(handler,type):
@@ -213,9 +217,9 @@ class TSViewer(FigCanvas):
         elif event.key=='up':
             self.zoom_viewport(-1)
         elif event.key=='left':
-            self.pan_viewport(-1)
+            self.pan_viewport(-self.options['pan_proportion'])
         elif event.key=='right':
-            self.pan_viewport(1)
+            self.pan_viewport(self.options['pan_proportion'])
 
 def test():
 

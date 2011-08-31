@@ -111,8 +111,8 @@ class SpecHandler(TSViewer.TSDataHandler, _configurable):
 class SpecViewer(TSViewer.TSViewer):
     """ Combines a TSViewer panel with some spectrogram controls """
     def __init__(self, parent, id, figure=None, configfile=None):
-        handler = SpecHandler(configfile)
-        super(SpecViewer, self).__init__(parent, id, figure, handler=handler)
+        handler = SpecHandler(configfile=configfile)
+        super(SpecViewer, self).__init__(parent, id, figure, handler=handler, configfile=configfile)
 
 
 # Variables:

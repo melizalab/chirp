@@ -165,7 +165,7 @@ def main(argv=None, cout=None):
         elif o == '-j':
             nworkers = max(1,int(a))
             
-    print >> cout, "* Program: cpitch"
+    print >> cout, "* Program: ccompare"
     print >> cout, "** Version: %s" % version
     print >> cout, "* Input directory: %s" % os.getcwd()
     print >> cout, "* Number of workers: %d" % nworkers

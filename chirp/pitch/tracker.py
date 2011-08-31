@@ -13,6 +13,15 @@ from ..common.plg import pitchtrace
 from ..common.config import _configurable
 from ..common.math import nandecibels
 
+_scriptdoc = """\
+
+Usage: cpitch [-c <config.cfg>] [-m <mask.ebl>] <signal.wav>
+
+Calculates pitch of <signal.wav>, with optional masking by
+<mask.ebl>. Output is to stdout.  See documentation for
+configuration file details. """
+
+
 base_seed = 3653268
 
 class tracker(_configurable):
@@ -261,13 +270,7 @@ def hz2rel(freqs, samplerate):
 
 
 def cpitch(argv=None, cout=None, cerr=None, **kwargs):
-    """
-Usage: cpitch [-c <config.cfg>] [-m <mask.ebl>] <signal.wav>
-
-Calculates pitch of <signal.wav>, with optional masking by
-<mask.ebl>. Output is to stdout.  See documentation for
-configuration file details.
-    """
+    """ The script front-end """
     import sys
     from ..version import version
     if argv is None:
@@ -285,12 +288,12 @@ configuration file details.
 
     opts,args = getopt.getopt(argv, 'hvc:m:')
     if len(args) < 1:
-        print cpitch.__doc__
+        print _scriptdoc
         return -1
 
     for o,a in opts:
         if o == '-h':
-            print cpitch.__doc__
+            print _scriptdoc
             return -1
         elif o == '-v':
             print "cpitch version %s" % version
