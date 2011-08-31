@@ -122,7 +122,7 @@ class masker(_configurable):
         self.readconfig(configfile, ('masker',))
         self.options.update(kwargs)
 
-    def mask(self, elems, tgrid, fgrid, cout=None):
+    def mask(self, elems, tgrid, fgrid):
         """
         Construct a mask composed of all the elements in an
         elementlist.
@@ -138,7 +138,6 @@ class masker(_configurable):
         for i0,i1 in intervals:
             cols |= (tgrid >= i0) & (tgrid <= i1)
         imask[:,cols] = True
-        print >> cout, "*** Mask size: %d/%d points" % (imask.sum(),imask.size)
         return imask
 
     def split(self, spec, elems, tgrid, fgrid, cout=None):

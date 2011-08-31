@@ -39,12 +39,9 @@ class spcc(base_comparison, _configurable):
         The ID for the signal is the name of the file, with the
         extension stripped.
         """
-        import os.path
-        from glob import iglob
-        return [(os.path.splitext(os.path.split(f)[-1])[0], f) for \
-                    f in iglob(os.path.join(location,'*.wav'))]
+        return base_comparison.list_signals(location, '*.wav')
 
-    def load_signal(self, id, locator, dtype='f', cout=None):
+    def load_signal(self, id, locator, dtype='d'):
         """
         Loads the signal and computes the linear spectrogram.
 
@@ -52,7 +49,6 @@ class spcc(base_comparison, _configurable):
                single-precision to reduce storage requirements.
         """
         from ..common.audio import wavfile
-        print >> cout, "** Loading signal for %s" % id
         fp = wavfile(locator)
         signal = fp.read()
         Fs = fp.sampling_rate

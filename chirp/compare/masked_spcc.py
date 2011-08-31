@@ -26,12 +26,11 @@ class masked_spcc(spcc):
         self.options.update(kwargs)
         self.masker = masker(boxmask=self.options['boxmask'])
 
-    def load_signal(self, id, locator, dtype='f', cout=None):
+    def load_signal(self, id, locator, dtype='d'):
         eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
         if not os.path.exists(eblfile):
             return spcc.load_signal(self, id, locator, dtype)
 
-        print >> cout, "** Loading signal for %s" % id
         from ..common.audio import wavfile
         fp = wavfile(locator)
         signal = fp.read()
@@ -40,8 +39,7 @@ class masked_spcc(spcc):
                          self.options['nfreq'], self.options['shift'])
 
         mask = elementlist.read(eblfile)
-        print >> cout, "** Mask file %s, elements=%d" % (eblfile,len(mask))
-        imask = self.masker.mask(mask, T * 1000., F / 1000., cout=cout)
+        imask = self.masker.mask(mask, T * 1000., F / 1000.)
         S[~imask] = 0
         return S.astype(dtype)
 

@@ -32,13 +32,15 @@ ragged which introduces a lot more programming.
 
 ** TODO revamp front-end
 
-*** TODO do pitch and spectrogram in same script
+*** DONE do pitch and spectrogram in same script
 
-*** TODO flat file output
+*** DONE flat file output
 
-*** TODO config file for front-end
+*** DONE config file for front-end
 
 ** TODO test
+
+** TODO fix race condition in output while loading files
 
 * TODO chirp (main gui) [3/5]
 

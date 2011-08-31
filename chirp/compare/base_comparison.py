@@ -24,13 +24,18 @@ class base_comparison():
 
     symmetric = True
 
-    def list_signals(self, location=None):
+    def list_signals(self, location=None, extension='*'):
         """
         Given some base location, returns list of (id, locator) tuples
         for each signal to be compared.  The locator is usually a
-        path.
+        path.  Default implementation scans location directory for a
+        glob pattern.
         """
-        pass
+        import os.path
+        from glob import iglob
+        return [(os.path.splitext(os.path.split(f)[-1])[0], f) for \
+                    f in iglob(os.path.join(location,extension))]
+
 
     def load_signal(self, id, locator):
         """

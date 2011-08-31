@@ -19,7 +19,6 @@ class pitchfilter(_configurable):
     unless otherwise noted.  Set any threshold to 0 to disable.
 
     """
-
     options = dict(max_particle_sd=400,
                    max_chain_sd=0)
 
