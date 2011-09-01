@@ -1,0 +1,44 @@
+# -*- coding: iso-8859-1 -*-
+# -*- mode: python -*-
+
+# This file provides some simple job management for calculating the
+# pitch of a whole bunch of files.  In this case it was for an
+# analysis of superb starling flight calls.  The stimuli consist of a
+# set of WAV files with associated EBL files that specify regions of
+# interest.  Drop this file in the directory to be analyzed, adjust
+# options as needed and run scons -Q -j <n> where <n> is the number of
+# simultaneous processes to run.
+
+import os,glob
+
+# edit this to point to the configuration file for cpitch
+config_file = '../chirp.cfg'
+# edit this to point to the directory of wav and ebl files
+source_dir  = '.'
+# edit this to point to the output directory
+target_dir  = '.'
+
+# this specifies the shell environment in which cpitch will be run
+# Usually it's enough to include the environment
+env = Environment(ENV = os.environ)
+
+# pitch calculation
+pitch_files = []
+for f in glob.iglob(os.path.join(source_dir,"*.wav")):
+    basename = os.path.split(os.path.splitext(str(f))[0])[1]
+    # check to see an ebl file exists and add it to the list
+    ebl = os.path.join(source_dir, basename + ".ebl")
+    if os.path.exists(ebl):
+        p = env.Command(os.path.join(target_dir, basename + ".plg"),
+                        [ebl, f],
+                        "cpitch -c %s -m $SOURCES > $TARGET" % config_file)
+    else:
+        p = env.Command(os.path.join(target_dir, basename + ".plg"),
+                        f,
+                        "cpitch -c %s $SOURCE > $TARGET" % config_file)
+    # comment next line out to remove dependency on configuration file (useful when debugging)
+    env.Depends(p, config_file)
+    pitch_files.append(p)
+
+env.Alias('pitch',pitch_files)
+env.Alias('pitch-test',pitch_files[0])
