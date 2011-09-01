@@ -55,8 +55,8 @@ of the following programs:
 """
 
 _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
-#pyxfiles = ['chirp/pitch/vitterbi']
-#extensions = [Extension(m.replace('/','.'), [m+SUFFIX], **COMPILER_SETTINGS) for m in pyxfiles]
+_dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],
+                 extra_compile_args=['-std=c99'])
 
 setup(
   name = 'chirp',
@@ -72,7 +72,7 @@ setup(
   download_url = 'https://github.com/dmeliza/chirp',
   packages= find_packages(exclude=["*test*"]),
   package_data = {'': ['*.pyx']},
-  ext_modules = [_vitterbi],
+  ext_modules = [_vitterbi,_dtw],
   install_requires=['distribute', 'numpy>=1.3'],   # check this
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main',

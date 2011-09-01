@@ -591,7 +591,7 @@ length by more than 2 times, the distance will be undefined.  To avoid
 having missing values in the dataset, one can dynamically adjust the
 cost matrix based on the difference in duration.  This algorithm
 allows signals that differ greatly in length to be compared, but with
-an increasing penalty for larger differences.  The distance measures
+an exponentially increasing penalty for larger differences.  The distance measures
 will be extremely large, but they will be finite, which can make later
 clustering analyses much more tractable.
 

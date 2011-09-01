@@ -1,0 +1,16 @@
+!    -*- f90 -*-
+python module _dtw
+interface
+   subroutine dtw_forward(metric, weights, distance, steps, nrow, ncol, ncost)
+     intent(c) dtw_forward
+     intent(c)
+     double precision intent(in) :: metric(nrow,ncol)
+     double precision intent(in) :: weights(ncost,3)
+     double precision intent(out) :: distance(nrow,ncol)
+     integer intent(out) :: steps(nrow,ncol)
+     integer intent(hide), depend(metric) :: nrow=shape(metric,0), ncol=shape(metric,1)
+     integer intent(hide), depend(weights) :: ncost=shape(weights,0)
+   end subroutine dtw_forward
+
+end interface
+end python module _dtw
