@@ -45,5 +45,12 @@ class masked_spcc(spcc):
 
     def options_str(self):
         return spcc.options_str(self) + "\n** Using full mask = %s" % self.options['boxmask']
+
+    @property
+    def compare_stat_fields(self):
+        """ Return a tuple of the names for the statistics returned by compare() """
+        if self.options['boxmask']: return ("spcc",)
+        else: return ("spcc_mask",)
+    
 # Variables:
 # End:
