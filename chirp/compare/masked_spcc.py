@@ -22,7 +22,7 @@ class masked_spcc(spcc):
                    **spcc.options)
 
     def __init__(self, configfile=None, **kwargs):
-        self.readconfig(configfile, ('spectrogram','compare_spcc',))
+        self.readconfig(configfile, ('spectrogram','spcc',))
         self.options.update(kwargs)
         self.masker = masker(boxmask=self.options['boxmask'])
 
@@ -44,7 +44,7 @@ class masked_spcc(spcc):
         return S.astype(dtype)
 
     def options_str(self):
-        return spcc.options_str(self) + "\n** Using full mask = %s" % self.options['boxmask']
+        return spcc.options_str(self) + "\n** Using full mask = %s" % (not self.options['boxmask'])
 
     @property
     def compare_stat_fields(self):

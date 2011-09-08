@@ -30,7 +30,7 @@ class spcc(base_comparison, _configurable):
                    )
 
     def __init__(self, configfile=None, **kwargs):
-        self.readconfig(configfile, ('spectrogram','ccompare_spcc',))
+        self.readconfig(configfile, ('spectrogram','spcc',))
         self.options.update(kwargs)
 
     def list_signals(self, location='', *args, **kwargs):
