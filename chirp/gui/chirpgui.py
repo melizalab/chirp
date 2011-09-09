@@ -13,7 +13,6 @@ import os,sys
 import wx
 import numpy as nx
 from ..common import geom, audio, config, plg
-from .wxcommon import *
 from . import wxgeom
 from .TSViewer import RubberbandPainter
 from .SpecViewer import SpecViewer
@@ -134,7 +133,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
     def delete_selections(self):
         """ Remove all selections """
         self.delete_selection(*range(len(self.selections)))
-        
+
     def get_selected(self):
         return list(i for i,p in enumerate(self.selections) if p.get_lw() > self._element_lw_unselected)
     def set_selected(self, selections):
@@ -520,7 +519,7 @@ class ChirpGui(wx.Frame):
                                    dynrange=float(self.dynrange.GetValue()),
                                    spec_method=self.spec_method.GetValue(),
                                    colormap=self.cmap.GetValue())
-            
+
             self.configfile.write(outfile)
             self.status.SetStatusText("Saved default configuration to %s" % outfile)
         except Exception, e:

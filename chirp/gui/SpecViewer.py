@@ -10,7 +10,6 @@ Created 2009-07-16
 
 from __future__ import division
 import wx
-from .wxcommon import *
 from . import TSViewer
 
 import numpy as nx

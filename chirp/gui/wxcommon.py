@@ -29,8 +29,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from collections import deque
 
-__all__=['FigCanvas','Painter','defaultstack','addCheckableMenuItems']
-
 class defaultstack(deque):
     def __init__(self, *args, **kwargs):
         super(defaultstack, self).__init__(*args)
@@ -71,7 +69,7 @@ class FigCanvas(FigureCanvasWxAgg):
     def _xypos(self, evt):
         return evt.GetX(), evt.GetY()
 
-    def _inaxes(self, x, y): 
+    def _inaxes(self, x, y):
         evt = MouseEvent('', self, x, self.figure.bbox.height - y)
         return self.axes.in_axes(evt)
 
@@ -89,7 +87,7 @@ class FigCanvas(FigureCanvasWxAgg):
     def figure_enter_event(self, event):
         self.SetFocus()
 
-    #Add middle button events	
+    #Add middle button events
     def _onMiddleButtonDown(self, evt):
         """Start measuring on an axis."""
         x = evt.GetX()

@@ -7,19 +7,6 @@ from numpy.distutils.core import setup,Extension
 import sys, os
 import os.path as op
 
-# try:
-#     from Cython.Distutils import build_ext
-#     SUFFIX = '.pyx'
-# except ImportError:
-#     from distutils.command.build_ext import build_ext
-#     SUFFIX = '.c'
-
-# import numpy
-
-# COMPILER_SETTINGS = {
-#     'include_dirs' : [numpy.get_include()]
-#     }
-
 # --- Distutils setup and metadata --------------------------------------------
 
 VERSION = '1.1.0'
@@ -51,7 +38,6 @@ of the following programs:
 + chirp :: inspect spectrograms of recordings and define regions
 + cpitch :: determine the pitch of recordings
 + ccompare :: compare libraries of recordings using pitch or spectrograms
-+ cfilter :: extract sounds corresponding to specific spectrotemporal regions
 """
 
 _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
@@ -71,9 +57,8 @@ setup(
   url = 'https://dmeliza.github.com/chirp',
   download_url = 'https://github.com/dmeliza/chirp',
   packages= find_packages(exclude=["*test*"]),
-  package_data = {'': ['*.pyx']},
   ext_modules = [_vitterbi,_dtw],
-  install_requires=['distribute', 'numpy>=1.3'],   # check this
+  install_requires=['distribute', 'numpy>=1.3'],
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main',
                                        'ccompare = chirp.compare.ccompare:main'],

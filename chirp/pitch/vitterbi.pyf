@@ -1,5 +1,11 @@
 !    -*- f90 -*-
 python module _vitterbi
+usercode '''
+#ifndef Py_TYPE
+/* Python 2.5 compatibility */
+#define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
+'''
 interface
    subroutine filter(out, particles, loglikelihood, logproposal, lognormal, minlog, N, K, nL, nP)
      intent(c) filter

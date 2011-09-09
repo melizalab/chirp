@@ -13,7 +13,7 @@ Created 2009-07-06
 """
 
 import wx
-from .wxcommon import *
+from .wxcommon import Painter,FigCanvas,defaultstack
 from ..common.config import _configurable
 
 class RubberbandPainter(Painter):
@@ -115,7 +115,7 @@ class TSViewer(FigCanvas, _configurable):
     axes object.
     """
     options = dict(pan_proportion = 0.8)
-    
+
     def __init__(self, parent, id=-1, figure=None, handler=TSDataHandler, configfile=None):
         super(TSViewer, self).__init__(parent, id, figure)
         self.readconfig(configfile,('spectrogram',))

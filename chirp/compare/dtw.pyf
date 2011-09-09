@@ -1,5 +1,11 @@
 !    -*- f90 -*-
 python module _dtw
+usercode '''
+#ifndef Py_TYPE
+/* Python 2.5 compatibility */
+#define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
+'''
 interface
    subroutine dtw_forward(metric, weights, distance, steps, nrow, ncol, ncost)
      intent(c) dtw_forward

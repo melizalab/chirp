@@ -9,7 +9,7 @@ Created 2009-07-08
 """
 
 import wx
-from .wxcommon import *
+from .wxcommon import Painter,FigCanvas,defaultstack
 
 class PolygonPainter(Painter):
     """ Handles the actual drawing of the vertices onto the canvas """
