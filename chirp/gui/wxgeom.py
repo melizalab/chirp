@@ -3,7 +3,7 @@
 """
 functions to convert between shapely geoms and matplotlib ones
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-31
 """
 from matplotlib.patches import Rectangle, Polygon, PathPatch
@@ -18,13 +18,13 @@ polypatch = PathPatch
 def interval_to_rect(x0, x1, y0, y1, **kwargs):
     """ Generate a mpl Rectangle patch, making sure coordinates are proprly ordered """
     x0,x1 = min(x0,x1),max(x0,x1)
-    y0,y1 = min(y0,y1),max(y0,y1)    
+    y0,y1 = min(y0,y1),max(y0,y1)
     return Rectangle((x0, y0), x1-x0, y1-y0, **kwargs)
 
 def poly_to_patch(poly, **kwargs):
     """ Convert exterior of shapely polygon to an mpl patch """
     return Polygon(asarray(poly.exterior.coords), closed=True, **kwargs)
-    
+
 # this code is from http://sgillies.net/blog/1013/painting-punctured-polygons-with-matplotlib/
 def ring_coding(ob):
     # The codes will be all "LINETO" commands, except for "MOVETO"s at the
@@ -64,7 +64,7 @@ def path_to_poly(pathpatch):
     else:
         rings = split(path.vertices, ringstarts, axis=0)
         return geom.Polygon(rings[0],rings[1:])
-    
+
 
 def patches_to_elist(elements):
     elist = geom.elementlist()
@@ -80,7 +80,6 @@ def patches_to_elist(elements):
         elif isinstance(patch, PathPatch):
             elist.append(path_to_poly(patch))
     return elist
-
 
 
 # Variables:

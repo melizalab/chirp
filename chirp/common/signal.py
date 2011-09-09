@@ -1,9 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-signal processing
+basic signal processing
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 from .config import _configurable

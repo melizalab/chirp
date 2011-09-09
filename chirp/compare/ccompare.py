@@ -1,9 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Front end for performing pairwise comparisons.
+front end for performing pairwise comparisons.
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
@@ -83,7 +83,7 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
 
 def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
     """
-    Calculate comparisons between each pair of signals.  
+    Calculate comparisons between each pair of signals.
 
     comparator:  comparison object, needs to have compare()
     shm_dict:    a shared dictionary, keyed by signal id
@@ -102,7 +102,7 @@ def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
             tgtdata = shm_dict[tgt]
             results = comparator.compare(refdata, tgtdata)
             dq.put((ref,tgt) + results)
-    
+
     for i in xrange(nworkers):
         p = multiprocessing.Process(target=_compare, args=(task_queue, done_queue))
         p.daemon = True
@@ -146,7 +146,7 @@ def main(argv=None, cout=None):
     import getopt
     from ..common.config import configoptions
     config = configoptions()
-    
+
     opts,args = getopt.getopt(argv, 'hvc:m:j:')
 
     method = None
@@ -164,7 +164,7 @@ def main(argv=None, cout=None):
             method = a
         elif o == '-j':
             nworkers = max(1,int(a))
-            
+
     print >> cout, "* Program: ccompare"
     print >> cout, "** Version: %s" % version
     print >> cout, "* Input directory: %s" % os.getcwd()
@@ -190,6 +190,6 @@ def main(argv=None, cout=None):
     print >> cout, signal_table(signals)
     print >> cout, "* Running comparisons:"
     run_comparisons(comparator,data,mgr,nworkers=nworkers, cout=cout)
-    
+
 # Variables:
 # End:

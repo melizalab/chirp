@@ -1,12 +1,11 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Compare signals using dynamic time warping of pitch traces
+compare signals using dynamic time warping of pitch traces
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
-
 import numpy as nx
 from ..common import postfilter
 from .feat_dtw import feat_dtw

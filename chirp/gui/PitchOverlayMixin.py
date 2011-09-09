@@ -1,9 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Mixin class for plotting an overlay of pitch estimates in an axes
+mixin class for plotting an overlay of pitch estimates in an axes
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-29
 """
 from matplotlib.lines import Line2D

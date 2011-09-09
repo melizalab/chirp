@@ -1,4 +1,5 @@
 !    -*- f90 -*-
+! Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 python module _vitterbi
 usercode '''
 #ifndef Py_TYPE

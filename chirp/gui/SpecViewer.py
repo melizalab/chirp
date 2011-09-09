@@ -4,10 +4,9 @@
 Classes deriving from TSViewer.TSDataHandler and TSViewer.TSViewer
 with specializations for plotting spectrograms.
 
-Copyright (C) 2009 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2009 Daniel Meliza <dan // meliza.org>
 Created 2009-07-16
 """
-
 from __future__ import division
 import wx
 from . import TSViewer

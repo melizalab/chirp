@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
@@ -8,10 +7,9 @@ zoom in on particular time segments of the data by selecting regions
 with the middle mouse button and pushing the down arrow key.  In
 zoomed mode the left and right keys move the viewport.
 
-Copyright (C) 2009 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2009 Daniel Meliza <dan // meliza.org>
 Created 2009-07-06
 """
-
 import wx
 from .wxcommon import Painter,FigCanvas,defaultstack
 from ..common.config import _configurable
@@ -249,8 +247,6 @@ def test():
     app.frame = TSViewFrame()
     app.frame.Show()
     app.MainLoop()
-
-
 
 # Variables:
 # End:

@@ -3,7 +3,9 @@
 """
 pitch-tracking from time-frequency reassignment spectrograms
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+This is the main entry point and includes the cpitch script.
+
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import numpy as nx
@@ -117,7 +119,7 @@ class tracker(_configurable):
 
         mask: a logical array, nfreq by nframes.  Only used if
               'remask_likelihood' option is set.
-        
+
         Selected options:
         particles    number of particles in filter
         chains       number of simulation chains
@@ -150,7 +152,7 @@ class tracker(_configurable):
             rows = (self.template.fgrid >= self.template.pgrid[0]) & \
                 (self.template.fgrid <= self.template.pgrid[-1])
             like[~mask[rows,starttime:starttime+spec.shape[1]]] = 0
-            
+
         proposal = template.frame_xcorr(spec, **options)
 
         pitch_mmse = nx.zeros((spec.shape[1],chains))
@@ -244,7 +246,7 @@ def specprocess(spec, pow_thresh=1e3, row_thresh=0.02, **kwargs):
     detector.  Currently this consists of eliminating frames at the
     beginning and end where the total power is less than pow_thresh,
     or the proportion of nonzero rows is less than row_thresh.
-    
+
     Although inputs should be segmented carefully, this helps to deal
     with cases where the mask may be so small at the beginning or end
     that the spectrogram is essentially masked out.

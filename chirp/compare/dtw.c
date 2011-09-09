@@ -1,6 +1,6 @@
 /* @file dtw.c
  *
- * Copyright (C) 2011 C Daniel Meliza <dan@meliza.org>
+ * Copyright (C) 2011 C Daniel Meliza <dan // meliza.org>
  *
  * Adapted from dpfast.m/dpcore.c, by Dan Ellis <dpwe@ee.columbia.edu>
  *
@@ -30,7 +30,7 @@
  *          1.0]), some prefer Itakura constraint [(1,1,1),(1,2,2),(2,1,2)]
  *
  * @param D output distance matrix, nrow x ncol.
- * 
+ *
  * @param S output step size matrix, nrow x ncol.
  */
 void

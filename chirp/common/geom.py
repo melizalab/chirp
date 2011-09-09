@@ -1,13 +1,15 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Geometry manipulation and input/output.
+Geometry manipulation and input/output
 
 elementlist:          a collection of intervals and/or polygons
 masker:               uses an elementlist to generate masks and split up a spectrogram
 rasterize():          convert a polygon to a binary array on a grid
 
-Copyright (C) 2010 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Code in this module is dependent on shapely, but not on matplotlib.
+
+Copyright (C) 2010 Daniel Meliza <dan // meliza.org>
 Created 2010-02-02
 """
 import numpy as nx
@@ -63,7 +65,7 @@ class elementlist(list):
     def intervals(self):
         """ Return a list of all the intervals in the elementlist """
         return [p for p in self if self.element_type(p)=='interval']
-    
+
     @staticmethod
     def element_type(el):
         """ Return type of the element (currently poly or interval) """

@@ -1,14 +1,14 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-particle:   a simple particle filter implementation
+a simple particle filter implementation
 
 Much of the particle filter code is ported from SMCTC [1]
 
 [1] Johansen A.M., "SMCTC: Sequential Monte Carlo in C++", J Stat Soft 30: 1--41 (2009).
     http://www.jstatsoft.org/v30/i06
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import numpy as nx

@@ -3,7 +3,7 @@
 """
 audio:    module for i/o etc of audio data
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import os

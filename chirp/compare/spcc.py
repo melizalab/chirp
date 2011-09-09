@@ -1,12 +1,11 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Compare signals using spectrographic cross-correlation.
+compare signals using spectrographic cross-correlation.
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
-
 from ..common.config import _configurable
 from .base_comparison import base_comparison
 

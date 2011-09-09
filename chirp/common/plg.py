@@ -9,7 +9,7 @@ pitchtrace: class for storing estimates from one or more chain.
 read():     read plg file into recarray. In plg format the data
             have been summarized across chains.
 
-Copyright (C) 2011 Dan Meliza <dmeliza@gmail.com>
+Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 Created 2011-08-06
 """
 

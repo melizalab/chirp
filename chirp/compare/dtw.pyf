@@ -1,4 +1,5 @@
 !    -*- f90 -*-
+! Copyright (C) 2011 C Daniel Meliza <dan // meliza.org>
 python module _dtw
 usercode '''
 #ifndef Py_TYPE

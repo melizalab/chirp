@@ -1,9 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-masked_spcc.py
+compute spcc of masked spectrograms
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
@@ -51,6 +51,6 @@ class masked_spcc(spcc):
         """ Return a tuple of the names for the statistics returned by compare() """
         if self.options['boxmask']: return ("spcc",)
         else: return ("spcc_mask",)
-    
+
 # Variables:
 # End:

@@ -5,11 +5,10 @@ Read from clg (ccompare log files)
 
 read()     a generator that yields records from the file
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-09-08
 """
 import os.path
-
 
 def _read_signals(fp):
     signal_names = {}
@@ -26,7 +25,7 @@ def _yield_values(fp):
     for line in fp:
         if fields is None: fields = line.strip().split('\t')
         else: yield dict(zip(fields, line.strip().split('\t')))
-            
+
 
 def read(filename):
     fp = open(filename,'rt')

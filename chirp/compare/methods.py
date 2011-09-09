@@ -1,9 +1,9 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Loads comparison methods from the entry points.
+load comparison methods from the entry points.
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 from pkg_resources import iter_entry_points
@@ -20,6 +20,6 @@ def load(name):
         if ep.name.lower() == name.lower():
             return ep.load()
     raise ImportError, "No entry point for %s in group %s" % (name.lower(), entry_point_name)
-    
+
 # Variables:
 # End:

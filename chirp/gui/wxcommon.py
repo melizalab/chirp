@@ -1,13 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Various tools used by all of the modules
+various wxpython-related tools
 
-Copyright (C) 2009 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2009 Daniel Meliza <dan // meliza.org>
 Created 2009-07-08
 """
-
 import wx
 import matplotlib
 matplotlib.use('WXAgg')

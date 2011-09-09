@@ -1,5 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
+# Copyright (C) 2010 Daniel Meliza <dan // meliza.org>
+# Created 2010-03-15
 """
 Plot spectrograms of all the calls and associated pitch data in the
 current directory.
@@ -10,9 +12,6 @@ cplotpitch [-c config] <outfile>
 Produces a PDF file with the spectrogram of each wav file in the
 current directory, overlaid with pitch traces from each corresponding
 plg file.
-
-Copyright (C) 2010 Daniel Meliza <dmeliza@dylan.uchicago.edu>
-Created 2010-03-15
 """
 
 _scriptname = "cplotpitch"
@@ -138,7 +137,7 @@ def main(argv=None, cout=None):
 
     filt = postfilter.pitchfilter(configfile=config)
     print >> cout, filt.options_str()
-    
+
     for fname in sorted(glob.iglob("*.wav")):
         basename = os.path.splitext(fname)[0]
         print "** %s" % basename

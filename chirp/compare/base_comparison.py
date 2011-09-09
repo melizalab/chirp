@@ -3,7 +3,7 @@
 """
 An "abstract base" for classes that do pairwise comparisons.
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 

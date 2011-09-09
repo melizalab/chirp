@@ -1,12 +1,11 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Miscellaneous scripts for plotting results
+miscellaneous scripts and modules
 
-Copyright (C) 2011 Dan Meliza <dmeliza@gmail.com>
+Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 Created 2011-08-10
 """
-
 
 
 # Variables:

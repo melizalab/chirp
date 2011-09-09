@@ -1,13 +1,11 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
+# Copyright (C) 2009-2011 Daniel Meliza <dan // meliza.org>
 """
 Define spectrographic elements of acoustic signals
 
 chirp [-c chirp.cfg] [<input.wav>]
-
-Copyright (C) 2009-2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 """
-
 from __future__ import division
 import os,sys
 import wx

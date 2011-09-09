@@ -1,6 +1,6 @@
 /* @file vitterbi.c
  *
- * Copyright (C) 2011 C Daniel Meliza <dan@meliza.org>
+ * Copyright (C) 2011 C Daniel Meliza <dan // meliza.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

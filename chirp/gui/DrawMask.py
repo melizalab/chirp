@@ -1,13 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Defines a class for selecting regions of an image with the mouse.
+gui classes for selecting regions of an image with the mouse.
 
-Copyright (C) 2009 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2009 Daniel Meliza <dan // meliza.org>
 Created 2009-07-08
 """
-
 import wx
 from .wxcommon import Painter,FigCanvas,defaultstack
 

@@ -1,15 +1,13 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
-Postfiltering of pitch traces.
+postfiltering of pitch traces
 
-Copyright (C) 2011 Daniel Meliza <dmeliza@dylan.uchicago.edu>
+Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-29
 """
-
 import numpy as nx
 from ..common.config import _configurable
-
 
 class pitchfilter(_configurable):
     """
