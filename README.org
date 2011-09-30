@@ -403,15 +403,15 @@ scons -j N
 #+end_src
 
 where N is the number of processes to run simultaneously, something on
-the order of the number of available processors.  By default,
+the order of the number of available processors.  The example
 SConstruct file instructs the /cpitch/ processes to look for a file
-called 'chirp.cfg' in the current directory; edit the file to change
-the location of this file.  /Scons/ will check files
-to determine if they've changed; if you run the above command after
-editing some of the mask files, only the recordings that have been
-edited will be reanalyzed.  The configuration file is also a
-dependency; if this is edited all the recordings will have to be
-reanalyzed.
+called 'chirp.cfg' in the parent directory, and to look for /wav/ and
+/ebl/ files in the current directory; edit the file to change these
+locations.  /Scons/ will check files to determine if
+they've changed; if you run the above command after editing some of
+the mask files, only the recordings that have been edited will be
+reanalyzed.  The configuration file is also a dependency; if this is
+edited all the recordings will have to be reanalyzed.
 
 *** Pitch tracking theory
 
