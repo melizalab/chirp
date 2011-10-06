@@ -23,20 +23,9 @@ class base_comparison():
     """
 
     symmetric = True
+    file_extension = None
 
-    def list_signals(self, location=None, extension='*'):
-        """
-        Given some base location, returns list of (id, locator) tuples
-        for each signal to be compared.  The locator is usually a
-        path.  The id can be anything but it's recommended to use
-        integer codes to reduce the size of the output file.  Default
-        implementation scans location directory for a glob pattern.
-        """
-        import os.path
-        from glob import iglob
-        return [(i, f) for i,f in enumerate(iglob(os.path.join(location,extension)))]
-
-    def load_signal(self, id, locator):
+    def load_signal(self, locator):
         """
         The signal stored under <locator> is loaded from disk,
         preprocessed, and returned in a form ready for pairwise

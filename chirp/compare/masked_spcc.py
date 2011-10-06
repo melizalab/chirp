@@ -26,7 +26,7 @@ class masked_spcc(spcc):
         self.options.update(kwargs)
         self.masker = masker(boxmask=self.options['boxmask'])
 
-    def load_signal(self, id, locator, dtype='d'):
+    def load_signal(self, locator, dtype='d'):
         eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
         if not os.path.exists(eblfile):
             return spcc.load_signal(self, id, locator, dtype)

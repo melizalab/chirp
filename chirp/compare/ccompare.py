@@ -7,7 +7,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
-from . import methods
+from . import methods, storage
 from ..common.config import _configurable
 import multiprocessing
 
@@ -21,19 +21,23 @@ except ImportError:
         def __call__(self,iterable):
             import sys
             sys.stderr.write("[ %s: completed 0 ]" % self.title)
+            i = None
             for i,v in enumerate(iterable):
                 if i % 10 == 0: sys.stderr.write("\r[ %s: completed %d ]" % (self.title,i+1))
                 yield v
-            sys.stderr.write("\r[ %s: completed %d ]\n" % (self.title,i+1))
+            if i:
+                sys.stderr.write("\r[ %s: completed %d ]\n" % (self.title,i+1))
 
 _scriptdoc = \
 """
 ccompare.py [-c <config.cfg>] [-j workers] [-m METHOD]
+            [-s STORAGE] [-l LOCATION] 
 
-For each signal in the current directory, perform all pairwise
-comparisons using METHOD. Supported methods include:
+Perform pairwise comparisons using METHOD (%s).
+Signals are loaded using STORAGE (%s) from LOCATION. Default is to
+load all signals from current directory.
 
-""" + "\n".join(methods.names())
+""" % (",".join(methods.names()), ",".join(storage.names()))
 
 def pairs(items, symmetric):
     from itertools import product
@@ -43,7 +47,7 @@ def pairs(items, symmetric):
     else:
         for v1,v2 in product(items,items): yield v1,v2
 
-def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
+def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
     """
     Load data into <shm_manager> using the iterate_signals() and
     load_signal() methods on <comparator>.
@@ -59,7 +63,7 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
 
     def _load(tq,dq):
         for id,loc in iter(tq.get,None):
-            d[id] = comparator.load_signal(id,loc)
+            d[id] = comparator.load_signal(loc)
             dq.put(id)
 
     for i in xrange(nworkers):
@@ -67,21 +71,20 @@ def load_data(comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
         p.daemon = True
         p.start()
 
-    signals = comparator.list_signals(*args, **kwargs)
-    for id,loc in signals:
+    for id,loc in storager.signals:
         tq.put((id,loc))
 
     for i in xrange(nworkers):
         tq.put(None)
 
     progress = progbar('Loading signals: ')
-    for i in progress(xrange(len(signals))):
+    for i in progress(xrange(len(storager.signals))):
         dq.get()
 
-    return d, signals
+    return d
 
 
-def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
+def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cout=None):
     """
     Calculate comparisons between each pair of signals.
 
@@ -118,21 +121,7 @@ def run_comparisons(comparator, shm_dict, shm_manager, nworkers=1, cout=None):
         task_queue.put(None)
 
     progress = progbar('Comparing: ')
-    if cout is None:
-        return [done_queue.get() for i in progress(range(nq))]
-    else:
-        print >> cout, "** Results:"
-        print >> cout, "ref\ttgt\t" + "\t".join(comparator.compare_stat_fields)
-        for i in progress(range(nq)):
-            print >> cout, "\t".join(("%s" % x) for x in done_queue.get())
-
-
-def signal_table(signals):
-    """ Generate a table of the id/locator assignments """
-    out = "id\tlocation"
-    for id,loc in signals:
-        out += "\n%s\t%s" % (id,loc)
-    return out
+    storager.store_results(done_queue.get() for i in progress(range(nq)))
 
 
 def main(argv=None, cout=None):
@@ -147,9 +136,12 @@ def main(argv=None, cout=None):
     from ..common.config import configoptions
     config = configoptions()
 
-    opts,args = getopt.getopt(argv, 'hvc:m:j:')
+    opts,args = getopt.getopt(argv, 'hvc:m:s:j:l:')
 
     method = None
+    store_name = 'file'
+    store_loc = None
+
     nworkers = 1
     for o,a in opts:
         if o == '-h':
@@ -162,14 +154,18 @@ def main(argv=None, cout=None):
             config.read(a)
         elif o == '-m':
             method = a
+        elif o == '-s':
+            store_name = a
         elif o == '-j':
             nworkers = max(1,int(a))
+        elif o == '-l':
+            store_loc = a
 
     print >> cout, "* Program: ccompare"
     print >> cout, "** Version: %s" % version
     print >> cout, "* Input directory: %s" % os.getcwd()
     print >> cout, "* Number of workers: %d" % nworkers
-
+    
     if method is None:
         print >> cout, "* Comparison method: None; aborting"
         print >> sys.stderr, "Please specify a comparison method. Options are %s" % ','.join(methods.names())
@@ -184,12 +180,27 @@ def main(argv=None, cout=None):
     comparator = compare_class(configfile=config)
     print >> cout, comparator.options_str()
 
+    try:
+        storage_class = storage.load(store_name)
+        print >> cout, "* Storage system: %s %s " % (store_name, storage_class)
+    except ImportError, e:
+        print >> cout, "* %s" % e
+        return -1
+
+    storager = storage_class(comparator, location=store_loc)
+    print >> cout, storager.options_str()
+    
     print >> cout, "* Loading signals:"
     mgr = multiprocessing.Manager()
-    data,signals = load_data(comparator, mgr, nworkers=nworkers, cout=cout)
-    print >> cout, signal_table(signals)
+    data = load_data(storager, comparator, mgr, nworkers=nworkers, cout=cout)
+    storager.output_signals(cout)
+    if storager.nsignals == 0:
+        print >> cout, "* No signals loaded; aborting"
+        return -2
     print >> cout, "* Running comparisons:"
-    run_comparisons(comparator,data,mgr,nworkers=nworkers, cout=cout)
+    run_comparisons(storager, comparator, data, mgr,
+                    nworkers=nworkers, cout=cout)
+    return 0
 
 # Variables:
 # End:

@@ -23,6 +23,7 @@ class pitch_dtw(feat_dtw):
     Additional options specify the degree of postfiltering; see
     common.postfilter.pitchfilter
     """
+    file_extension = '.plg'
     options = dict(estimator = 'p.map',
                    **feat_dtw.options)
 
@@ -32,15 +33,7 @@ class pitch_dtw(feat_dtw):
         self.options.update(kwargs)
         self.filter = postfilter.pitchfilter(configfile=configfile, **kwargs)
 
-    def list_signals(self, location='', *args, **kwargs):
-        """
-        Iterates through all the PLG files in the specified directory.
-        The ID for the signal is the name of the file, with the
-        extension stripped.
-        """
-        return feat_dtw.list_signals(self, location, '*.plg')
-
-    def load_signal(self, id, locator, cout=None):
+    def load_signal(self, locator, cout=None):
         """
         Loads the pitch trace and filters it. If no points are
         reliable, returns None.

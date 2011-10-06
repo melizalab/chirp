@@ -65,7 +65,8 @@ setup(
                   'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],
                   'chirp.compare.method' : ['spcc = chirp.compare.spcc:spcc',
                                             'masked_spcc = chirp.compare.masked_spcc:masked_spcc',
-                                            'pitch_dtw = chirp.compare.pitch_dtw:pitch_dtw']},
+                                            'pitch_dtw = chirp.compare.pitch_dtw:pitch_dtw'],
+                  'chirp.compare.storage' : ['file = chirp.compare.file_storage:file_storage']},
 )
 
 

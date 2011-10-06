@@ -20,7 +20,7 @@ class spcc(base_comparison, _configurable):
     window:      the windowing function to use
     biased_norm: use a biased (but more robust) normalization
     """
-
+    file_extension = ".wav"
     options = dict(nfreq=100,
                    shift=50,
                    freq_range=(750.0,10000.0),
@@ -32,15 +32,7 @@ class spcc(base_comparison, _configurable):
         self.readconfig(configfile, ('spectrogram','spcc',))
         self.options.update(kwargs)
 
-    def list_signals(self, location='', *args, **kwargs):
-        """
-        Iterates through all the WAV files in the specified directory.
-        The ID for the signal is the name of the file, with the
-        extension stripped.
-        """
-        return base_comparison.list_signals(self, location, '*.wav')
-
-    def load_signal(self, id, locator, dtype='d'):
+    def load_signal(self, locator, dtype='d'):
         """
         Loads the signal and computes the linear spectrogram.
 
