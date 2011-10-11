@@ -29,7 +29,7 @@ class masked_spcc(spcc):
     def load_signal(self, locator, dtype='d'):
         eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
         if not os.path.exists(eblfile):
-            return spcc.load_signal(self, id, locator, dtype)
+            return spcc.load_signal(self, locator, dtype)
 
         from ..common.audio import wavfile
         fp = wavfile(locator)
