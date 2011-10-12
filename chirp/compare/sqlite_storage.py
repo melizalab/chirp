@@ -34,8 +34,10 @@ class sqlite_storage(object):
         self.file_pattern = "%s" % comparator.file_extension
         self.compare_stat_fields = comparator.compare_stat_fields
         self.table_name = "superb_" + type(comparator).__name__
+        self.symmetric = comparator.symmetric
         self.signals = []
         self._load_signals()
+
 
     def _load_signals(self):
         """
@@ -68,40 +70,43 @@ class sqlite_storage(object):
         if not os.path.exists(path):
             raise ValueError, "Invalid database location (path does not exist)"
         return path,table
-        
+
     @property
     def nsignals(self):
         return len(self.signals)
 
-    @property
-    def insert_sql(self):
-        """ The sql code used to insert a result set """
-        cols = ("ref","tgt") + tuple(self.compare_stat_fields)
-        return "INSERT INTO %s (%s) VALUES (%s)" % (self.table_name,
-                                                    ",".join(cols),
-                                                    ",".join("?" for x in cols))
-    
+
     def output_signals(self, cout=None):
         """
         Generate a table of the id/locator assignments. This may not
         be necessary if this information is stored elsewhere.
         """
         pass
-    
+
     def store_results(self, gen, cout=None):
         """
         For each item in gen, store the resulting comparison.  The
         target table is dropped and reinitialized.
         """
         # create table using types of first yielded result
-        sql = self.insert_sql
+        cols = ("ref","tgt") + tuple(self.compare_stat_fields)
+        sql1 =  "INSERT INTO %s (%s) VALUES (%s)" % (self.table_name,
+                                                    ",".join(cols),
+                                                    ",".join("?" for x in cols))
+        cols = ("tgt","ref") + tuple(self.compare_stat_fields)
+        sql2 =  "INSERT INTO %s (%s) VALUES (%s)" % (self.table_name,
+                                                    ",".join(cols),
+                                                    ",".join("?" for x in cols))
+
         result = gen.next()
         with self.connection:
             self._create_target_table(result)
-            self.connection.execute(sql,result)
+            self.connection.execute(sql1,result)
+            if self.symmetric: self.connection.execute(sql2,result)
             for result in gen:
-                self.connection.execute(sql,result)
-        
+                self.connection.execute(sql1,result)
+                if self.symmetric: self.connection.execute(sql2,result)
+
     def options_str(self):
         out = """\
 * Storage parameters:
