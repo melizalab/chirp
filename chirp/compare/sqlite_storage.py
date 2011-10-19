@@ -102,10 +102,10 @@ class sqlite_storage(object):
         with self.connection:
             self._create_target_table(result)
             self.connection.execute(sql1,result)
-            if self.symmetric: self.connection.execute(sql2,result)
+            if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
             for result in gen:
                 self.connection.execute(sql1,result)
-                if self.symmetric: self.connection.execute(sql2,result)
+                if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
 
     def options_str(self):
         out = """\
