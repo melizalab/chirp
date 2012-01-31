@@ -20,7 +20,7 @@ import os
 import numpy as nx
 import matplotlib
 from ..common.config import configoptions,_configurable
-from ..common import postfilter
+from ..common import postfilter, _tools
 
 figparams = { 'dpi' : 300 }
 matplotlib.rc('font', size=10)
@@ -83,15 +83,65 @@ class plotter(_configurable):
         ax.hold(False)
         return p
 
-
-def main(argv=None, cout=None):
-    import sys, getopt, glob
+@_tools.consumer
+def multiplotter(outfile, config, cout=None):
+    """
+    A coroutine for plotting a bunch of motifs on the same page. A
+    useful entry point for scripts that want to do something similar
+    to cplotpitch, but with control over which motifs get plotted.
+    """
     matplotlib.use('PDF')
     from matplotlib.backends.backend_pdf import PdfPages as multipdf
     from matplotlib.pyplot import close as close_figure
     from ..version import version
     from ..common.graphics import axgriditer
     from ..common.signal import spectrogram
+
+    def gridfun(**kwargs):
+        from matplotlib.pyplot import subplots
+        return subplots(_nrows,_ncols,sharex=True,sharey=True, figsize=_figsize)
+
+    def figfun(fig):
+        ax = fig.axes[0]
+        ax.set_xticklabels('')
+        ax.set_yticklabels('')
+        fig.subplots_adjust(left=0.05, right=0.95, wspace=0)
+        pp.savefig(fig)
+        close_figure(fig)
+
+    # set up plotting
+    pp = multipdf(outfile)
+    axg = axgriditer(gridfun, figfun)
+    spectrogram = spectrogram(configfile=config)
+    plt = plotter(configfile=config)
+
+    filt = postfilter.pitchfilter(configfile=config)
+    print >> cout, filt.options_str()
+
+    try:
+        # first call to yield won't return anything
+        ax = None
+        while 1:
+            # receives filename from caller and returns last axes
+            basename = yield ax
+            ax = axg.next()
+            print "** %s" % basename
+
+            signal,Fs,t,p = load_data(basename, filt)
+            spec,extent = spectrogram.dbspect(signal,Fs)
+            plt.plot_spectrogram(ax, spec, extent)
+            if t is not None:
+                plt.plot_trace(ax, t,p)
+
+        # loop will break when caller sends stop()
+    finally:
+        axg.close()
+        pp.close()
+
+
+def main(argv=None, cout=None):
+    import sys, getopt, glob
+    from ..version import version
 
     if argv is None:
         argv = sys.argv[1:]
@@ -113,46 +163,16 @@ def main(argv=None, cout=None):
         print __doc__
         sys.exit(-1)
 
-    def gridfun(**kwargs):
-        from matplotlib.pyplot import subplots
-        return subplots(_nrows,_ncols,sharex=True,sharey=True, figsize=_figsize)
-
-    def figfun(fig):
-        ax = fig.axes[0]
-        ax.set_xticklabels('')
-        ax.set_yticklabels('')
-        fig.subplots_adjust(left=0.05, right=0.95, wspace=0)
-        pp.savefig(fig)
-        close_figure(fig)
-
-    # set up plotting
-    pp = multipdf(args[0])
-    axg = axgriditer(gridfun, figfun)
-    spectrogram = spectrogram(configfile=config)
-    plt = plotter(configfile=config)
-
     print >> cout, "* Program: cplotpitch"
     print >> cout, "** Version: %s" % version
     print >> cout, "* Plotting files in directory: %s" % os.getcwd()
 
-    filt = postfilter.pitchfilter(configfile=config)
-    print >> cout, filt.options_str()
-
+    plotter = multiplotter(args[0], config, cout)
     for fname in sorted(glob.iglob("*.wav")):
         basename = os.path.splitext(fname)[0]
-        print "** %s" % basename
-        ax = axg.next()
-
-        signal,Fs,t,p = load_data(basename, filt)
-        spec,extent = spectrogram.dbspect(signal,Fs)
-        plt.plot_spectrogram(ax, spec, extent)
-        if t is not None:
-            plt.plot_trace(ax, t,p)
-
+        ax = plotter.send(basename)
         ax.set_title(basename, ha='left', position=(0.0,1.0), fontsize=4)
 
-    axg.close()
-    pp.close()
     return 0
 
 # Variables:
