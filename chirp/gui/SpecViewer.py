@@ -32,16 +32,11 @@ class SpecHandler(TSViewer.TSDataHandler, _configurable):
         self.image = None
         self.Fs = None
 
-    def get_fpass(self):
-        return self.options['freq_range']
-    def set_fpass(self, value):
-        if not len(value)==2: raise ValueError, "Frequency range must have length of 2"
-        if value==self.options['freq_range']: return
-        self.options['freq_range'] = value
-        if self.image:
-            self.axes.set_ylim(tuple(f/1000. for f in value))
-            self.draw()
-    fpass = property(get_fpass, set_fpass)
+    def set_axes(self, axes):
+        """ After getting axes, set the default ylim """
+        super(SpecHandler, self).set_axes(axes)
+        f1,f2 = (f/1000. for f in self.options['freq_range'])
+        self.axes.set_ylim((f1,f2))
 
     def get_colormap(self, obj=False):
         if obj:
@@ -96,13 +91,15 @@ class SpecHandler(TSViewer.TSDataHandler, _configurable):
         self.Fs = float(Fs)
         S,extent = self.spectrogram.dbspect(signal, Fs)
         if self.image is None:
+            # store current ylim
+            y1,y2 = self.ylim
             self.image = self.axes.imshow(S, extent=extent, cmap=self.get_colormap(obj=True), origin='lower')
+            self.ylim = y1,y2
         else:
             self.image.set_data(S)
 
         Smax = S.max()
         self.image.set_clim((Smax - self.dynrange / 10, Smax))
-        self.axes.set_ylim(tuple(f/1000. for f in self.fpass))
         self.draw()
 
 
@@ -111,6 +108,24 @@ class SpecViewer(TSViewer.TSViewer):
     def __init__(self, parent, id, figure=None, configfile=None):
         handler = SpecHandler(configfile=configfile)
         super(SpecViewer, self).__init__(parent, id, figure, handler=handler, configfile=configfile)
+
+def test(soundfile):
+
+    from ..common.audio import wavfile
+    fp = wavfile(soundfile)
+    signal,Fs = fp.read(), fp.sampling_rate
+
+    class SpecViewFrame(wx.Frame):
+        def __init__(self, parent=None):
+            super(SpecViewFrame, self).__init__(parent, title="TSViewer Test App", size=(1000,300),
+                style=wx.DEFAULT_FRAME_STYLE|wx.NO_FULL_REPAINT_ON_RESIZE)
+            self.figpanel = SpecViewer(self, -1)
+            self.figpanel.plot_data(signal, Fs)
+
+    app = wx.PySimpleApp()
+    app.frame = SpecViewFrame()
+    app.frame.Show()
+    app.MainLoop()
 
 
 # Variables:

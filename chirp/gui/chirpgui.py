@@ -12,7 +12,7 @@ import wx
 import numpy as nx
 from ..common import geom, audio, config, plg
 from . import wxgeom
-from .TSViewer import RubberbandPainter
+from .TSViewer import XRubberbandPainter
 from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
@@ -73,22 +73,25 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         self.selections = []
         self.trace_h = []
         self.set_colormap(self.handler.colormap)
+        self.Bind(wx.EVT_CHAR, self.keyhandler)
 
-    def on_key(self, event):
+    def keyhandler(self, event):
         """
         's': mark current selection
         'p': play current selection
         'x': subtract current region from all polygons
         """
         key = event.GetKeyCode()
-        if chr(key)=='s':
+        if key > 255:
+            event.Skip()
+        elif chr(key)=='s':
             painter = self.selected
-            if isinstance(painter, RubberbandPainter):
+            if isinstance(painter, XRubberbandPainter):
                 self.add_geometry(painter.value)
             elif isinstance(painter, PolygonPainter):
                 self.add_geometry(geom.vertices_to_polygon(painter.value))
         elif chr(key)=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
-            if isinstance(self.selected, RubberbandPainter):
+            if isinstance(self.selected, XRubberbandPainter):
                 tlim = self.selected.value
             else:
                 tlim = self.axes.get_xlim()
@@ -105,7 +108,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
         else:
-            super(SpecPicker, self).on_key(event)
+            event.Skip()
 
     def add_geometry(self, obj):
         """  Add a geometry (polygon or interval) to the spectrogram """
@@ -164,6 +167,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         self.selections = []
         self.remove_trace()
         self.axes.clear()
+        self.clear_painters()
         self.handler.image = None
 
 
@@ -171,7 +175,7 @@ class ChirpGui(wx.Frame):
     """ The main frame of the application """
     dpi = 100
 
-    def __init__(self, title='chirp', size=(1000,350), configfile=None):
+    def __init__(self, title='chirp', size=(1000,450), configfile=None):
         super(ChirpGui, self).__init__(None, -1, title, size=size)
         # load configuration file if one's supplied
         self.configfile = config.configoptions(configfile)
@@ -229,7 +233,7 @@ class ChirpGui(wx.Frame):
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.OnSelectItem, id=self.list.GetId())
 
         # Create the mpl Figure and FigCanvas objects.
-        fig = Figure((8.0, 3.0), dpi=self.dpi)
+        fig = Figure((8.0, 4.0), dpi=self.dpi)
         self.spec = SpecPicker(mainPanel, -1, fig, configfile=self.configfile)
 
         spec_controls = self.create_spec_controls(mainPanel)
@@ -248,7 +252,6 @@ class ChirpGui(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnMerge, id=fmrg.GetId())
         self.Bind(wx.EVT_BUTTON, self.OnSubtract, id=fsub.GetId())
         self.Bind(wx.EVT_BUTTON, self.OnSplit, id=fspl.GetId())
-
 
         # status bar
         self.status = wx.StatusBar(mainPanel, -1)
@@ -305,15 +308,6 @@ class ChirpGui(wx.Frame):
         self.shift_size = wx.TextCtrl(controls, -1, str(self.spec.handler.shift), style=wx.TE_PROCESS_ENTER)
         hbox.Add(self.shift_size, 1)
 
-        txt = wx.StaticText(controls, -1, 'Freq Range (Hz):')
-        txt.SetFont(font)
-        hbox.Add(txt, 0, wx.RIGHT | wx.LEFT, 5)
-        frange = self.spec.handler.fpass
-        self.f_low = wx.TextCtrl(controls, -1, str(frange[0]), style=wx.TE_PROCESS_ENTER)
-        hbox.Add(self.f_low, 1, wx.RIGHT, 5)
-        self.f_high = wx.TextCtrl(controls, -1, str(frange[1]), style=wx.TE_PROCESS_ENTER)
-        hbox.Add(self.f_high, 1)
-
         txt = wx.StaticText(controls, -1, 'Color Range (dB):')
         txt.SetFont(font)
         hbox.Add(txt, 0, wx.RIGHT | wx.LEFT, 5)
@@ -325,7 +319,7 @@ class ChirpGui(wx.Frame):
         hbox.Add(txt, 0, wx.RIGHT | wx.LEFT, 5)
         self.cmap = wx.ComboBox(controls, -1, choices=colormaps, style=wx.CB_READONLY)
         self.cmap.SetValue(self.spec.handler.colormap)
-        hbox.Add(self.cmap, 1)
+        hbox.Add(self.cmap, 1, wx.RIGHT, 50)
 
         controls.Bind(wx.EVT_COMBOBOX, self.OnSpecMethod, self.spec_method)
         controls.Bind(wx.EVT_TEXT_ENTER, self.OnSpecControl)  # bind all text events
@@ -437,9 +431,6 @@ class ChirpGui(wx.Frame):
     def OnSpecControl(self, event):
         # this is sort of cheap - just check all the values against the handler's values
         # and update the ones that have changed
-        f_min = float(self.f_low.GetValue())
-        f_max = float(self.f_high.GetValue())
-        self.spec.handler.fpass = (f_min, f_max)
         self.spec.handler.window_len = float(self.win_size.GetValue())
         self.spec.handler.shift = float(self.shift_size.GetValue())
         self.spec.handler.dynrange = float(self.dynrange.GetValue())
@@ -512,7 +503,6 @@ class ChirpGui(wx.Frame):
         outfile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
         try:
             self.configfile.update('spectrogram',
-                                   freq_range=(float(self.f_low.GetValue()), float(self.f_high.GetValue())),
                                    window_len=float(self.win_size.GetValue()),
                                    window_shift=float(self.shift_size.GetValue()),
                                    dynrange=float(self.dynrange.GetValue()),
