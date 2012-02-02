@@ -80,20 +80,21 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         'p': play current selection
         'x': subtract current region from all polygons
         """
-        if event.key=='s':
+        key = event.GetKeyCode()
+        if chr(key)=='s':
             painter = self.selected
             if isinstance(painter, RubberbandPainter):
                 self.add_geometry(painter.value)
             elif isinstance(painter, PolygonPainter):
                 self.add_geometry(geom.vertices_to_polygon(painter.value))
-        elif event.key=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
+        elif chr(key)=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
             if isinstance(self.selected, RubberbandPainter):
                 tlim = self.selected.value
             else:
                 tlim = self.axes.get_xlim()
             i0,i1 = (int(x*self.handler.Fs) for x in tlim)
             audio.play_wave(self.handler.signal[i0:i1], self.handler.Fs)
-        elif event.key=='x':
+        elif chr(key)=='x':
             painter = self.selected
             if not isinstance(painter, PolygonPainter): return
             p1 = geom.vertices_to_polygon(painter.value)

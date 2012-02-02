@@ -105,8 +105,8 @@ class TSViewer(FigCanvas, _configurable):
     axes which supports the following interactions:
 
     * middle-button drag to select a region of the time series
-    * up-down keys to zoom and unzoom
-    * left-right keys to navigate a zoomed time series
+    * up-down keys to zoom and unzoom horizontally
+    * left-right keys to navigate a zoomed time series horizontally
 
     A separate object is used for data handling; by default this is a
     TSDataHandler instance, which just pushes data to the underlying
@@ -135,7 +135,7 @@ class TSViewer(FigCanvas, _configurable):
         # handlers
         # have to bind our own motion handler to permit multiple inheritance
         self.Bind(wx.EVT_MOTION, self.onMotion)
-        self.mpl_connect('key_press_event', self.on_key)
+        self.Bind(wx.EVT_CHAR, self.on_key)
 
     def plot_data(self, *args, **kwargs):
         """ Calls the handler's plot_data method to populate the figure with data """
@@ -209,15 +209,18 @@ class TSViewer(FigCanvas, _configurable):
             evt.Skip()
 
     def on_key(self, event):
-        """ Handle arrow keys """
-        if event.key=='down':
+        """ Handle navigation keys """
+        key = event.GetKeyCode()
+        if key==wx.WXK_DOWN:
             self.zoom_viewport(1)
-        elif event.key=='up':
+        elif key==wx.WXK_UP:
             self.zoom_viewport(-1)
-        elif event.key=='left':
+        elif key==wx.WXK_LEFT:
             self.pan_viewport(-self.options['pan_proportion'])
-        elif event.key=='right':
+        elif key==wx.WXK_RIGHT:
             self.pan_viewport(self.options['pan_proportion'])
+        else:
+            event.Skip()
 
 def test():
 
