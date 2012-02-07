@@ -80,6 +80,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         's': mark current selection
         'p': play current selection
         'x': subtract current region from all polygons
+        'a': merge current region with all polygons
         """
         key = event.GetKeyCode()
         if key > 255:
@@ -107,6 +108,19 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 if not p2.is_empty: newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
+        elif chr(key)=='a':
+            painter = self.selected
+            if not isinstance(painter, PolygonPainter): return
+            p1 = geom.vertices_to_polygon(painter.value)
+            newgeoms = []
+            for p in self.selections:
+                p2 = wxgeom.path_to_poly(p)
+                if p2.intersects(p1):
+                    p2 = p2.union(p1)
+                    newgeoms.extend(geom.polygon_components(p2))
+            self.delete_selections()
+            for p in newgeoms: self.add_geometry(p)
+            
         else:
             event.Skip()
 
