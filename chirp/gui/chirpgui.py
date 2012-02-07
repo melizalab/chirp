@@ -11,7 +11,7 @@ import os,sys
 import wx
 import numpy as nx
 from ..common import geom, audio, config, plg
-from . import wxgeom
+from . import wxgeom, HelpWindow
 from .TSViewer import XRubberbandPainter
 from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
@@ -201,12 +201,12 @@ class ChirpGui(wx.Frame):
         self.menubar = wx.MenuBar()
 
         menu_file = wx.Menu()
-        m_open = menu_file.Append(-1, "&Open File...\tCtrl-O", "Open File...")
+        m_open = menu_file.Append(wx.ID_OPEN, "&Open File...\tCtrl-O", "Open File...")
         m_next_file = menu_file.Append(-1, "&Next File\tCtrl-N", "Next File")
         m_prev_file = menu_file.Append(-1, "Previous File\tCtrl-B", "Previous File")
-        m_save = menu_file.Append(-1, "&Save Elements\tCtrl-S", "Save Elements")
+        m_save = menu_file.Append(wx.ID_SAVE, "&Save Elements\tCtrl-S", "Save Elements")
         m_save_params = menu_file.Append(-1, "Save Parameters", "Save Params")
-        m_exit = menu_file.Append(-1, "E&xit\tCtrl-X", "Exit")
+        m_exit = menu_file.Append(wx.ID_EXIT, "E&xit\tCtrl-X", "Exit")
         self.Bind(wx.EVT_MENU, self.on_open, m_open)
         self.Bind(wx.EVT_MENU, self.on_next_file, m_next_file)
         self.Bind(wx.EVT_MENU, self.on_prev_file, m_prev_file)
@@ -227,9 +227,16 @@ class ChirpGui(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_load_pitch, m_pitch_l)
         self.Bind(wx.EVT_MENU, self.on_clear_pitch, m_clear)
 
+        menu_help = wx.Menu()
+        m_controls = menu_help.Append(-1, "Chirp &Controls", "Chirp Controls")
+        m_about = menu_help.Append(wx.ID_ABOUT, "&About Chirp", "About Chirp")
+        self.Bind(wx.EVT_MENU, self.on_help, m_controls)
+        self.Bind(wx.EVT_MENU, self.on_about, m_about)
+        
         self.menubar.Append(menu_file, "&File")
         self.menubar.Append(menu_edit, "&Edit")
         self.menubar.Append(menu_analysis, "&Analysis")
+        self.menubar.Append(menu_help, "&Help")
         self.SetMenuBar(self.menubar)
 
     def create_main_panel(self):
@@ -570,6 +577,16 @@ class ChirpGui(wx.Frame):
     def on_clear_pitch(self, event):
         self.spec.remove_trace()
 
+    def on_help(self, event):
+        dlg = HelpWindow.AboutBox("Chirp Controls",HelpWindow.help_txt)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def on_about(self, event):
+        dlg = HelpWindow.AboutBox("About Chirp",HelpWindow.about_txt)
+        dlg.ShowModal()
+        dlg.Destroy()        
+        
     def on_exit(self, event):
         self.Destroy()
 

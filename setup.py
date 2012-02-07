@@ -9,7 +9,7 @@ import os.path as op
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 cls_txt = \
 """
