@@ -271,6 +271,7 @@ class TSViewer(FigCanvas, _configurable):
             if self.select_start==y: self.yrubberband.clear()
             self.select_start = None
             self.selector = None
+            self.yzoom_viewport(1)
 
 
     def onMotion(self, evt):
@@ -292,10 +293,7 @@ class TSViewer(FigCanvas, _configurable):
         """ Handle navigation keys """
         key = event.GetKeyCode()
         if key==wx.WXK_DOWN:
-            if event.ShiftDown():
-                self.yzoom_viewport(1)
-            else:
-                self.xzoom_viewport(1)
+            self.xzoom_viewport(1)
         elif key==wx.WXK_UP:
             if event.ShiftDown():
                 self.yzoom_viewport(-1)
