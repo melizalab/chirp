@@ -66,7 +66,6 @@ CFLAGS="-I/opt/local/include" easy_install \
 http://people.csail.mit.edu/hubert/pyaudio/ if the last command above
 doesn't work)
 
-
 * Usage
 
 *Chirp* consists of a number of interlinked programs that perform
@@ -125,9 +124,6 @@ appearance of the spectrogram.
 + shift :: controls the amount that the analysis window is shifted
            between frames.  Smaller numbers give more finely-spaced
            frames, which may help in visualizing time-varying signals.
-+ freq range :: set what frequencies are displayed in the window. Only
-                values between 0 and half the sampling frequency are
-                valid.
 + color range :: set the dynamic range of the spectrogram, relative to
                  the maximum power of the signal. Smaller values
                  restrict the display to more intense spectrotemporal
@@ -148,6 +144,11 @@ Vertical bars will indicate the selected region.  Pressing the down
 arrow key will zoom in on the selected segment.  Pressing up will zoom
 back to the previous viewpoint.  When zoomed, pressing left and right
 arrow keys will pan the viewport across the spectrogram.
+
+To view a restricted range of frequencies, click on the spectrogram with
+the right mouse button and drag to select the range of interest.  The
+view will zoom in to those frequencies.  To zoom back out, press Shift
+and the up arrow key.
 
 **** Selecting temporal and spectrotemporal segments
 
@@ -201,15 +202,17 @@ don't overlap it's not possible to merge them.
 Complex segments can be created by trimming and/or splitting other
 segments.  Under the hood, the segments are defined by polygons that
 can be simple or complex (i.e. with interior rings), and the *shapely*
-library is used to perform geometrical operations on those polygons.
-To remove a region from a segment, draw another region with the left
-mouse button and press the 'x' key.  The drawn region will be
-subtracted from all the currently defined spectrotemporal segments.
-Segments can also be directly subtracted from each other.  Select two
-or more segments and press the Subtract button.  The smaller segments
-will all be extracted from the largest one.  Finally, you can select
-two segments and use the Split button to divide the two polygons into
-mutually disjoint regions.
+library is used to perform geometrical operations on those
+polygons. To remove a region from a segment, draw another region with
+the left mouse button and press the 'x' key.  The drawn region will be
+subtracted from all the currently defined spectrotemporal
+segments. Conversely, if you press 'a' after drawing a region, it will
+be added to all the currently defined segments.  Segments can also be
+directly subtracted from each other.  Select two or more segments and
+press the Subtract button.  The smaller segments will all be extracted
+from the largest one.  Finally, you can select two segments and use
+the Split button to divide the two polygons into mutually disjoint
+regions.
 
 See [[*Mask%20design%20considerations][Mask design considerations]] for further notes on making good masks.
 
@@ -218,7 +221,7 @@ See [[*Mask%20design%20considerations][Mask design considerations]] for further 
 Elements can be stored to disk for further editing and for use in
 later analysis steps.  Both interval and spectrotemporal elements are
 stored in an /enhanced label/ (/ebl/) file. Select "Save Elements"
-from the File menu, or type Ctrl-S (Open-Apple-S on Mac).  The current
+from the File menu, or type Ctrl-S (Command-S on Mac).  The current
 display parameters can also be saved from the File menu ("Save
 Parameters").  Note that the comments in the configuration file are
 lost in this process, so you may prefer to edit the file by hand.
@@ -248,7 +251,7 @@ a single set of markers will be shown.
 
 For recordings of exceptional quality, it may not be necessary to do
 any masking.  Near-field recordings, obtained by placing a microphone
-close to a nest or perch site,will tend to have less noise than
+close to a nest or perch site, will tend to have less noise than
 recordings obtained with a shotgun or parabolic microphone, but some
 degree of masking may still be desirable if there is reverb or strong
 stationary noise (i.e. with relatively constant spectrum).
@@ -265,23 +268,49 @@ Generally speaking, the algorithm will have the most problems when
 there are multiple ways of tracking through the spectrogram.  Imagine
 starting at the beginning of the spectrogram of the signal and trying
 to stay on top of the ridge defined by the fundamental frequency.  If
-there's noise in the signal that creates shortcuts, the algorithm
-can't tell which is the true path and which isn't.  Broadband noise is
-less of a problem than narrowband noise, which has a well-defined
-pitch and represents a serious "temptation" for the tracker.  There
-can also be issues when the pitch is being rapidly modulated, because
-physical reverb and the inevitable limits in time-frequency resolution
-can smear the power between closely spaced components, causing the
-tracker to jump between harmonics.
+there are alternate paths through the signal, the algorithm can't tell
+which is the true path and which isn't.  There are several sources of
+possible interference: time-frequency limitations, reverb, and
+environmental noise.
 
-For example, in the recording we opened above, there's a rapid
-downmodulation of the pitch that occurs around 110 ms.  The signal
-reverberates slightly, leading to interference between the fundamental
-frequency and the first overtone.  The lower frequency is stronger, and
-a better fit to the harmonic template.  In many cases the tracker will
-be able to find its way through correctly, but given the probabilistic
-nature of the algorithm it may need some help.  And the lower the
-signal to noise ratio of the recording, the more help it needs.
+According to signal processing theory, there is a tradeoff in the time
+and frequency resolution of spectral analysis that's determined by the
+length of the analysis window.  Long analysis windows give high
+resolution for frequencies, but low resolution over time; short
+analysis windows allow resolution of rapidly changing components, but
+poor frequency resolution.  You can see this for yourself by changing
+the "window size" parameter in /chirp/.  There's usually an optimal
+window size for any given class of signals, but it may be impossible
+to completely resolve rapid frequency modulations.  Time-frequency
+tradeoffs tend to exacerbate the effects of environmental noise.
+
+Reverberation is a passive source of interference, which arises from
+the fact that in most physical environments, sound will bounce off
+surfaces and won't all arrive at the microphone at the same time.  As
+a result, the spectrograms of such recordings will be smeared
+temporally.  In the example signal, note the "tails" of power that
+come after the signal modulates (at 125 ms) or ends (at 200
+ms). This reverberation is pretty bad, but it's fairly diffuse; in
+some situations you'll see a distinct echo of the signal.
+
+Field recordings also contain structured and unstructured noise from
+active sources.  Unstructured noise is broadband and nontonal, and
+appears as a diffuse "hash" or static in the spectrogram.  Wind is
+probably the most significant source of unstructured noise.  The
+spectrum of such noise tends to have a 1/f distribution, so you'll see
+a lot more in low than high frequencies.  Fortunately, most animals
+have adapted to these statistics and pitch their vocalizations above
+the worst of the noise. Furthermore, because the noise is diffuse and
+not continuous, the pitch tracker can usually stay on the signal of
+interest.  Structured noise is much more problematic because the power
+tends to be concentrated in time and/or frequency.  Other animals,
+including humans, are the predominant source of structured noise.
+You'll see vertical lines that indicate percussive events (e.g., a
+door slamming, footsteps), and horizontal lines from other voices.
+Human speech is fairly low in frequency and has a characteristic
+pulsed appearance.  These lines may overlap with the lines of the
+signal you're interested in, and if they're stronger the algorithm
+may get off track.
 
 It's a good idea to start with a fairly broadband mask and trim it
 down.  The more harmonics in the signal, the stronger the evidence for
@@ -339,7 +368,6 @@ to first adjust the parameters until most of the recordings give good
 estimates, then draw broadband masks, adjust the parameters again, and
 then fine-tune the masks as a final step.
 
-
 ** cpitch
 
 Although it's possible to calculate pitch traces in /chirp/, when
@@ -383,7 +411,6 @@ If the backtracing algorithm is enabled, the table will also contain:
            distribution. This is the most likely path through the
            posterior distribution
 + p.map.sd :: the standard deviation of p.map across chains
-
 
 *** Batch processing
 
@@ -542,7 +569,6 @@ tracking algorithm:
                  the variance of that Gaussian.
 + btrace :: sets whether to run the backtrace filter
 
-
 ** ccompare
 
 The /ccompare/ program performs pairwise comparisons between
@@ -621,13 +647,13 @@ basic SPCC algorithm, and an extended algorithm that can use masks in
 temporal segments.  To use the basic algorithm on the example files:
 
 #+begin_src sh
-cpitch -c ../chirp.cfg -m spcc > spcc_comparisons.clg
+ccompare -c ../chirp.cfg -m spcc > spcc_comparisons.clg
 #+end_src
 
 And to use the extended algorithm:
 
 #+begin_src sh
-cpitch -c ../chirp.cfg -m masked_spcc > spccm_comparisons.clg
+ccompare -c ../chirp.cfg -m masked_spcc > spccm_comparisons.clg
 #+end_src
 
 Both algorithms have options that can be set in the configuration
@@ -715,7 +741,6 @@ bandpass filters.
 The algorithms for this program are already developed and simply need
 to be adapted to work in the *chirp* architecture.
 
-
 * Acknowledgements and References
 
 - The time-frequency reassignment code is distributed in a separate
@@ -725,14 +750,14 @@ to be adapted to work in the *chirp* architecture.
 - The harmonic template algorithm is mostly based on the following two
   papers:
 
-  - Wang C, Seneff S (2000) Robust pitch tracking for prosodic modeling
-    in telephone speech. Acoustics, Speech, and Signal Processing, 2000
-    ICASSP ’00 Proceedings 2000 IEEE International Conference on 3:
-    1343-–1346 vol.3.
+  - Wang C, Seneff S (2000) Robust pitch tracking for prosodic
+    modeling in telephone speech. IEEE International Conference on
+    Acoustics, Speech, and Signal
+    Processing, 2000. doi:10.1109/ICASSP.2000.861827
 
-  - Shapiro AD, Wang C (2009) A versatile pitch tracking algorithm: From
-    human speech to killer whale vocalizations. J Acoust Soc Am 126:
-    451–459.
+  - Shapiro AD, Wang C (2009) A versatile pitch tracking algorithm:
+    From human speech to killer whale vocalizations. J Acoust Soc Am
+    126: 451–459. doi:10.1121/1.3132525
 
 - The particle filter code is based on SMCTC:
 
@@ -743,8 +768,8 @@ to be adapted to work in the *chirp* architecture.
   posterior density:
 
   - Godsill S, Doucet A, West MJ (2001) Maximum a posteriori sequence
-    estimation using monte carlo particle filters. Ann Inst Statist Math
-    53:82--96.
+    estimation using monte carlo particle filters. Ann Inst Statist
+    Math 53:82--96. doi:10.1023/A:1017968404964
 
 - The idea for using masks to aid pitch calculations comes from
   Luscinia, by Robert Lachlan: http://luscinia.sourceforge.net/
@@ -762,8 +787,8 @@ licensed under the Gnu Public License (GPL) version 2; see COPYING for
 details.
 
 As noted throughout the sources, some code is adapted from various
-sources with licences believed to be compatible with the GPL
-version 2
+other sources; their licences are known or believed to be compatible
+with the GPL version 2.
 
 THE PROGRAMS ARE PROVIDED "AS IS" WITHOUT WARRANTY OF MERCANTABILITY
 OR FITNESS FOR A PARTICULAR PURPOSE OR ANY OTHER WARRANTY, EXPRESS OR
