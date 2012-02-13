@@ -1,0 +1,36 @@
+#-*- mode: org -*-
+#+STARTUP:    align showall hidestars oddeven
+#+TITLE:    chirp - pitch detection and comparison for bioacoustics
+#+AUTHOR:    Dan Meliza
+#+EMAIL:     dan@meliza.org
+#+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t TeX:t LaTeX:nil skip:nil d:t tags:not-in-toc
+#+STYLE:    <link rel="stylesheet" type="text/css" href="index.css" />
+#+INFOJS_OPT: view:nil toc:t ltoc:t mouse:underline buttons:0
+#+LANGUAGE:   en
+
+** What is chirp?
+
+Chirp is a suite of software for analyzing and comparing bioacoustic
+signals. It consists of the following semi-independent components:
+
++ A graphical interface for viewing conventional and [[http://dmeliza.github.com/libtfrspec][time-frequency
+  reassignment]] spectrograms.
+  + Select, play, and zoom in on temporal sections of recordings;
+    adjust spectrogram parameters interactively.
+  + Define temporal and spectrotemporal regions of interest; save in
+    simple text-based files for further analysis
++ An advanced signal processing algorithm for tracking the pitch
+  (fundamental frequency) of tonal signals.  Designed for use with
+  noisy field recordings.
++ A dynamic time-warping algorithm for quantitatively comparing the
+  pitch traces of signals.  Supports batch processing on multicore
+  machines for large datasets.
++ Plugin architecture supporting additional algorithms for comparing
+  signals (currently includes spectrographic cross-correlation)
+
+Chirp hasn't been officially released. To be notified when it is,
+follow the [[https://github.com/dmeliza/chirp/wiki.atom][Atom feed for the project wiki]].  Here's a screenshot of the
+chirp GUI:
+
+[[file:chirp_mask3.png]]
+
