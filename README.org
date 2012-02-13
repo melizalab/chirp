@@ -1,0 +1,13 @@
+#-*- mode: org -*-
+#+STARTUP:    align showall hidestars oddeven
+#+TITLE:    chirp - pitch detection and comparison for bioacoustics
+#+AUTHOR:    Dan Meliza
+#+EMAIL:     dan@meliza.org
+#+OPTIONS:   H:3 num:nil toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t TeX:t LaTeX:nil skip:nil d:t tags:not-in-toc
+#+STYLE:    <link rel="stylesheet" type="text/css" href="index.css" />
+#+INFOJS_OPT: view:nil toc:t ltoc:t mouse:underline buttons:0
+#+LANGUAGE:   en
+
+Chirp is a suite of software for analyzing and comparing bioacoustic
+signals. It hasn't been officially released yet, so this page is just
+a placeholder.
