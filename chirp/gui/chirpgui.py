@@ -120,7 +120,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                     newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
-            
+
         else:
             event.Skip()
 
@@ -219,10 +219,19 @@ class ChirpGui(wx.Frame):
         m_copy_name = menu_edit.Append(-1, "Copy &Recording Name\tCtrl-R", "Copy Recording Name")
         self.Bind(wx.EVT_MENU, self.on_copy_name, m_copy_name)
 
+        menu_batch = wx.Menu()
+        m_batch_pitch = menu_batch.Append(-1, "Calculate &Pitch...", "Calculate Pitch")
+        m_batch_compare = menu_batch.Append(-1, "&Compare Signals...", "Compare Signals")
+        self.Bind(wx.EVT_MENU, self.on_batch_pitch, m_batch_pitch)
+        self.Bind(wx.EVT_MENU, self.on_batch_compare, m_batch_compare)
+
         menu_analysis = wx.Menu()
         m_pitch = menu_analysis.Append(-1, "Calculate &Pitch\tShift-Ctrl-P", "Calculate Pitch")
         m_pitch_l = menu_analysis.Append(-1, "Load &Pitch Data\tCtrl-P", "Load Pitch Data")
         m_clear = menu_analysis.Append(-1, "&Clear Analysis Output\tCtrl-C", "Clear Analysis Output")
+        menu_analysis.AppendSeparator()
+        menu_analysis.AppendSubMenu(menu_batch, "&Batch Analysis")
+
         self.Bind(wx.EVT_MENU, self.on_calc_pitch, m_pitch)
         self.Bind(wx.EVT_MENU, self.on_load_pitch, m_pitch_l)
         self.Bind(wx.EVT_MENU, self.on_clear_pitch, m_clear)
@@ -232,7 +241,7 @@ class ChirpGui(wx.Frame):
         m_about = menu_help.Append(wx.ID_ABOUT, "&About Chirp", "About Chirp")
         self.Bind(wx.EVT_MENU, self.on_help, m_controls)
         self.Bind(wx.EVT_MENU, self.on_about, m_about)
-        
+
         self.menubar.Append(menu_file, "&File")
         self.menubar.Append(menu_edit, "&Edit")
         self.menubar.Append(menu_analysis, "&Analysis")
@@ -466,6 +475,7 @@ class ChirpGui(wx.Frame):
         fdlg = wx.FileDialog(self, "Select a file to open",
                              wildcard="WAV files (*.wav)|*.wav|Element files (*.ebl)|*.ebl|Pitch files (*.plg)|*.plg",
                              style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
             infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
@@ -519,6 +529,7 @@ class ChirpGui(wx.Frame):
         fdlg = wx.FileDialog(self, "Select a destination file",
                              wildcard="Config files (*.cfg)|*.cfg",
                              style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if not val==wx.ID_OK: return
         outfile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
@@ -577,6 +588,12 @@ class ChirpGui(wx.Frame):
     def on_clear_pitch(self, event):
         self.spec.remove_trace()
 
+    def on_batch_pitch(self, event):
+        pass
+
+    def on_batch_compare(self, event):
+        pass
+
     def on_help(self, event):
         dlg = HelpWindow.AboutBox("Chirp Controls",HelpWindow.help_txt)
         dlg.ShowModal()
@@ -585,8 +602,8 @@ class ChirpGui(wx.Frame):
     def on_about(self, event):
         dlg = HelpWindow.AboutBox("About Chirp",HelpWindow.about_txt)
         dlg.ShowModal()
-        dlg.Destroy()        
-        
+        dlg.Destroy()
+
     def on_exit(self, event):
         self.Destroy()
 
