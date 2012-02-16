@@ -16,6 +16,7 @@ from .TSViewer import XRubberbandPainter
 from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
+from .BatchPitch import BatchPitch
 
 from matplotlib.figure import Figure
 from matplotlib import cm
@@ -589,7 +590,9 @@ class ChirpGui(wx.Frame):
         self.spec.remove_trace()
 
     def on_batch_pitch(self, event):
-        pass
+        dlg = BatchPitch(self)
+        dlg.config_control.SetValue(self.configfile.filename)
+        dlg.Show()
 
     def on_batch_compare(self, event):
         pass
@@ -614,7 +617,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    configfile = "chirp.cfg"  # load in current directory if it exists
+    configfile = os.path.join(os.getcwd(),"chirp.cfg")  # load in current directory if it exists
     opts,args = getopt.getopt(argv,'hc:')
     for o,a in opts:
         if o =='-h':

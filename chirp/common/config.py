@@ -21,12 +21,14 @@ class configoptions(object):
         """
         self.config = self._configparser(kwargs)
         self.read(configfile)
+        self.filename = ''
 
     def read(self, fname):
         """ Parse a configuration file """
         import os
         if fname is not None and os.path.exists(fname):
             self.config.read(fname)
+            self.filename = fname
 
     def write(self, fname):
         """ Write stored configuration to file. Note that all comments will be stripped """

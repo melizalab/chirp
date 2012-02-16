@@ -7,7 +7,8 @@ Copyright (C) 2012 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2012-02-13
 """
 
-import wx
+import os,wx
+import threading
 from ..pitch import batch
 
 class FileListBox(wx.Panel):
@@ -59,14 +60,52 @@ class FileListBox(wx.Panel):
         for x in reversed(sorted(self.file_list.GetSelections())):
             self.file_list.Delete(x)
 
+# updating the progress bar is handled through events and a separate thread
+# that monitors the process pool
+myEVT_BATCH = wx.NewEventType()
+EVT_BATCH = wx.PyEventBinder(myEVT_BATCH, 1)
+class BatchEvent(wx.PyCommandEvent):
+    """Event to signal that a count value is ready"""
+    def __init__(self, etype, eid, value=None):
+        """Creates the event object"""
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self._value = value
+
+    def GetValue(self):
+        return self._value
+
+class BatchThread(threading.Thread):
+    def __init__(self, parent, control, iterable):
+        """
+        @param parent: The gui object that should recieve the value
+        @param iterable: the iterator to monitor
+        """
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self._parent = parent
+        self._iter = iterable
+        self._ctrl = control
+
+    def run(self):
+        for i,v in enumerate(self._iter):
+            evt = BatchEvent(myEVT_BATCH, -1, i)
+            wx.PostEvent(self._parent, evt)
+        evt = BatchEvent(myEVT_BATCH, -1, None)
+        wx.PostEvent(self._parent, evt)
+
+    def stop(self):
+        self._ctrl.value = True
 
 class BatchPitch(wx.Frame):
+
+    _inactive_controls = ('file_list','config_control','config_pick_btn','usemask',
+                          'skipcompl','nworkers','btn_start')
 
     def __init__(self, parent=None):
         wx.Frame.__init__(self, parent, title="Batch Pitch Estimation", size=(400,400),
                           style=wx.DEFAULT_FRAME_STYLE|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.create_main_panel()
-        self.runner = batch_runner()
+        self.batch_thread = None
 
     def create_main_panel(self):
         font = wx.SystemSettings_GetFont(wx.SYS_SYSTEM_FONT)
@@ -88,9 +127,9 @@ class BatchPitch(wx.Frame):
         hbox.Add(txt,0,wx.ALIGN_CENTER)
         self.config_control = wx.TextCtrl(mainPanel, -1)
         hbox.Add(self.config_control,1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        btn = wx.Button(mainPanel, wx.ID_OPEN)
-        self.Bind(wx.EVT_BUTTON, self.on_pick_config, id=btn.GetId())
-        hbox.Add(btn,0)
+        self.config_pick_btn = wx.Button(mainPanel, wx.ID_OPEN)
+        self.Bind(wx.EVT_BUTTON, self.on_pick_config, id=self.config_pick_btn.GetId())
+        hbox.Add(self.config_pick_btn,0)
         vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
 
         # number of workers
@@ -99,7 +138,7 @@ class BatchPitch(wx.Frame):
         txt.SetFont(font)
         hbox.Add(txt, 0,wx.ALIGN_CENTER)
         self.nworkers = wx.SpinCtrl(mainPanel, -1, size=(60,-1))
-        self.nworkers.SetRange(1, batch.runner.max_workers())
+        self.nworkers.SetRange(1, batch.multiprocessing.cpu_count())
         self.nworkers.SetValue(1)
         hbox.Add(self.nworkers, 0, wx.LEFT, 5)
         vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
@@ -143,6 +182,11 @@ class BatchPitch(wx.Frame):
         hbox.Add(self.btn_cancel)
         vbox.Add(hbox,0,wx.ALIGN_RIGHT|wx.ALL,5)
 
+        self.Bind(EVT_BATCH, self.on_batch_update)
+
+        self.status = wx.StatusBar(mainPanel, -1)
+        vbox.Add(self.status, 0, wx.EXPAND)
+
         mainPanel.SetSizer(vbox)
 
     def on_pick_config(self, event):
@@ -155,11 +199,63 @@ class BatchPitch(wx.Frame):
             self.config_control.SetValue(os.path.join(fdlg.GetDirectory(), fdlg.GetFilename()))
 
     def on_start(self, event):
-        pass
+        # load data from controls
+        import time
+        files = self.file_list.files
+        nfiles = len(files)
+        if len(files)==0:
+            self.status.SetStatusText("No files selected")
+            return
+        cfg   = self.config_control.GetValue()
+        if len(cfg)==0:
+            cfg = None
+        mask  = self.usemask.GetValue()
+        skip  = self.skipcompl.GetValue()
+        nw    = self.nworkers.GetValue()
+
+        # disable controls and start job
+        self._disable_interface()
+        self.gauge.SetRange(nfiles)
+        self.gauge.SetValue(0)
+        self.status.SetStatusText("Batch running...")
+
+        try:
+            self.batch_thread = BatchThread(self, *batch.run(files, config=cfg, workers=nw, mask=mask, skip=skip))
+            self.batch_thread.start()
+        except Exception,e:
+            self._enable_interface()
+            self.status.SetStatusText("Error: %s" % e)
+
+    def on_batch_update(self, event):
+        value = event.GetValue()
+        if value is not None:
+            self.gauge.SetValue(value+1)
+        else:
+            self.status.SetStatusText("Batch finished (%d/%d completed)" % (self.gauge.GetValue(),
+                                                                            self.gauge.GetRange()))
+            self.gauge.SetValue(self.gauge.GetRange())
+            self._enable_interface()
 
     def on_cancel(self, event):
-        if not self.runner.running:
+        if self.batch_thread is None or not self.batch_thread.is_alive():
             self.Destroy()
+        else:
+            self.status.SetStatusText("Canceling batch after current jobs finish...")
+            self.batch_thread.stop()
+            wx.BeginBusyCursor()
+
+    def _disable_interface(self):
+        for ctrl in self._inactive_controls:
+            getattr(self,ctrl).Disable()
+        self.btn_cancel.SetLabel("Cancel")
+
+    def _enable_interface(self):
+        self.btn_cancel.SetLabel("Close")
+        self.btn_cancel.Enable()
+        wx.EndBusyCursor()
+        for ctrl in self._inactive_controls:
+            getattr(self,ctrl).Enable()
+
 
 def test():
 
