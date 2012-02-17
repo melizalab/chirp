@@ -9,24 +9,9 @@ Created 2011-08-30
 
 from . import methods, storage
 from ..common.config import _configurable
+from ..common.progressbar import progressbar
 import multiprocessing
 
-try:
-    from progressbar import ProgressBar,Percentage,Bar
-    def progbar(title=''): return ProgressBar(widgets=[title,Percentage(),Bar()])
-except ImportError:
-    class progbar(object):
-        def __init__(self,title=''):
-            self.title = title
-        def __call__(self,iterable):
-            import sys
-            sys.stderr.write("[ %s: completed 0 ]" % self.title)
-            i = None
-            for i,v in enumerate(iterable):
-                if i % 10 == 0: sys.stderr.write("\r[ %s: completed %d ]" % (self.title,i+1))
-                yield v
-            if i:
-                sys.stderr.write("\r[ %s: completed %d ]\n" % (self.title,i+1))
 
 _scriptdoc = \
 """
@@ -56,12 +41,16 @@ def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, *
 
     Returns a dictionary proxy keyed by id, and a list of id, locator tuples
     """
+    from ctypes import c_bool
+
     tq = shm_manager.Queue()
     dq = shm_manager.Queue()
     d = shm_manager.dict()
+    stop_signal = shm_manager.Value(c_bool,False)  # this is only used by the GUI
 
-    def _load(tq,dq):
+    def _load():
         for id,loc in iter(tq.get,None):
+            if stop_signal.value: break
             try:
                 d[id] = comparator.load_signal(loc)
                 dq.put(id)
@@ -69,7 +58,7 @@ def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, *
                 cout.write("** Error loading data from %s: %s" % (loc,e))
 
     for i in xrange(nworkers):
-        p = multiprocessing.Process(target=_load, args=(tq,dq))
+        p = multiprocessing.Process(target=_load)
         p.daemon = True
         p.start()
 
@@ -79,8 +68,8 @@ def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, *
     for i in xrange(nworkers):
         tq.put(None)
 
-    progress = progbar('Loading signals: ')
-    for i in progress(xrange(len(storager.signals))):
+    progress = progressbar('Loading signals: ')
+    for i in progress(xrange(len(storager.signals)), stop_signal):
         dq.get()
 
     return d
@@ -98,8 +87,10 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cou
     stats is whatever gets returned by comparator.compare().  If not,
     outputs results to cout as a table.
     """
+    from ctypes import c_bool
     task_queue = shm_manager.Queue()
     done_queue = shm_manager.Queue()
+    stop_signal = shm_manager.Value(c_bool,False)  # this is only used by the GUI
 
     def _compare(tq,dq):
         for ref,tgt in iter(tq.get,None):
@@ -125,7 +116,7 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cou
     if nq == 0:
         print >> cout, "** Task done; exiting"
     else:
-        progress = progbar('Comparing: ')
+        progress = progressbar('Comparing: ')
         storager.store_results(done_queue.get() for i in progress(range(nq)))
 
 

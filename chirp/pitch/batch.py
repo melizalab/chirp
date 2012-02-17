@@ -70,17 +70,6 @@ def run(files, config=None, workers=1, mask=True, skip=True):
     def _consumer():
         for v in iter(done_queue.get,None):
             yield v
-        # once we get a None, it means the queue is empty or the user
-        # stopped the batch; in the latter case we have to join on the
-        # child processes to make sure any remaining jobs are cleared
-        for p in procs:
-            p.join()
-        try:
-            while 1:
-                v = done_queue.get_nowait()
-                if v is not None: yield v
-        except:
-            pass
 
     return stop_signal, _consumer()
 

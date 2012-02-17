@@ -741,6 +741,11 @@ bandpass filters.
 The algorithms for this program are already developed and simply need
 to be adapted to work in the *chirp* architecture.
 
+** other features
+
++ Display spectrograms on log-frequency grid
++ Add MySQL backend
+
 * Acknowledgements and References
 
 - The time-frequency reassignment code is distributed in a separate

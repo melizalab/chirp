@@ -20,8 +20,8 @@ class configoptions(object):
         Initialize the parser, optionally reading in a config file and specifying defaults
         """
         self.config = self._configparser(kwargs)
-        self.read(configfile)
         self.filename = ''
+        self.read(configfile)
 
     def read(self, fname):
         """ Parse a configuration file """

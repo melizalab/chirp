@@ -17,6 +17,7 @@ from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
 from .BatchPitch import BatchPitch
+from .BatchCompare import BatchCompare
 
 from matplotlib.figure import Figure
 from matplotlib import cm
@@ -591,19 +592,20 @@ class ChirpGui(wx.Frame):
 
     def on_batch_pitch(self, event):
         dlg = BatchPitch(self)
-        dlg.config_control.SetValue(self.configfile.filename)
+        dlg.config.SetPath(self.configfile.filename)
         dlg.Show()
 
     def on_batch_compare(self, event):
-        pass
+        dlg = BatchCompare(self)
+        dlg.config.SetPath(self.configfile.filename)
+        dlg.Show()
 
     def on_help(self, event):
-        dlg = HelpWindow.AboutBox("Chirp Controls",HelpWindow.help_txt)
-        dlg.ShowModal()
-        dlg.Destroy()
+        dlg = HelpWindow.AboutBox(self,"Chirp Controls",HelpWindow.help_txt)
+        dlg.Show()
 
     def on_about(self, event):
-        dlg = HelpWindow.AboutBox("About Chirp",HelpWindow.about_txt)
+        dlg = HelpWindow.AboutBox(self,"About Chirp",HelpWindow.about_txt)
         dlg.ShowModal()
         dlg.Destroy()
 

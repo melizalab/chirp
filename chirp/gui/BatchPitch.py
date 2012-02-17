@@ -8,7 +8,7 @@ Created 2012-02-13
 """
 
 import os,wx
-import threading
+from .events import EVT_BATCH, BatchEvent, BatchThread
 from ..pitch import batch
 
 class FileListBox(wx.Panel):
@@ -26,7 +26,7 @@ class FileListBox(wx.Panel):
         hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         self.file_list = wx.ListBox(self, -1, style=wx.LB_EXTENDED)
         hbox1.Add(self.file_list, 1, wx.EXPAND)
-        vbox.Add(hbox1, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 2)
+        vbox.Add(hbox1, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 2)
 
         hbox2 = wx.BoxSizer(wx.HORIZONTAL)
         add = wx.Button(self, -1, "Add Files", size=(100,-1))
@@ -46,7 +46,7 @@ class FileListBox(wx.Panel):
     def on_add(self, event):
         fdlg = wx.FileDialog(self, "Select one or more files",
                              wildcard=self.wildcard,
-                             style = wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST)
+                             style = wx.FD_OPEN|wx.FD_MULTIPLE|wx.FD_FILE_MUST_EXIST)
         fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
@@ -60,49 +60,14 @@ class FileListBox(wx.Panel):
         for x in reversed(sorted(self.file_list.GetSelections())):
             self.file_list.Delete(x)
 
-# updating the progress bar is handled through events and a separate thread
-# that monitors the process pool
-myEVT_BATCH = wx.NewEventType()
-EVT_BATCH = wx.PyEventBinder(myEVT_BATCH, 1)
-class BatchEvent(wx.PyCommandEvent):
-    """Event to signal that a count value is ready"""
-    def __init__(self, etype, eid, value=None):
-        """Creates the event object"""
-        wx.PyCommandEvent.__init__(self, etype, eid)
-        self._value = value
-
-    def GetValue(self):
-        return self._value
-
-class BatchThread(threading.Thread):
-    def __init__(self, parent, control, iterable):
-        """
-        @param parent: The gui object that should recieve the value
-        @param iterable: the iterator to monitor
-        """
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self._parent = parent
-        self._iter = iterable
-        self._ctrl = control
-
-    def run(self):
-        for i,v in enumerate(self._iter):
-            evt = BatchEvent(myEVT_BATCH, -1, i)
-            wx.PostEvent(self._parent, evt)
-        evt = BatchEvent(myEVT_BATCH, -1, None)
-        wx.PostEvent(self._parent, evt)
-
-    def stop(self):
-        self._ctrl.value = True
 
 class BatchPitch(wx.Frame):
 
-    _inactive_controls = ('file_list','config_control','config_pick_btn','usemask',
+    _inactive_controls = ('file_list','config','usemask',
                           'skipcompl','nworkers','btn_start')
 
     def __init__(self, parent=None):
-        wx.Frame.__init__(self, parent, title="Batch Pitch Estimation", size=(400,400),
+        wx.Frame.__init__(self, parent, title="Batch Pitch Estimation", size=(400,500),
                           style=wx.DEFAULT_FRAME_STYLE|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.create_main_panel()
         self.batch_thread = None
@@ -115,22 +80,21 @@ class BatchPitch(wx.Frame):
         # file list
         txt = wx.StaticText(mainPanel, -1, 'Select files to analyze:')
         txt.SetFont(font)
-        vbox.Add(txt, 0, wx.ALL, 5)
+        vbox.Add(txt, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
 
         self.file_list = FileListBox(mainPanel, -1)
-        vbox.Add(self.file_list, 1, wx.EXPAND | wx.ALL, 5)
+        vbox.Add(self.file_list, 1, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 5)
 
         # config file
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
         txt = wx.StaticText(mainPanel, -1, 'Select configuration file:')
         txt.SetFont(font)
-        hbox.Add(txt,0,wx.ALIGN_CENTER)
-        self.config_control = wx.TextCtrl(mainPanel, -1)
-        hbox.Add(self.config_control,1, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
-        self.config_pick_btn = wx.Button(mainPanel, wx.ID_OPEN)
-        self.Bind(wx.EVT_BUTTON, self.on_pick_config, id=self.config_pick_btn.GetId())
-        hbox.Add(self.config_pick_btn,0)
-        vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
+        vbox.Add(txt, 0, wx.LEFT|wx.RIGHT|wx.TOP, 5)
+
+        self.config = wx.FilePickerCtrl(mainPanel, -1,
+                                        message="Select configuration file",
+                                        wildcard="CFG files (*.cfg)|*.cfg",
+                                        style = wx.FLP_OPEN|wx.FLP_FILE_MUST_EXIST|wx.FLP_USE_TEXTCTRL)
+        vbox.Add(self.config,0,wx.EXPAND|wx.LEFT|wx.RIGHT,5)
 
         # number of workers
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -141,7 +105,7 @@ class BatchPitch(wx.Frame):
         self.nworkers.SetRange(1, batch.multiprocessing.cpu_count())
         self.nworkers.SetValue(1)
         hbox.Add(self.nworkers, 0, wx.LEFT, 5)
-        vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
+        vbox.Add(hbox,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP,5)
 
         # look for mask files?
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -151,9 +115,9 @@ class BatchPitch(wx.Frame):
         self.usemask = wx.CheckBox(mainPanel, -1)
         self.usemask.SetValue(1)
         hbox.Add(self.usemask, 0, wx.LEFT, 5)
-        vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
+        vbox.Add(hbox,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP,5)
 
-        # look for mask files?
+        # skip completed?
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         txt = wx.StaticText(mainPanel, -1, 'Skip completed:')
         txt.SetFont(font)
@@ -161,7 +125,7 @@ class BatchPitch(wx.Frame):
         self.skipcompl = wx.CheckBox(mainPanel, -1)
         self.skipcompl.SetValue(1)
         hbox.Add(self.skipcompl, 0, wx.LEFT, 5)
-        vbox.Add(hbox,0,wx.EXPAND|wx.ALL,5)
+        vbox.Add(hbox,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP,5)
 
         # run button; status bar; cancel
         vbox.Add((-1,10))
@@ -189,24 +153,14 @@ class BatchPitch(wx.Frame):
 
         mainPanel.SetSizer(vbox)
 
-    def on_pick_config(self, event):
-        fdlg = wx.FileDialog(self, "Select configuration file",
-                             wildcard="CFG files (*.cfg)|*.cfg",
-                             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        fdlg.SetDirectory(os.getcwd())
-        val = fdlg.ShowModal()
-        if val==wx.ID_OK:
-            self.config_control.SetValue(os.path.join(fdlg.GetDirectory(), fdlg.GetFilename()))
-
     def on_start(self, event):
         # load data from controls
-        import time
         files = self.file_list.files
         nfiles = len(files)
         if len(files)==0:
             self.status.SetStatusText("No files selected")
             return
-        cfg   = self.config_control.GetValue()
+        cfg   = self.config.GetPath()
         if len(cfg)==0:
             cfg = None
         mask  = self.usemask.GetValue()

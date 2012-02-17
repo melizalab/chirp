@@ -67,10 +67,10 @@ class HtmlWindow(wx.html.HtmlWindow):
 
     def OnLinkClicked(self, link):
         wx.LaunchDefaultBrowser(link.GetHref())
-        
+
 class AboutBox(wx.Dialog):
-    def __init__(self, title, text):
-        wx.Dialog.__init__(self, None, -1, title,
+    def __init__(self, parent=None, title='', text=''):
+        wx.Dialog.__init__(self, parent, -1, title,
             style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER)
         hwin = HtmlWindow(self, -1, size=(400,200))
         hwin.SetPage(text)
