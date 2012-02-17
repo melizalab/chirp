@@ -21,5 +21,12 @@ def load(name):
             return ep.load()
     raise ImportError, "No entry point for %s in group %s" % (name.lower(), entry_point_name)
 
+def make_scriptdoc():
+    out = "Available methods:"
+    for ep in iter_entry_points(entry_point_name):
+        obj = ep.load()
+        out += "\n%15s    %s" % (obj.__name__, obj._descr)
+    return out
+
 # Variables:
 # End:

@@ -31,21 +31,20 @@ except ImportError:
 _scriptdoc = \
 """
 ccompare.py [-c <config.cfg>] [-j workers] [-m METHOD]
-            [-s STORAGE] [-l LOCATION] 
+            [--skip-completed] [--restrict]
+            [-s STORAGE:LOCATION] [SIGNAL_PATH]
 
-Perform pairwise comparisons using METHOD (%s).
-Signals are loaded using STORAGE (%s) from LOCATION. Default is to
-load all signals from current directory.
+Perform pairwise comparisons between all signals in the directory
+SIGNAL_PATH
 
-""" % (",".join(methods.names()), ",".join(storage.names()))
+-c   specify configuration file (see documentation for format)
+-j   number of worker processes (default 1)
+-m   specify method for comparing signals
+-s   specify storage (format and location)
 
-def pairs(items, symmetric):
-    from itertools import product
-    if symmetric:
-        for i,v1 in enumerate(items):
-            for v2 in items[i:]: yield v1,v2
-    else:
-        for v1,v2 in product(items,items): yield v1,v2
+--skip-completed   skip completed calculations (database storage only)
+--restrict         restrict to signals stored in database table 'signals'
+"""
 
 def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
     """
@@ -63,8 +62,11 @@ def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, *
 
     def _load(tq,dq):
         for id,loc in iter(tq.get,None):
-            d[id] = comparator.load_signal(loc)
-            dq.put(id)
+            try:
+                d[id] = comparator.load_signal(loc)
+                dq.put(id)
+            except Exception, e:
+                cout.write("** Error loading data from %s: %s" % (loc,e))
 
     for i in xrange(nworkers):
         p = multiprocessing.Process(target=_load, args=(tq,dq))
@@ -113,15 +115,18 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cou
 
     print >> cout, "** Comparison is symmetric: %s" % comparator.symmetric
     nq = 0
-    for ref,tgt in pairs(shm_dict.keys(), comparator.symmetric):
+    for ref,tgt in storager.pairs():
         task_queue.put((ref,tgt))
         nq +=1
     print >> cout, "** Number of comparisons: %d " % nq
     for i in xrange(nworkers):
         task_queue.put(None)
 
-    progress = progbar('Comparing: ')
-    storager.store_results(done_queue.get() for i in progress(range(nq)))
+    if nq == 0:
+        print >> cout, "** Task done; exiting"
+    else:
+        progress = progbar('Comparing: ')
+        storager.store_results(done_queue.get() for i in progress(range(nq)))
 
 
 def main(argv=None, cout=None):
@@ -136,16 +141,16 @@ def main(argv=None, cout=None):
     from ..common.config import configoptions
     config = configoptions()
 
-    opts,args = getopt.getopt(argv, 'hvc:m:s:j:l:')
+    opts,args = getopt.getopt(argv, 'hvc:m:s:j:',['skip-completed','restrict'])
 
     method = None
-    store_name = 'file'
-    store_loc = None
+    store_descr = None
+    store_options = dict()
 
     nworkers = 1
     for o,a in opts:
         if o == '-h':
-            print _scriptdoc
+            print _scriptdoc + '\n' + methods.make_scriptdoc() + '\n\n' + storage.make_scriptdoc()
             return -1
         elif o == '-v':
             print "cpitch version %s" % version
@@ -155,17 +160,24 @@ def main(argv=None, cout=None):
         elif o == '-m':
             method = a
         elif o == '-s':
-            store_name = a
+            store_descr = a
         elif o == '-j':
             nworkers = max(1,int(a))
-        elif o == '-l':
-            store_loc = a
+        elif o == '--skip-completed':
+            store_options['skip'] = True
+        elif o == '--restrict':
+            store_options['restrict'] = True
+
+    if len(args)==0:
+        signal_dir = os.getcwd()
+    else:
+        signal_dir = args[0]
 
     print >> cout, "* Program: ccompare"
     print >> cout, "** Version: %s" % version
-    print >> cout, "* Input directory: %s" % os.getcwd()
+    print >> cout, "* Input directory: %s" % signal_dir
     print >> cout, "* Number of workers: %d" % nworkers
-    
+
     if method is None:
         print >> cout, "* Comparison method: None; aborting"
         print >> sys.stderr, "Please specify a comparison method. Options are %s" % ','.join(methods.names())
@@ -174,32 +186,42 @@ def main(argv=None, cout=None):
         compare_class = methods.load(method)
         print >> cout, "* Comparison method: %s %s" % (method, compare_class)
     except ImportError, e:
-        print >> cout, "* %s" % e
+        print >> cout, "* ERROR: %s" % e
         return -1
 
     comparator = compare_class(configfile=config)
     print >> cout, comparator.options_str()
 
     try:
+        if store_descr is None or store_descr.startswith('file'):
+            store_name, store_loc = 'file', cout
+        else:
+            store_name, store_loc = store_descr.split(':')
         storage_class = storage.load(store_name)
         print >> cout, "* Storage system: %s %s " % (store_name, storage_class)
+        storager = storage_class(comparator, location=store_loc, signals=signal_dir, **store_options)
     except ImportError, e:
-        print >> cout, "* %s" % e
+        print >> cout, "* ERROR: %s" % e
+        return -1
+    except ValueError:
+        print >> cout, "* ERROR: Bad storage descriptor syntax (use STORAGE:LOCATION)"
         return -1
 
-    storager = storage_class(comparator, location=store_loc)
     print >> cout, storager.options_str()
-    
+
+    if storager.nsignals == 0:
+        print >> cout, "** ERROR: No signals were specified (check restrict flag?)"
+        return -1
+
     print >> cout, "* Loading signals:"
     mgr = multiprocessing.Manager()
     data = load_data(storager, comparator, mgr, nworkers=nworkers, cout=cout)
-    storager.output_signals(cout)
+    storager.output_signals()
     if storager.nsignals == 0:
-        print >> cout, "* No signals loaded; aborting"
+        print >> cout, "* ERROR: No signals loaded; aborting"
         return -2
     print >> cout, "* Running comparisons:"
-    run_comparisons(storager, comparator, data, mgr,
-                    nworkers=nworkers, cout=cout)
+    run_comparisons(storager, comparator, data, mgr, nworkers=nworkers)
     return 0
 
 # Variables:

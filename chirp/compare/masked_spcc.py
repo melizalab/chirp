@@ -18,6 +18,7 @@ class masked_spcc(spcc):
     denoising.  Can do a full 2D mask or just use the bounding box for
     the start/stop times of the mask.
     """
+    _descr = "masked spectrographic cross-correlation (requires .wav and .ebl files)"
     options = dict(boxmask = True,
                    **spcc.options)
 

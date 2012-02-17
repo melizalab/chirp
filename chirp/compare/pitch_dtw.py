@@ -23,6 +23,9 @@ class pitch_dtw(feat_dtw):
     Additional options specify the degree of postfiltering; see
     common.postfilter.pitchfilter
     """
+    # short description
+    _descr = "dynamic time warping of pitch traces (requires .plg files)"
+
     file_extension = '.plg'
     options = dict(estimator = 'p.map',
                    **feat_dtw.options)

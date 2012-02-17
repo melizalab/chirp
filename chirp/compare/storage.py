@@ -21,5 +21,13 @@ def load(name):
             return ep.load()
     raise ImportError, "No entry point for %s in group %s" % (name.lower(), entry_point_name)
 
+
+def make_scriptdoc():
+    out = "Available storage formats:"
+    for ep in iter_entry_points(entry_point_name):
+        cls = ep.load()
+        out += "\n%15s    %s" % (cls.__name__, cls._descr)
+    return out
+
 # Variables:
 # End:

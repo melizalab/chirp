@@ -20,6 +20,7 @@ class spcc(base_comparison, _configurable):
     window:      the windowing function to use
     biased_norm: use a biased (but more robust) normalization
     """
+    _descr = "spectrographic cross-correlation (requires .wav files)"
     file_extension = ".wav"
     options = dict(nfreq=100,
                    shift=50,

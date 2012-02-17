@@ -8,21 +8,23 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-10-05
 """
 
-class file_storage(object):
+from .base_storage import base_storage as _base_storage
 
-    def __init__(self, comparator, location=None):
-        """
-        Initialize the storage object with the location (directory)
-        where the data is stored.  Requires access to the object that
-        will be doing the comparisons (comparator), to determine the
-        file extension and the fields of the output.
-        """
-        self.location = location or '.'
-        self.file_pattern = "*%s" % comparator.file_extension
-        self.compare_stat_fields = comparator.compare_stat_fields
-        self._load_signals()
+class file_storage(_base_storage):
+    _descr = "standard out (default; skip and restrict options unsupported)"
 
-    def _load_signals(self):
+    def __init__(self, comparator, location, signals=None, **kwargs):
+        """
+        Initialize the storage object with the location (stream
+        object) where the data will be stored.  Requires access to the
+        object that will be doing the comparisons (comparator), to
+        determine the file extension and the fields of the output.
+        """
+        _base_storage.__init__(self, comparator)
+        self.cout = location
+        self._load_signals(signals or '.')
+
+    def _load_signals(self, signal_dir):
         """
         Generates a list of input signals by globbing a directory.
         Returns a list of (id, locator) tuples, where the id is an
@@ -32,36 +34,30 @@ class file_storage(object):
         import os.path
         from glob import iglob
         self.signals = [(i, f) for i,f in \
-                            enumerate(iglob(os.path.join(self.location,self.file_pattern)))]
+                            enumerate(iglob(os.path.join(signal_dir,'*' + self.file_pattern)))]
 
-    @property
-    def nsignals(self):
-        return len(self.signals)
-        
-    def output_signals(self, cout=None):
+    def output_signals(self):
         """
         Generate a table of the id/locator assignments. This may not
         be necessary if this information is stored elsewhere.
         """
-        print >> cout, "id\tlocation"
+        print >> self.cout, "id\tlocation"
         for id,loc in self.signals:
-            print >> cout, "%s\t%s" % (id,loc)
+            print >> self.cout, "%s\t%s" % (id,loc)
 
-    def store_results(self, gen, cout=None):
-        """
-        For each item in gen, output the resulting comparison.
-        """
-        print >> cout, "** Results:"
-        print >> cout, "ref\ttgt\t" + "\t".join(self.compare_stat_fields)
+    def store_results(self, gen):
+        """ For each item in gen, output the resulting comparison. """
+        print >> self.cout, "** Results:"
+        print >> self.cout, "ref\ttgt\t" + "\t".join(self.compare_stat_fields)
         for result in gen:
-            print >> cout, "\t".join(("%s" % x) for x in result)
-        
+            print >> self.cout, "\t".join(("%s" % x) for x in result)
+
     def options_str(self):
         out = """\
 * Storage parameters:
 ** Location = %s
 ** File pattern = %s
-** Writing to standard out (fields: %s)""" % (self.location, self.file_pattern,
+** Writing to standard out (fields: %s)""" % (self.cout.name, self.file_pattern,
                                               ",".join(self.compare_stat_fields))
         return out
-            
+
