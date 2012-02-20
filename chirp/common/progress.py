@@ -27,7 +27,7 @@ class consumer(object):
     finish     called when the batch is done
     """
 
-    def start(self, queue, nworkers, stop_signal):
+    def start(self, queue, nworkers, stop_signal, njobs=None, gen=None):
         """
         Consume data from the queue. Workers should indicate when they
         terminate by placing None on the queue; this function will
@@ -38,7 +38,9 @@ class consumer(object):
         @param nworkers    the number of workers adding values to the queue
         @param stop_signal a variable used to terminate the job (for consumers
                            linked to GUIs, for example)
-
+        @param njobs       the (approximate) number of jobs in the batch
+        @param gen         an optional callback generator; if not None,
+                           calls send() with each new value
         """
         i = 0
         while nworkers > 0:
@@ -47,6 +49,7 @@ class consumer(object):
                 nworkers -= 1
             else:
                 self.process(i,v)
+                if gen: gen.send(v)
                 i += 1
         self.finish(i)
 
@@ -62,16 +65,16 @@ try:
     from progressbar import ProgressBar,Percentage,Bar,Counter
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title='',njobs=None):
-            if njobs is not None:
-                self.pbar = ProgressBar(widgets=[title,Percentage(),Bar()])
-                self.pbar.maxval = njobs
-            else:
-                self.pbar = ProgressBar(widgets=[title,Counter])
+        def __init__(self,title=''):
+            self.title = title
 
-        def start(self, queue, nworkers, stop_signal):
+        def start(self, queue, nworkers, stop_signal, njobs=None, gen=None):
+            if njobs is not None:
+                self.pbar = ProgressBar(widgets=[self.title,Percentage(),Bar()], maxval=njobs)
+            else:
+                self.pbar = ProgressBar(widgets=[self.title,Counter])
             self.pbar.start()
-            consumer.start(self, queue, nworkers, stop_signal)
+            consumer.start(self, queue, nworkers, stop_signal, njobs, gen)
 
         def process(self, index, value):
             self.pbar.update(index)
@@ -83,19 +86,18 @@ except ImportError:
     import sys
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title='',njobs=None):
+        def __init__(self,title=''):
             self.title = title
-            self.maxval = njobs
 
-        def start(self, queue, nworkers, stop_signal):
+        def start(self, queue, nworkers, stop_signal, njobs=None, gen=None):
             sys.stderr.write("[ %s completed 0 ]" % self.title)
-            consumer.start(self, queue, nworkers, stop_signal)
+            consumer.start(self, queue, nworkers, stop_signal, njobs, gen)
 
         def process(self, index, value):
-            if index % 10 == 0: sys.stderr.write("\r[ %s completed %d/%d ]" % (self.title,index+1,maxval))
+            if index % 10 == 0: sys.stderr.write("\r[ %s completed %d ]" % (self.title,index+1))
 
         def finish(self, index):
-            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index,maxval))
+            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index))
 
 
 

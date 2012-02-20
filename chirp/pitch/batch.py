@@ -10,15 +10,10 @@ Created 2012-02-14
 import os, multiprocessing
 from . import tracker
 
-def run(files, config=None, workers=1, mask=True, skip=True):
+def run(files, consumer, config=None, workers=1, mask=True, skip=True):
     """
     Run a batch of files. Communication with the running jobs is
-    accomplished via a shared stop signal and a queue, which is
-    wrapped in a generator.
-
-    @return stop_signal: set to True to cause all running processes to stop
-            done_iter:   yields the name of jobs as they complete. Stops when
-                         all jobs are done or all processes are terminated.
+    accomplished via the consumer argument.
     """
     from ctypes import c_bool
 
@@ -28,7 +23,6 @@ def run(files, config=None, workers=1, mask=True, skip=True):
     task_queue  = multiprocessing.Queue()
     done_queue  = multiprocessing.Queue()
     stop_signal = multiprocessing.Value(c_bool,False)
-    #counter     = multiprocessing.Value(c_int,0)
 
     def _job():
         for fname in iter(task_queue.get,None):
@@ -40,7 +34,6 @@ def run(files, config=None, workers=1, mask=True, skip=True):
                 tgt_mtime = os.stat(tname).st_mtime
                 if tgt_mtime > os.stat(fname).st_mtime and \
                         (not os.path.exists(mname) or tgt_mtime > os.stat(mname).st_mtime):
-                    #counter.value += 1
                     done_queue.put(fname)
                     continue
             argv = []
@@ -51,7 +44,6 @@ def run(files, config=None, workers=1, mask=True, skip=True):
             argv.append(fname)
             ofp = open(tname,'wt')
             rv = tracker.cpitch(argv=argv,cout=ofp)
-            #counter.value +=1
             done_queue.put(fname)
         done_queue.put(None)
 
@@ -60,18 +52,12 @@ def run(files, config=None, workers=1, mask=True, skip=True):
     for i in xrange(workers):
         task_queue.put(None)
 
-    procs = []
     for i in xrange(workers):
         p = multiprocessing.Process(target=_job)
         p.daemon = True
         p.start()
-        procs.append(p)
 
-    def _consumer():
-        for v in iter(done_queue.get,None):
-            yield v
-
-    return stop_signal, _consumer()
+    consumer.start(done_queue, workers, stop_signal, njobs=len(files))
 
 
 # Variables:

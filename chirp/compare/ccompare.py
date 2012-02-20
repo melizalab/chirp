@@ -31,14 +31,14 @@ SIGNAL_PATH
 --restrict         restrict to signals stored in database table 'signals'
 """
 
-def load_data(storager, comparator, shm_manager, consumercls, nworkers=1, cout=None):
+def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None):
     """
     Load data into the shared memory manager.
 
     @param storager     uses the .signals property as a list of signals to load
     @param comparator   uses load_signal() method to read the data
     @param shm_manager  the shared memory manager
-    @param consumercls  a class that will pull done tasks off the done queue
+    @param consumer     an object that will pull done tasks off the done queue
 
     @returns a dictionary proxy keyed by id, and a list of id, locator tuples
     """
@@ -70,13 +70,12 @@ def load_data(storager, comparator, shm_manager, consumercls, nworkers=1, cout=N
     for i in xrange(nworkers):
         task_queue.put(None)
 
-    consumer = consumercls(title='Loading signals:',njobs=len(storager.signals))
-    consumer.start(done_queue, nworkers, stop_signal)
+    consumer.start(done_queue, nworkers, stop_signal, njobs=len(storager.signals))
 
     return data
 
 
-def run_comparisons(storager, comparator, shm_dict, shm_manager, consumercls,
+def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
                     nworkers=1, cout=None):
     """
     Calculate comparisons between each pair of signals.
@@ -120,14 +119,8 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumercls,
         print >> cout, "** Task done; exiting"
         return
 
-    # a little adapter class to feed data from consumer to storager
     sgen = storager.store_results()
-    class adapter(consumercls):
-        def process(self,index,value):
-            consumercls.process(self,index,value)
-            sgen.send(value)
-    consumer = adapter("Comparing:",nq)
-    consumer.start(done_queue, nworkers, stop_signal)
+    consumer.start(done_queue, nworkers, stop_signal, njobs=nq, gen=sgen)
 
 
 def main(argv=None, cout=None):
@@ -216,13 +209,15 @@ def main(argv=None, cout=None):
 
     print >> cout, "* Loading signals:"
     mgr = multiprocessing.Manager()
-    data = load_data(storager, comparator, mgr, progressbar, nworkers=nworkers, cout=cout)
+    progbar = progressbar(title='Loading signals:')
+    data = load_data(storager, comparator, mgr, progbar, nworkers=nworkers, cout=cout)
     storager.output_signals()
     if storager.nsignals == 0:
         print >> cout, "* ERROR: No signals loaded; aborting"
         return -2
     print >> cout, "* Running comparisons:"
-    run_comparisons(storager, comparator, data, mgr, progressbar, nworkers=nworkers)
+    progbar = progressbar(title='Comparing:')
+    run_comparisons(storager, comparator, data, mgr, progbar, nworkers=nworkers)
     return 0
 
 # Variables:

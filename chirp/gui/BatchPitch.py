@@ -8,7 +8,7 @@ Created 2012-02-13
 """
 
 import os,wx
-from .events import EVT_BATCH, BatchEvent, BatchThread
+from .events import EVT_BATCH, BatchEvent, BatchConsumer, threading
 from ..pitch import batch
 
 class FileListBox(wx.Panel):
@@ -174,7 +174,12 @@ class BatchPitch(wx.Frame):
         self.status.SetStatusText("Batch running...")
 
         try:
-            self.batch_thread = BatchThread(self, *batch.run(files, config=cfg, workers=nw, mask=mask, skip=skip))
+            self.batch_consumer = BatchConsumer(self)
+            # returns immediately
+            batch.run(files, self.batch_consumer, config=cfg, workers=nw, mask=mask, skip=skip)
+            # start thread to run the consumer
+            self.batch_thread = threading.Thread(target=self.batch_consumer)
+            self.batch_thread.daemon = True
             self.batch_thread.start()
         except Exception,e:
             self._enable_interface()
@@ -195,7 +200,7 @@ class BatchPitch(wx.Frame):
             self.Destroy()
         else:
             self.status.SetStatusText("Canceling batch after current jobs finish...")
-            self.batch_thread.stop()
+            self.batch_consumer.stop()
             wx.BeginBusyCursor()
 
     def _disable_interface(self):
