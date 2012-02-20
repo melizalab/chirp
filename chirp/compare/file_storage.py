@@ -9,6 +9,7 @@ Created 2011-10-05
 """
 
 from .base_storage import base_storage as _base_storage
+from ..common import _tools
 
 class file_storage(_base_storage):
     _descr = "standard out (default; skip and restrict options unsupported)"
@@ -45,12 +46,16 @@ class file_storage(_base_storage):
         for id,loc in self.signals:
             print >> self.cout, "%s\t%s" % (id,loc)
 
-    def store_results(self, gen):
-        """ For each item in gen, output the resulting comparison. """
+    @_tools.consumer
+    def store_results(self):
         print >> self.cout, "** Results:"
         print >> self.cout, "ref\ttgt\t" + "\t".join(self.compare_stat_fields)
-        for result in gen:
-            print >> self.cout, "\t".join(("%s" % x) for x in result)
+        try:
+            while 1:
+                result = yield
+                print >> self.cout, "\t".join(("%s" % x) for x in result)
+        except GeneratorExit:
+            pass
 
     def options_str(self):
         out = """\

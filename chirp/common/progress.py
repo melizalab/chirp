@@ -18,13 +18,16 @@ from __future__ import absolute_import
 
 class consumer(object):
     """
-    Base class for consuming objects from a queue. Subclasses should
-    override __init__() to provide initialization (for instance,
-    setting the number of jobs expected to be run), and progress() to
-    provide status updates to the user.
+    Base class for consuming objects from a queue. Methods to
+    override:
+
+    __init__   initialization of display/processing for retrieved items
+    start      start consuming values from the queue
+    process    called for each value pulled off the queue
+    finish     called when the batch is done
     """
-    
-    def __call__(self,queue,nworkers,stop_signal):
+
+    def start(self, queue, nworkers, stop_signal):
         """
         Consume data from the queue. Workers should indicate when they
         terminate by placing None on the queue; this function will
@@ -35,45 +38,64 @@ class consumer(object):
         @param nworkers    the number of workers adding values to the queue
         @param stop_signal a variable used to terminate the job (for consumers
                            linked to GUIs, for example)
-        
-        @yields values from the queue as they are retrieved.
+
         """
+        i = 0
         while nworkers > 0:
             v = queue.get()
             if v is None:
                 nworkers -= 1
             else:
-                yield v
-                self.progress()
+                self.process(i,v)
+                i += 1
+        self.finish(i)
 
-    def progress(self):
+    def process(self, index, value):
         """ Called when a value is retrieved from the queue """
         pass
-    
+
+    def finish(self, lastindex):
+        """ Called when the queue is empty """
+        pass
+
 try:
-    from progressbar import ProgressBar,Percentage,Bar
+    from progressbar import ProgressBar,Percentage,Bar,Counter
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title=''):
-            self.pbar = ProgressBar(widgets=[title,Percentage(),Bar()])
-        def progress(self):
-            return self.pbar(iterable)
+        def __init__(self,title='',njobs=None):
+            if njobs is not None:
+                self.pbar = ProgressBar(widgets=[title,Percentage(),Bar()])
+                self.pbar.maxval = njobs
+            else:
+                self.pbar = ProgressBar(widgets=[title,Counter])
+
+        def start(self, queue, nworkers, stop_signal):
+            self.pbar.start()
+            consumer.start(self, queue, nworkers, stop_signal)
+
+        def process(self, index, value):
+            self.pbar.update(index)
+
+        def finish(self, index):
+            self.pbar.finish()
 
 except ImportError:
     import sys
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title=''):
+        def __init__(self,title='',njobs=None):
             self.title = title
-        
-        def progress(self):
+            self.maxval = njobs
+
+        def start(self, queue, nworkers, stop_signal):
             sys.stderr.write("[ %s completed 0 ]" % self.title)
-            i = None
-            for i,v in enumerate(iterable):
-                if i % 10 == 0: sys.stderr.write("\r[ %s completed %d ]" % (self.title,i+1))
-                yield v
-            if i:
-                sys.stderr.write("\r[ %s completed %d ]\n" % (self.title,i+1))
+            consumer.start(self, queue, nworkers, stop_signal)
+
+        def process(self, index, value):
+            if index % 10 == 0: sys.stderr.write("\r[ %s completed %d/%d ]" % (self.title,index+1,maxval))
+
+        def finish(self, index):
+            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index,maxval))
 
 
 

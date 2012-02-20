@@ -10,6 +10,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org> Created
 """
 import os,sqlite3,glob
 from .base_storage import base_storage as _base_storage
+from ..common import _tools
 
 sql_create_filelist = """\
 CREATE TABLE IF NOT EXISTS %s (
@@ -87,17 +88,20 @@ class sqlite_storage(_base_storage):
         else:
             for k1,k2 in _base_storage.pairs(self): yield k1,k2
 
-    def output_signals(self, cout=None):
+    def output_signals(self):
         """
         Generate a table of the id/locator assignments. This may not
         be necessary if this information is stored elsewhere.
         """
         pass
 
-    def store_results(self, gen, cout=None):
+    @_tools.consumer
+    def store_results(self):
         """
-        For each item in gen, store the resulting comparison.  The
-        target table is dropped and reinitialized.
+        Store comparisons. This function returns a generator; use
+        send() to store each comparison as it's available.  If not
+        skipping completed comparisons, the target table is dropped
+        and recreated.
         """
         # create table using types of first yielded result
         cols = ("ref","tgt") + tuple(self.compare_stat_fields)
@@ -108,14 +112,18 @@ class sqlite_storage(_base_storage):
         sql2 =  "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
                                                     ",".join(cols),
                                                     ",".join("?" for x in cols))
-        result = gen.next()
-        with self.connection:
-            self._create_target_table(result)
-            self.connection.execute(sql1,result)
-            if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
-            for result in gen:
+        try:
+            with self.connection:
+                result = yield
+                self._create_target_table(result)
                 self.connection.execute(sql1,result)
                 if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
+                while 1:
+                    result = yield
+                    self.connection.execute(sql1,result)
+                    if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
+        except GeneratorExit:
+            pass
 
     def options_str(self):
         out = """\
