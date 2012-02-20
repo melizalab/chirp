@@ -31,24 +31,25 @@ SIGNAL_PATH
 --restrict         restrict to signals stored in database table 'signals'
 """
 
-def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, **kwargs):
+def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None):
     """
-    Load data into <shm_manager> using the iterate_signals() and
-    load_signal() methods on <comparator>.
+    Load data into the shared memory manager.
 
-    Additional arguments (e.g. base location) are passed to
-    iterate_signals()
+    @param storager    uses the .signals property as a list of signals to load
+    @param comparator  uses load_signal() method to read the data
+    @param shm_manager the shared memory manager
+    @param consumer    an object that will pull done tasks off the done queue
 
-    Returns a dictionary proxy keyed by id, and a list of id, locator tuples
+    @returns a dictionary proxy keyed by id, and a list of id, locator tuples
     """
     from ctypes import c_bool
 
-    tq = shm_manager.Queue()
-    dq = shm_manager.Queue()
-    d = shm_manager.dict()
-    stop_signal = shm_manager.Value(c_bool,False)  # this is only used by the GUI
+    task_queue = shm_manager.Queue()
+    done_queue = shm_manager.Queue()
+    data = shm_manager.dict()
+    stop_signal = shm_manager.Value(c_bool,False)
 
-    def _load():
+    def _load(tq,dq,d):
         for id,loc in iter(tq.get,None):
             if stop_signal.value: break
             try:
@@ -56,51 +57,52 @@ def load_data(storager, comparator, shm_manager, nworkers=1, cout=None, *args, *
                 dq.put(id)
             except Exception, e:
                 cout.write("** Error loading data from %s: %s" % (loc,e))
+        dq.put(None)
 
     for i in xrange(nworkers):
-        p = multiprocessing.Process(target=_load)
+        p = multiprocessing.Process(target=_load, args=(task_queue, done_queue, data))
         p.daemon = True
         p.start()
 
     for id,loc in storager.signals:
-        tq.put((id,loc))
+        task_queue.put((id,loc))
 
     for i in xrange(nworkers):
-        tq.put(None)
+        task_queue.put(None)
 
-    progress = progressbar('Loading signals: ')
-    for i in progress(xrange(len(storager.signals)), stop_signal):
-        dq.get()
+    for i in consumer(done_queue, nworkers, stop_signal):
+        pass
 
     return d
 
 
-def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cout=None):
+def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
+                    nworkers=1, cout=None):
     """
     Calculate comparisons between each pair of signals.
 
-    comparator:  comparison object, needs to have compare()
-    shm_dict:    a shared dictionary, keyed by signal id
-    nworkers:    number of jobs to run in parallel
+    @param storager    call store_results() to store results, pairs() to get pairs to run
+    @param comparator  comparison object, needs to have compare()
+    @param shm_dict    a shared dictionary, keyed by signal id
+    @param nworkers    number of jobs to run in parallel
 
-    If cout is None, returns a list of tuples (ref, tgt, *stats) where
-    stats is whatever gets returned by comparator.compare().  If not,
-    outputs results to cout as a table.
     """
     from ctypes import c_bool
     task_queue = shm_manager.Queue()
     done_queue = shm_manager.Queue()
-    stop_signal = shm_manager.Value(c_bool,False)  # this is only used by the GUI
+    stop_signal = shm_manager.Value(c_bool,False)
 
-    def _compare(tq,dq):
+    def _compare(tq,dq,d):
         for ref,tgt in iter(tq.get,None):
-            refdata = shm_dict[ref]
-            tgtdata = shm_dict[tgt]
+            if stop_signal.value: break
+            refdata = d[ref]
+            tgtdata = d[tgt]
             results = comparator.compare(refdata, tgtdata)
             dq.put((ref,tgt) + results)
+        dq.put(None)
 
     for i in xrange(nworkers):
-        p = multiprocessing.Process(target=_compare, args=(task_queue, done_queue))
+        p = multiprocessing.Process(target=_compare, args=(task_queue, done_queue, shm_dict))
         p.daemon = True
         p.start()
 
@@ -116,8 +118,8 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, nworkers=1, cou
     if nq == 0:
         print >> cout, "** Task done; exiting"
     else:
-        progress = progressbar('Comparing: ')
-        storager.store_results(done_queue.get() for i in progress(range(nq)))
+        for val in consumer(done_queue, nworkers, stop_signal):
+            storager.store_results(val)
 
 
 def main(argv=None, cout=None):
@@ -206,13 +208,15 @@ def main(argv=None, cout=None):
 
     print >> cout, "* Loading signals:"
     mgr = multiprocessing.Manager()
-    data = load_data(storager, comparator, mgr, nworkers=nworkers, cout=cout)
+    progbar = progressbar('Loading signals:')
+    data = load_data(storager, comparator, mgr, progbar, nworkers=nworkers, cout=cout)
     storager.output_signals()
     if storager.nsignals == 0:
         print >> cout, "* ERROR: No signals loaded; aborting"
         return -2
     print >> cout, "* Running comparisons:"
-    run_comparisons(storager, comparator, data, mgr, nworkers=nworkers)
+    progbar = progressbar('Comparing:')
+    run_comparisons(storager, comparator, data, mgr, progbar, nworkers=nworkers)
     return 0
 
 # Variables:
