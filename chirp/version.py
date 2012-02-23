@@ -5,7 +5,7 @@ version = "1.1.1"
 
 def lib_versions():
     import sys
-    from libtfr import __version__ as tfrver
+    from .common.libtfr import __version__ as tfrver
     from shapely.geos import geos_capi_version
     from numpy import __version__ as npyver
     return dict(chirp = version,

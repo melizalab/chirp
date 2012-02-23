@@ -7,6 +7,20 @@ from numpy.distutils.core import setup,Extension
 import sys, os
 import os.path as op
 
+ext_libs = ['fftw3']
+ext_incl = []
+
+if hasattr(os,'uname'):
+    system = os.uname()[0]
+else:
+    system = 'Windows'
+
+if system=='Darwin':
+    ext_libs.append('lapack')
+    ext_incl.append('/opt/local/include')
+elif system=='Linux':
+    ext_libs.append('lapack')
+
 # --- Distutils setup and metadata --------------------------------------------
 
 VERSION = '1.1.1'
@@ -43,6 +57,8 @@ of the following programs:
 _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
 _dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],
                  extra_compile_args=['-std=c99'])
+_libtfr = Extension('chirp.common._libtfr',sources=['libtfr/libtfr.c','libtfr/tfr.c','libtfr/mtm.c'],
+                    libraries=ext_libs, extra_compile_args=['-std=c99'], include_dirs=ext_incl)
 
 setup(
   name = 'chirp',
@@ -57,7 +73,7 @@ setup(
   url = 'https://dmeliza.github.com/chirp',
   download_url = 'https://github.com/dmeliza/chirp',
   packages= find_packages(exclude=["*test*"]),
-  ext_modules = [_vitterbi,_dtw],
+  ext_modules = [_vitterbi,_dtw,_libtfr],
   install_requires=['distribute', 'numpy>=1.3'],
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main',

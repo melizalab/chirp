@@ -1,4 +1,3 @@
-
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 """
@@ -10,8 +9,9 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import numpy as nx
-import os, libtfr
+import os
 from . import template, particle, vitterbi
+from ..common import libtfr
 from ..common.plg import pitchtrace
 from ..common.config import _configurable
 from ..common.math import nandecibels
@@ -199,7 +199,7 @@ class tracker(_configurable):
         spec = libtfr.tfr_spec(signal, options['nfft'], options['shift'], options['winsize'],
                                options['tfr_order'], options['tfr_tm'], options['tfr_flock'],
                                options['tfr_tlock'], fgrid=self.template.fgrid)
-        return spec, nx.linspace(0, float(signal.size) / Fs, spec.shape[1]), self.template.fgrid * Fs
+        return spec, libtfr.tgrid(signal.size, Fs, options['shift'], options['winsize']), self.template.fgrid * Fs
 
 
     def spectrogram_options_str(self):
@@ -328,12 +328,12 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     pt = tracker(configfile=config, samplerate=samplerate*1000, **kwargs)
     print >> cout, pt.spectrogram_options_str()
     print >> cout, pt.template_options_str()
-
     print >> cout, "* DLFT spectrogram:"
     spec,tgrid,fgrid = pt.matched_spectrogram(pcm, samplerate)
     print >> cout, "** Dimensions:", spec.shape
 
     print >> cout, pt.particle_options_str()
+
     if maskfile is not None and os.path.exists(maskfile):
         from ..common.geom import elementlist, masker
         print >> cout, "* Mask file:", maskfile
@@ -343,8 +343,9 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
             try:
                 startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, cout=cout, mask=imask)
                 stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
-                ptrace = pitchtrace(tgrid[startframe+startcol:startframe+startcol+pitch_mmse.shape[0]],
-                                    pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
+                T = tgrid[startframe+startcol:startframe+startcol+pitch_mmse.shape[0]]
+                # + tracker.options['winsize'] / (samplerate * 1000) ??
+                ptrace = pitchtrace(T, pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
                                     **stats)
                 print >> cout, "*** Pitch calculations:"
                 ptrace.write(cout)
@@ -358,8 +359,8 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
         try:
             startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(spec, cout=cout)
             stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
-            ptrace = pitchtrace(tgrid[startframe:startframe+pitch_mmse.shape[0]],
-                                pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
+            T = tgrid[startframe:startframe+pitch_mmse.shape[0]]
+            ptrace = pitchtrace(T, pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
                                 **stats)
             print >> cout, "*** Pitch calculations:"
             ptrace.write(cout)

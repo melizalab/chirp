@@ -17,7 +17,7 @@ from .SpecViewer import SpecViewer
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
 from .BatchPitch import BatchPitch
-#from .BatchCompare import BatchCompare
+from .BatchCompare import BatchCompare
 
 from matplotlib.figure import Figure
 from matplotlib import cm

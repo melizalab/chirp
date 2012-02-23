@@ -24,9 +24,9 @@ class spectrogram(_configurable):
         self.readconfig(configfile,('spectrogram',))
 
     def linspect(self, signal, Fs):
-        """ Calculate the spectrogram on a linear power scale """
+        """ Calculate the spectrogram on a linear power scale.  """
         import numpy as nx
-        from libtfr import stft, tfr_spec
+        from .libtfr import stft, tfr_spec, tgrid
         Np = int(Fs * self.options['window_len'])
         shift = int(self.options['window_shift'] * Fs)
         nfft = int(2**nx.ceil(nx.log2(Np)))
@@ -40,7 +40,8 @@ class spectrogram(_configurable):
             wfun = getattr(nx,self.options['spec_method'])
             w = wfun(Np)
             S = stft(signal, w, shift, nfft)
-        extent = (0, signal.size / Fs, 0, Fs / 2)
+        t = tgrid(signal.size, Fs, shift, Np)
+        extent = (0, t[-1], 0, Fs / 2)
         return S,extent
 
     def dbspect(self, signal, Fs, dBrange=96):

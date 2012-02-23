@@ -8,7 +8,7 @@ Created 2012-02-13
 """
 
 import os,wx
-from .events import EVT_BATCH, BatchEvent, BatchConsumer, threading
+from .events import EVT_COUNT, BatchEvent, BatchConsumer, threading
 from ..pitch import batch
 
 class FileListBox(wx.Panel):
@@ -146,7 +146,7 @@ class BatchPitch(wx.Frame):
         hbox.Add(self.btn_cancel)
         vbox.Add(hbox,0,wx.ALIGN_RIGHT|wx.ALL,5)
 
-        self.Bind(EVT_BATCH, self.on_batch_update)
+        self.Bind(EVT_COUNT, self.on_batch_update)
 
         self.status = wx.StatusBar(mainPanel, -1)
         vbox.Add(self.status, 0, wx.EXPAND)
