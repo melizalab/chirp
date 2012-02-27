@@ -69,13 +69,13 @@ class spcc(base_comparison, _configurable):
 def linspect(signal, Fs, frange, N, shift):
     """ Compute STFT of signal and time/frequency grid """
     from numpy import hanning, linspace
-    from libtfr import stft, fgrid, tgrid
+    from ..common.libtfr import stft, fgrid, tgrid
     # have to derive NFFT from N
     df = 1. * (frange[1]-frange[0])/N
     nfft = int(1.0 * Fs / df)
     S = stft(signal, hanning(nfft), shift)
     F,ind = fgrid(Fs,nfft,frange)
-    T = tgrid(signal.size, Fs, shift)
+    T = tgrid(signal.size, Fs, shift, nfft)
     return S[ind,:], F, T
 
 def spectcc(ref, tgt, biased_norm=True):

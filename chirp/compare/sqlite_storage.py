@@ -30,6 +30,7 @@ PRIMARY KEY (`id` ASC AUTOINCREMENT))
 
 class sqlite_storage(_base_storage):
     _descr = "sqlite database (LOCATION: database file)"
+    _preferred_extension = ".db"
     signal_table = "signals"
 
     def __init__(self, comparator, location, signals=None, restrict=False, skip=False, **kwargs):
@@ -57,36 +58,39 @@ class sqlite_storage(_base_storage):
         integer code and the locator is the path.  Note glob does not
         always return the same ordering of files.
         """
-        self.connection = sqlite3.connect(self.location)
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute(sql_create_filelist % self.signal_table)
+        con = sqlite3.connect(self.location)
+        with con:
+            con.execute(sql_create_filelist % self.signal_table)
             files = glob.glob(os.path.join(signal_dir, "*" + self.file_pattern))
             if not self.restrict:
-                rv = cursor.executemany("INSERT OR IGNORE INTO %s (filename) VALUES (?)" % self.signal_table,
-                                        ((os.path.splitext(os.path.split(x)[1])[0],) for x in files))
-            cursor.execute("SELECT id,filename FROM %s ORDER BY id" % self.signal_table)
+                con.executemany("INSERT OR IGNORE INTO %s (filename) VALUES (?)" % self.signal_table,
+                                ((os.path.splitext(os.path.split(x)[1])[0],) for x in files))
+            cursor = con.execute("SELECT id,filename FROM %s ORDER BY id" % self.signal_table)
             self.signals = [(i,os.path.join(signal_dir,f+self.file_pattern)) for i,f in cursor.fetchall() \
                                 if os.path.join(signal_dir, f+self.file_pattern) in files]
 
 
-    def _create_target_table(self, values):
+    def _create_target_table(self, con, values):
         sql_columns = ",\n".join("`%s` %s" % (name,sqlite_type(val)) for \
                                    name,val in zip(self.compare_stat_fields, values[2:]))
         sql = sql_create_target % (self.table_name, self.signal_table, self.signal_table, sql_columns)
         if not self.skip:
-            self.connection.execute("DROP TABLE IF EXISTS %s" % self.table_name)
-        self.connection.execute(sql)
+            con.execute("DROP TABLE IF EXISTS %s" % self.table_name)
+        con.execute(sql)
 
     def pairs(self):
         if self.skip:
-            cur = self.connection.cursor()
-            cur.execute("SELECT ref,tgt FROM %s" % self.table_name)
-            done = [(r,t) for r,t in cur.fetchall()]
-            for k1,k2 in _base_storage.pairs(self):
-                if (k1,k2) not in done: yield k1,k2
-        else:
-            for k1,k2 in _base_storage.pairs(self): yield k1,k2
+            try:
+                con = sqlite3.connect(self.location)
+                cur = con.execute("SELECT ref,tgt FROM %s" % self.table_name)
+                done = [(r,t) for r,t in cur.fetchall()]
+                for k1,k2 in _base_storage.pairs(self):
+                    if (k1,k2) not in done: yield k1,k2
+                return
+            except sqlite3.OperationalError:
+                # table probably doesn't exist; go to fallback
+                pass
+        for k1,k2 in _base_storage.pairs(self): yield k1,k2
 
     def output_signals(self):
         """
@@ -112,18 +116,19 @@ class sqlite_storage(_base_storage):
         sql2 =  "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
                                                     ",".join(cols),
                                                     ",".join("?" for x in cols))
-        try:
-            with self.connection:
+        con = sqlite3.connect(self.location)
+        with con:
+            try:
                 result = yield
-                self._create_target_table(result)
-                self.connection.execute(sql1,result)
-                if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
+                self._create_target_table(con, result)
+                con.execute(sql1,result)
+                if self.symmetric and result[0]!=result[1]: con.execute(sql2,result)
                 while 1:
                     result = yield
-                    self.connection.execute(sql1,result)
-                    if self.symmetric and result[0]!=result[1]: self.connection.execute(sql2,result)
-        except GeneratorExit:
-            pass
+                    con.execute(sql1,result)
+                    if self.symmetric and result[0]!=result[1]: con.execute(sql2,result)
+            except GeneratorExit:
+                pass
 
     def options_str(self):
         out = """\
@@ -138,6 +143,9 @@ class sqlite_storage(_base_storage):
                                              ",".join(self.compare_stat_fields))
         return out
 
+    def write_metadata(self, data):
+        """ Provide metadata about the analysis. With sqlite this just gets dumped to stdout """
+        print data
 
 # register some sqlite converters
 import numpy

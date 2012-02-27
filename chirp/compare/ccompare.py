@@ -56,7 +56,7 @@ def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None
                 d[id] = comparator.load_signal(loc)
                 dq.put(id)
             except Exception, e:
-                cout.write("** Error loading data from %s: %s" % (loc,e))
+                cout.write("** Error loading data from %s: %s\n" % (loc,e))
         dq.put(None)
 
     for i in xrange(nworkers):
@@ -114,13 +114,12 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
     for i in xrange(nworkers):
         task_queue.put(None)
 
-
     if nq == 0:
         print >> cout, "** Task done; exiting"
-        return
-
-    sgen = storager.store_results()
-    consumer.start(done_queue, nworkers, stop_signal, njobs=nq, gen=sgen)
+    else:
+        sgen = storager.store_results()
+        consumer.start(done_queue, nworkers, stop_signal, njobs=nq, gen=sgen)
+    return nq
 
 
 def main(argv=None, cout=None):

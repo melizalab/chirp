@@ -13,6 +13,7 @@ from ..common import _tools
 
 class file_storage(_base_storage):
     _descr = "standard out (default; skip and restrict options unsupported)"
+    _preferred_extension = ".clg"
 
     def __init__(self, comparator, location, signals=None, **kwargs):
         """
@@ -22,7 +23,10 @@ class file_storage(_base_storage):
         determine the file extension and the fields of the output.
         """
         _base_storage.__init__(self, comparator)
-        self.cout = location
+        if isinstance(location,basestring):
+            self.cout = open(location,'wt')
+        else:
+            self.cout = location
         self._load_signals(signals or '.')
 
     def _load_signals(self, signal_dir):
@@ -65,4 +69,8 @@ class file_storage(_base_storage):
 ** Writing to standard out (fields: %s)""" % (self.cout.name, self.file_pattern,
                                               ",".join(self.compare_stat_fields))
         return out
+
+    def write_metadata(self, data):
+        """ Provide metadata about the analysis. """
+        print data
 
