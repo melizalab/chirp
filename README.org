@@ -744,6 +744,8 @@ to be adapted to work in the *chirp* architecture.
 ** other features
 
 + Display spectrograms on log-frequency grid
++ More diagnostics for pitch tracking in the GUI - plotting
+  likelihoods, proposals, etc
 + Add MySQL backend
 
 * Acknowledgements and References

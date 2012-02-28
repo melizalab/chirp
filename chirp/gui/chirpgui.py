@@ -635,6 +635,7 @@ def main(argv=None):
         app.frame.load_file(args[0])
     app.frame.Show()
     app.MainLoop()
+    return 0
 
 # Variables:
 # End:

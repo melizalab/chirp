@@ -7,19 +7,17 @@ from numpy.distutils.core import setup,Extension
 import sys, os
 import os.path as op
 
-ext_libs = ['fftw3']
+ext_libs = ['fftw3','lapack']
 ext_incl = []
 
-if hasattr(os,'uname'):
-    system = os.uname()[0]
-else:
-    system = 'Windows'
-
-if system=='Darwin':
-    ext_libs.append('lapack')
+if sys.platform=='darwin':
     ext_incl.append('/opt/local/include')
-elif system=='Linux':
-    ext_libs.append('lapack')
+    app_options=dict(app=['chirp.py'])
+    print app_options
+elif sys.platform=='win32':
+    app_options=dict(app=['chirp.py'])
+else:
+    app_options=dict()
 
 # --- Distutils setup and metadata --------------------------------------------
 
@@ -60,6 +58,7 @@ _dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/co
 _libtfr = Extension('chirp.common._libtfr',sources=['libtfr/libtfr.c','libtfr/tfr.c','libtfr/mtm.c'],
                     libraries=ext_libs, extra_compile_args=['-std=c99'], include_dirs=ext_incl)
 
+
 setup(
   name = 'chirp',
   version = VERSION,
@@ -84,6 +83,7 @@ setup(
                                             'pitch_dtw = chirp.compare.pitch_dtw:pitch_dtw'],
                   'chirp.compare.storage' : ['file = chirp.compare.file_storage:file_storage',
                                              'sqlite = chirp.compare.sqlite_storage:sqlite_storage']},
+  **app_options
 )
 
 
