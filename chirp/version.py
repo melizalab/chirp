@@ -1,7 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 
-version = "1.1.1"
+version = "1.1.2"
 
 def lib_versions():
     import sys
@@ -17,7 +17,7 @@ def lib_versions():
 __doc__ = """\
 This is chirp, a program for bioacoustic analysis.
 
-Library versions:
+Version information:
 chirp:        %(chirp)s
 python:       %(python)s
 numpy:        %(numpy)s

@@ -1,16 +1,16 @@
 
-* DONE cpitch (pitch tracker) [2/3]
+* DONE cpitch (pitch tracker) [3/3]
 
 ** DONE finish front-end, write config file
 ** DONE test on pitch files
-** TODO try to fix pitch halving errors a bit by remasking
+** DONE try to fix pitch halving errors a bit by remasking
 
 Masks could be used more effectively, I think.  If the user masks out
 frequencies, this could/should be taken to exclude those values as
 possible pitches.  This means masking the likelihood, not the
 spectrogram (or in addition to it)
 
-* TODO eliminate weave dependencies [1/2]
+* DONE eliminate weave dependencies [2/2]
 
 Start with the weave code, rewrite into pure python, and cython.
 Profile along the way with -n1 -r3
@@ -28,9 +28,9 @@ calculations - many of the particles have the same value, so there's a
 lot of useless calculations.  However, this means the arrays become
 ragged which introduces a lot more programming.
 
-*** TODO dynamic time warping
+*** DONE dynamic time warping
 
-* TODO ccompare (recording comparisons) [2/4]
+* DONE ccompare (recording comparisons) [4/4]
 
 ** DONE revamp front-end
 
@@ -40,7 +40,7 @@ ragged which introduces a lot more programming.
 
 *** DONE config file for front-end
 
-** TODO test
+** DONE test
 
 some slight differences between these distances and the previous ones,
 even when running on same plg files; may reflect differences in
@@ -48,9 +48,9 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE fix race condition in output while loading files
 
-** TODO write database import script
+** DONE write database import script
 
-* TODO chirp (main gui) [6/9]
+* TODO chirp (main gui) [6/12]
 
 ** DONE propagate any changes to backend code
 
@@ -70,6 +70,12 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DEFERRED more efficient spectrogram display, eliminate matplotlib dependency
 
+** TODO load configuration from file
+
+** TODO store documentation in package
+
+** TODO PDF generation in chirp?
+
 * DEFERRED csplitter [0/2]
 
 ** DEFERRED znote
@@ -80,8 +86,12 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE cplotpitch (plot spectrograms and pitch overlay)
 
-* TODO release checking [0/2]
+* TODO release checking [1/4]
 
-** TODO check numpy dependency for versions
+** DONE check numpy dependency for versions
 
-** TODO documentation
+** STARTED documentation
+
+** TODO py2app
+
+** TODO py2exe

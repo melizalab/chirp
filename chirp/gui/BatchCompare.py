@@ -10,7 +10,7 @@ Created 2012-02-13
 import os,wx,sys
 import threading
 from .events import EVT_STAGE, myEVT_STAGE, EVT_COUNT, BatchEvent, BatchConsumer
-from ..compare import methods, storage, ccompare
+from ..compare import plugins, ccompare
 from ..common.config import configoptions
 
 class StagedBatchConsumer(BatchConsumer):
@@ -109,7 +109,7 @@ class BatchCompare(wx.Frame):
         txt = wx.StaticText(mainPanel, -1, 'Select comparison method:')
         txt.SetFont(font)
         hbox.Add(txt, 0,wx.ALIGN_CENTER)
-        self.method = wx.Choice(mainPanel, -1, choices=methods.names())
+        self.method = wx.Choice(mainPanel, -1, choices=plugins.methods.names())
         hbox.Add(self.method, 1, wx.LEFT, 5)
         vbox.Add(hbox,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP,5)
 
@@ -118,7 +118,7 @@ class BatchCompare(wx.Frame):
         txt = wx.StaticText(mainPanel, -1, 'Select storage format:')
         txt.SetFont(font)
         hbox.Add(txt, 0,wx.ALIGN_CENTER)
-        self.storage = wx.Choice(mainPanel, -1, choices=storage.names())
+        self.storage = wx.Choice(mainPanel, -1, choices=plugins.storage.names())
         hbox.Add(self.storage, 1, wx.LEFT, 5)
         vbox.Add(hbox,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP,5)
 
@@ -193,7 +193,7 @@ class BatchCompare(wx.Frame):
         if val==wx.ID_OK:
             base,ext = os.path.splitext(fdlg.GetFilename())
             if ext=='':
-                storage_class = storage.load(self.storage.GetStringSelection())
+                storage_class = plugins.storage.load(self.storage.GetStringSelection())
                 ext = storage_class._preferred_extension
             self.storageloc.SetValue(os.path.join(fdlg.GetDirectory(), base + ext))
 
@@ -219,8 +219,8 @@ class BatchCompare(wx.Frame):
         nw    = self.nworkers.GetValue()
 
         # load classes
-        compare_class = methods.load(self.method.GetStringSelection())
-        storage_class = storage.load(self.storage.GetStringSelection())
+        compare_class = plugins.methods.load(self.method.GetStringSelection())
+        storage_class = plugins.storage.load(self.storage.GetStringSelection())
 
         comparator = compare_class(configfile=config)
         storager = storage_class(comparator, location=store_loc, signals=filedir, **store_options)

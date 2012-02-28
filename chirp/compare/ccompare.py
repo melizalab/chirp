@@ -7,7 +7,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
-from . import methods, storage
+from .plugins import methods, storage
 from ..common.config import _configurable
 from ..common.progress import progressbar
 import multiprocessing

@@ -15,9 +15,9 @@ masked_spcc:      SPCC + masking
 Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 Created 2011-08-02
 """
-from .methods import entry_point_name as methods_entry_point
+from .plugins import methods
 
-__doc__ = __doc__ % methods_entry_point
+__doc__ = __doc__ % methods.entry_point_name
 
 # Variables:
 # End:

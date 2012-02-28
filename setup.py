@@ -7,13 +7,12 @@ from numpy.distutils.core import setup,Extension
 import sys, os
 import os.path as op
 
-ext_libs = ['fftw3','lapack']
+ext_libs = ['fftw3']
 ext_incl = []
 
 if sys.platform=='darwin':
     ext_incl.append('/opt/local/include')
     app_options=dict(app=['chirp.py'])
-    print app_options
 elif sys.platform=='win32':
     app_options=dict(app=['chirp.py'])
 else:
@@ -21,7 +20,7 @@ else:
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 
 cls_txt = \
 """
@@ -56,7 +55,7 @@ _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf
 _dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],
                  extra_compile_args=['-std=c99'])
 _libtfr = Extension('chirp.common._libtfr',sources=['libtfr/libtfr.c','libtfr/tfr.c','libtfr/mtm.c'],
-                    libraries=ext_libs, extra_compile_args=['-std=c99'], include_dirs=ext_incl)
+                    libraries=ext_libs, extra_compile_args=['-DNO_LAPACK -std=c99'], include_dirs=ext_incl)
 
 
 setup(
@@ -71,18 +70,13 @@ setup(
   maintainer_email = '"dan" at the domain "meliza.org"',
   url = 'https://dmeliza.github.com/chirp',
   download_url = 'https://github.com/dmeliza/chirp',
-  packages= find_packages(exclude=["*test*"]),
+  packages = find_packages(exclude=["*test*"]),
   ext_modules = [_vitterbi,_dtw,_libtfr],
-  install_requires=['distribute', 'numpy>=1.3'],
+  install_requires=['distribute'],
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main',
                                        'ccompare = chirp.compare.ccompare:main'],
-                  'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],
-                  'chirp.compare.method' : ['spcc = chirp.compare.spcc:spcc',
-                                            'masked_spcc = chirp.compare.masked_spcc:masked_spcc',
-                                            'pitch_dtw = chirp.compare.pitch_dtw:pitch_dtw'],
-                  'chirp.compare.storage' : ['file = chirp.compare.file_storage:file_storage',
-                                             'sqlite = chirp.compare.sqlite_storage:sqlite_storage']},
+                  'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
   **app_options
 )
 
