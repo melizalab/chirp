@@ -28,9 +28,10 @@ class spcc(base_comparison, _configurable):
                    window='hanning',
                    biased_norm=True
                    )
+    config_sections = ('spectrogram','spcc',)
 
     def __init__(self, configfile=None, **kwargs):
-        self.readconfig(configfile, ('spectrogram','spcc',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
 
     def load_signal(self, locator, dtype='d'):

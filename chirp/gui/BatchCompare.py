@@ -188,7 +188,6 @@ class BatchCompare(wx.Frame):
         fdlg = wx.FileDialog(self, "Select storage location",
                              wildcard="All files (*.*)|*.*",
                              style = wx.FD_SAVE)
-        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
             base,ext = os.path.splitext(fdlg.GetFilename())

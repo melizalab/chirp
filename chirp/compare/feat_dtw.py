@@ -28,9 +28,10 @@ class feat_dtw(base_comparison, _configurable):
     options = dict(cost_matrix = [(1,1,1),(1,2,2),(2,1,2)],
                    metric = 'euclidean',
                    dynamic_cost = True)
+    config_sections = ('spectrogram','dtw',)
 
     def __init__(self, configfile=None, **kwargs):
-        self.readconfig(configfile, ('spectrogram','dtw',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
 
     def compare(self, ref, tgt):
@@ -56,7 +57,7 @@ class feat_dtw(base_comparison, _configurable):
                 fudge += 1
         return pathlen(p,q), dcost, dcost / min(ref.size, tgt.size)
 
-    
+
     @property
     def compare_stat_fields(self):
         """ Return a tuple of the names for the statistics returned by compare() """
@@ -83,7 +84,7 @@ def euclidean(x,y):
         return T**2
 
 metrics = {'euclidean' : euclidean}
-    
+
 def dtw_cost_dynamic(nref,ntgt,extra_steps=0):
     """
     Generates a symmetric cost matrix that is guaranteed to give a
@@ -95,7 +96,7 @@ def dtw_cost_dynamic(nref,ntgt,extra_steps=0):
     base.extend((1,n,nx.exp(n)/3) for n in range(4,min_warp+1))
     base.extend((n,1,nx.exp(n)/3) for n in range(4,min_warp+1))
     return base
-    
+
 
 def dtw(M, C=None):
     """
@@ -150,6 +151,6 @@ def pathlen(p, q):
 def totcost(p,q,D):
     return D[p[-1],q[-1]]
 
-    
+
 # Variables:
 # End:

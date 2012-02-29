@@ -19,9 +19,10 @@ class spectrogram(_configurable):
                    tfr_flock = 0.01,
                    tfr_tlock = 5,
                    mtm_nw = 2.5)
+    config_sections = ('spectrogram',)
 
     def __init__(self, configfile=None):
-        self.readconfig(configfile,('spectrogram',))
+        self.readconfig(configfile)
 
     def linspect(self, signal, Fs):
         """ Calculate the spectrogram on a linear power scale.  """

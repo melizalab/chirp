@@ -93,8 +93,12 @@ class _configurable(object):
     This mixin provides classes with the ability to configure
     themselves using a config file. Instructions:
 
-    1. Define a dictionary called 'options' and populate with default
-       values
+    1. Define a class property dictionary called 'options' and
+       populate with default values
+
+    2. Define a class property 'config_section', a tuple of strings
+       that indicate which sections from the config file the class
+       should read (in order)
 
     2. Call configmixin.readconfig(), and the options dictionary will
        be updated with values from the config file.  This can be done
@@ -103,14 +107,15 @@ class _configurable(object):
     """
 
     options = dict()
+    config_sections = ('DEFAULT',)
 
-    def readconfig(self, cfg, sections=('DEFAULT',)):
+    def readconfig(self, cfg):
         self.options = self.options.copy()
         if cfg is None: return
         if isinstance(cfg, basestring):
             cfg = configoptions(configfile=cfg)
         if isinstance(cfg, configoptions):
-            self.options.update(cfg.getdict(self.options,sections))
+            self.options.update(cfg.getdict(self.options,self.config_sections))
         else:
             raise TypeError, "%s is not a configoptions object or a filename"
 

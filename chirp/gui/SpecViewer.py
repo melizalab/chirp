@@ -23,11 +23,12 @@ class SpecHandler(TSViewer.TSDataHandler, _configurable):
     """
     options = dict(colormap = 'Greys',
                    freq_range = (0.0, 10000.0),  # Hz frequency, gets displayed in kHz
-                   dynrange = 60)
+                   dynrange = 60,)
+    config_sections = ('spectrogram',)
 
     def __init__(self, configfile=None):
         self.spectrogram = spectrogram(configfile=configfile)
-        self.readconfig(configfile,('spectrogram',))
+        self.readconfig(configfile)
         self.signal = None
         self.image = None
         self.Fs = None

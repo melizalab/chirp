@@ -47,7 +47,6 @@ class FileListBox(wx.Panel):
         fdlg = wx.FileDialog(self, "Select one or more files",
                              wildcard=self.wildcard,
                              style = wx.FD_OPEN|wx.FD_MULTIPLE|wx.FD_FILE_MUST_EXIST)
-        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
             current = self.file_list.GetStrings()

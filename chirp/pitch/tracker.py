@@ -88,6 +88,7 @@ class tracker(_configurable):
                    chains=3,
                    btrace=False,
                    min_loglike=-100)
+    config_sections = ('spectrogram','cpitch')
 
     def __init__(self, configfile=None, samplerate=None, **kwargs):
         """
@@ -100,7 +101,7 @@ class tracker(_configurable):
         absolute units, will rescale the values by the sampling rate.
         Otherwise the ranges need to be specified in relative units.
         """
-        self.readconfig(configfile,('spectrogram','cpitch'))
+        self.readconfig(configfile)
         self.options.update(kwargs)
         try:
             self.options['freq_range'] = hz2rel(self.options['freq_range'], samplerate)

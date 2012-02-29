@@ -8,7 +8,6 @@ Created 2011-08-30
 """
 
 from .plugins import methods, storage
-from ..common.config import _configurable
 from ..common.progress import progressbar
 import multiprocessing
 

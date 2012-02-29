@@ -113,6 +113,7 @@ class masker(_configurable):
     columns are all zeros.
     """
     options = dict(boxmask = False)
+    config_sections = ('masker',)
 
     def __init__(self, configfile=None, **kwargs):
         """
@@ -120,7 +121,7 @@ class masker(_configurable):
 
         boxmask:  treat polygons as intervals and cut out all frequencies
         """
-        self.readconfig(configfile, ('masker',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
 
     def mask(self, elems, tgrid, fgrid):

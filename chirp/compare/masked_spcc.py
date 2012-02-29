@@ -21,9 +21,10 @@ class masked_spcc(spcc):
     _descr = "masked spectrographic cross-correlation (requires .wav and .ebl files)"
     options = dict(boxmask = True,
                    **spcc.options)
+    config_sections = ('spectrogram','spcc',)
 
     def __init__(self, configfile=None, **kwargs):
-        self.readconfig(configfile, ('spectrogram','spcc',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
         self.masker = masker(boxmask=self.options['boxmask'])
 

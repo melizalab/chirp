@@ -50,7 +50,7 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE write database import script
 
-* TODO chirp (main gui) [6/12]
+* TODO chirp (main gui) [8/13]
 
 ** DONE propagate any changes to backend code
 
@@ -70,11 +70,18 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DEFERRED more efficient spectrogram display, eliminate matplotlib dependency
 
-** TODO load configuration from file
+** DONE load configuration from file
 
-** TODO store documentation in package
+** TODO fix open dialogs in app
 
-** TODO PDF generation in chirp?
+should remember last directory
+
+** CANCELED store documentation in package
+
+too much trouble trying to load package data in standalone apps - just
+make a PDF
+
+** DEFERRED PDF generation in chirp?
 
 * DEFERRED csplitter [0/2]
 

@@ -13,7 +13,7 @@ import numpy as nx
 from ..common import geom, audio, config, plg
 from . import wxgeom, HelpWindow
 from .TSViewer import XRubberbandPainter
-from .SpecViewer import SpecViewer
+from .SpecViewer import SpecViewer, SpecHandler
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
 from .BatchPitch import BatchPitch
@@ -205,9 +205,10 @@ class ChirpGui(wx.Frame):
         menu_file = wx.Menu()
         m_open = menu_file.Append(wx.ID_OPEN, "&Open File...\tCtrl-O", "Open File...")
         m_next_file = menu_file.Append(-1, "&Next File\tCtrl-N", "Next File")
-        m_prev_file = menu_file.Append(-1, "Previous File\tCtrl-B", "Previous File")
+        m_prev_file = menu_file.Append(-1, "&Previous File\tCtrl-B", "Previous File")
         m_save = menu_file.Append(wx.ID_SAVE, "&Save Elements\tCtrl-S", "Save Elements")
-        m_save_params = menu_file.Append(-1, "Save Parameters", "Save Params")
+        m_open_params = menu_file.Append(-1, "Open &Configuration...", "Open Configuration...")
+        m_save_params = menu_file.Append(-1, "Save Configuration...", "Save Configuration...")
         m_exit = menu_file.Append(wx.ID_EXIT, "E&xit\tCtrl-X", "Exit")
         self.Bind(wx.EVT_MENU, self.on_open, m_open)
         self.Bind(wx.EVT_MENU, self.on_next_file, m_next_file)
@@ -215,6 +216,7 @@ class ChirpGui(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.on_save, m_save)
         self.Bind(wx.EVT_MENU, self.on_save_params, m_save_params)
+        self.Bind(wx.EVT_MENU, self.on_open_params, m_open_params)
         self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
         menu_edit = wx.Menu()
@@ -477,7 +479,6 @@ class ChirpGui(wx.Frame):
         fdlg = wx.FileDialog(self, "Select a file to open",
                              wildcard="WAV files (*.wav)|*.wav|Element files (*.ebl)|*.ebl|Pitch files (*.plg)|*.plg",
                              style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
             infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
@@ -516,7 +517,6 @@ class ChirpGui(wx.Frame):
         """ Open previous file in current directory"""
         self._next_file(-1)
 
-
     def on_save(self, event):
         """ save elements to a file """
         # all of the patches are going to have 2D vertices
@@ -526,12 +526,31 @@ class ChirpGui(wx.Frame):
             el.write(outfile)
             self.status.SetStatusText("Wrote %d elements to %s" % (len(el), outfile))
 
+    def on_open_params(self, event):
+        fdlg = wx.FileDialog(self, "Select a configuration file",
+                             wildcard="Config files (*.cfg)|*.cfg",
+                             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        val = fdlg.ShowModal()
+        if not val==wx.ID_OK: return
+        infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
+        self.configfile = config.configoptions(infile)
+        # this is sort of kludgy, but it's not too much
+        sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
+        self.spec.handler = SpecHandler(self.configfile)
+        self.spec.handler.set_axes(self.spec.axes)
+        self.win_size.SetValue(str(self.spec.handler.window_len))
+        self.shift_size.SetValue(str(self.spec.handler.shift))
+        self.dynrange.SetValue(str(self.spec.handler.dynrange))
+        self.cmap.SetValue(self.spec.handler.colormap)
+        self.spec_method.SetValue(self.spec.handler.method)
+        if sig is not None:
+            self.spec.handler.plot_data(sig, Fs)
+
 
     def on_save_params(self, event):
-        fdlg = wx.FileDialog(self, "Select a destination file",
+        fdlg = wx.FileDialog(self, "Choose file to save configuration to",
                              wildcard="Config files (*.cfg)|*.cfg",
                              style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-        fdlg.SetDirectory(os.getcwd())
         val = fdlg.ShowModal()
         if not val==wx.ID_OK: return
         outfile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())

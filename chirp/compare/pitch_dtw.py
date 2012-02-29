@@ -29,10 +29,11 @@ class pitch_dtw(feat_dtw):
     file_extension = '.plg'
     options = dict(estimator = 'p.map',
                    **feat_dtw.options)
+    config_sections = ('spectrogram','dtw','pitch_dtw')
 
     def __init__(self, configfile=None, **kwargs):
         feat_dtw.__init__(self, configfile=configfile, **kwargs)
-        self.readconfig(configfile, ('pitch_dtw',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
         self.filter = postfilter.pitchfilter(configfile=configfile, **kwargs)
 

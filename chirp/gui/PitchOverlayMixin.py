@@ -7,11 +7,10 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-29
 """
 from matplotlib.lines import Line2D
-from ..common.config import _configurable
 from ..common import plg, geom, postfilter
 from ..pitch import tracker as ptracker
 
-class PitchOverlayMixin(_configurable):
+class PitchOverlayMixin(object):
     """
     Provides functions for overplotting pitch traces in an axes.  Use
     as a mixin class; the deriving class needs to have an 'axes'

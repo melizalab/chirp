@@ -64,9 +64,10 @@ class plotter(_configurable):
                    dynrange=60,
                    freq_range=(750.,10000.),
                    pitch_color='r')
+    config_sections = ('spectrogram','cplotpitch')
 
     def __init__(self, configfile=None):
-        self.readconfig(configfile, ('spectrogram','cplotpitch'))
+        self.readconfig(configfile)
 
     def plot_spectrogram(self, ax, spec, extent):
         from matplotlib import cm

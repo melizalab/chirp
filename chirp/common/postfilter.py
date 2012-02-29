@@ -19,6 +19,7 @@ class pitchfilter(_configurable):
     """
     options = dict(max_particle_sd=400,
                    max_chain_sd=0)
+    config_options = ('postfilter',)
 
     def __init__(self, configfile=None, **kwargs):
         """
@@ -35,7 +36,7 @@ class pitchfilter(_configurable):
         applies to the MAP estimator.  Therefore, this threshold
         applies to the maximum of the two interchain SDs. In Hz.
         """
-        self.readconfig(configfile, ('postfilter',))
+        self.readconfig(configfile)
         self.options.update(kwargs)
 
     def __call__(self, pitch):

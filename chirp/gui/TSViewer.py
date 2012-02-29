@@ -150,10 +150,11 @@ class TSViewer(FigCanvas, _configurable):
     axes object.
     """
     options = dict(pan_proportion = 0.8)
+    config_sections = ('spectrogram',)
 
     def __init__(self, parent, id=-1, figure=None, handler=TSDataHandler, configfile=None):
         super(TSViewer, self).__init__(parent, id, figure)
-        self.readconfig(configfile,('spectrogram',))
+        self.readconfig(configfile)
 
         # data handler
         if isinstance(handler,type):
