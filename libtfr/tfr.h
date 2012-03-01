@@ -256,24 +256,6 @@ void tfr_spec(mfft *mtm, double *spec, const double *samples, int nsamples, int 
 /* taper generating functions */
 
 /**
- * Computes discrete prolate spherical sequences.
- * These are used in the multitaper method power spectrum calculations.
- *
- * @param npoints   the number of points in the window
- * @param nw        the time-bandwidth product. Must be an integer or half-integer
- *                  (typical choices are 2, 5/2, 3, 7/2, or 4)
- * @param k         how many DPSS vectors to return (up to npoints but k>nw*2-1 are not stable)
-
- * @param tapers   (output) k DPSS sequences in order of decreasing eigenvalue (size k*npoints)
- * @param lambda   (output) k eigenvalues associated with each taper
- *
- * @returns 0 for success,
- *          -1 for invalid parameters (NW >= npoints/2, npoints < 0, k < 0, etc),
- *          -2 for failed eigenvalue solver (shouldn't ever happen)
- */
-int dpss(double *tapers, double *lambda, int npoints, double nw, int k);
-
-/**
  *  Computes a set of orthogonal Hermite functions.
  *  Used in computing multi-taper reassigned spectrograms
  *

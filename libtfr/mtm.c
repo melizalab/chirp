@@ -11,13 +11,6 @@
 #include <float.h>
 #include "tfr.h"
 
-/* some LAPACK prototypes */
-extern void dsterf_(int *N, double *D, double *E, int *INFO);
-
-extern void dgtsv_(int *N, int *NRHS,
-                   double *DL, double *D, double *DU, double *B,
-                   int *LDB, int *INFO );
-
 #define SINC(A) sin(M_PI * 2.0 * W * (A))/(M_PI * 2.0 * W * (A))
 #define NTHREADS 1
 
@@ -298,102 +291,4 @@ fftconv(int N, const double *x, double *y)
         fftw_free(X1);
         fftw_free(X2);
         free(X);
-}
-
-
-int
-dpss(double *tapers, double *lambda, int npoints, double NW, int k)
-{
-        int i, j, m, rv;
-        double *d, *sd, *dd1, *dd2, *ee1, *ee2;
-        double *taper;
-
-        double W, ff;
-
-        if ((NW < 0) || (k < 1) || (k >= npoints) || (npoints < 0) || (NW >= npoints/2))
-                return -1;
-
-        W = NW/npoints;
-
-        d = (double*)malloc(npoints*sizeof(double));
-        sd = (double*)malloc(npoints*sizeof(double));
-        dd1 = (double*)malloc(npoints*sizeof(double));
-        dd2 = (double*)malloc(npoints*sizeof(double));
-        ee1 = (double*)malloc((npoints)*sizeof(double));
-        ee2 = (double*)malloc((npoints)*sizeof(double));
-
-        for (i = 0; i < npoints; i++) {
-                ff = (npoints - 1 - 2*i);
-                d[i] = dd1[i] = 0.25 * cos(2*M_PI*W) * ff * ff;
-                sd[i] = ee1[i] = (i+1) * (npoints-(i+1))/2.0;
-        }
-
-        // lapack eigenvalue solver; values stored in d in increasing order
-        dsterf_(&npoints,d,ee1,&rv);
-        if (rv != 0) return -2;
-
-        // set up tridiagonal equations:
-        for (j = 0; j < k; j++) {
-                taper = tapers + j * npoints;  // point into tapers array
-                lambda[j] = d[npoints-(j+1)];
-                // initialize taper
-                for (i = 0; i < npoints; i++)
-                        taper[i] = sin((j+1) * M_PI * i / (npoints-1));
-
-                for (m = 0; m < 3; m++) {
-                        // all inputs destroyed by dgtsv
-                        for (i = 0; i < npoints; i++) {
-                                dd2[i] = dd1[i] - lambda[j];
-                                ee1[i] = ee2[i] = sd[i];
-                        }
-                        i = 1;
-                        dgtsv_(&npoints, &i, ee1, dd2, ee2, taper, &npoints, &rv);
-                        if (rv != 0) return -2;
-                        renormalize(npoints, taper);
-                }
-
-                // fix sign of taper
-                if ((j+1) % 2==1) {
-                        // calculate sum
-                        ff = 0.0;
-                        for (i = 0; i < npoints; i++)
-                                ff += taper[i];
-                        if (ff < 0.0) {
-                                for (i = 0; i < npoints; i++)
-                                        taper[i] *= -1;
-                        }
-                }
-                else if (taper[2] < 0.0) {
-                        for (i = 0; i < npoints; i++)
-                                taper[i] *= -1;
-                }
-
-                // calculate lambdas
-                fftconv(npoints, taper, dd2);
-
-                ff = 2.0 * W * dd2[npoints-1];  // last point
-                for (i = 0; i < npoints-1; i++)
-                        ff += dd2[i] * 4.0 * W * SINC(npoints-1-i);
-
-                lambda[j] = ff;
-
-        }
-        free(d);
-        free(sd);
-        free(dd1);
-        free(dd2);
-        free(ee1);
-        free(ee2);
-        return 0;
-}
-
-
-mfft*
-mtm_init_dpss(int nfft, double nw, int ntapers)
-{
-        double *tapers, *lambdas;
-        tapers = (double*)malloc(nfft*ntapers*sizeof(double));
-        lambdas = (double*)malloc(nfft*sizeof(double));
-        dpss(tapers, lambdas, nfft, nw, ntapers);
-        return mtm_init(nfft, nfft, ntapers, tapers, lambdas);
 }
