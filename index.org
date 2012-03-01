@@ -28,9 +28,13 @@ signals. It consists of the following semi-independent components:
 + Plugin architecture supporting additional algorithms for comparing
   signals (currently includes spectrographic cross-correlation)
 
-Chirp hasn't been officially released. To be notified when it is,
-follow the [[https://github.com/dmeliza/chirp/wiki.atom][Atom feed for the project wiki]].  Here's a screenshot of the
-chirp GUI:
+The current version of chirp is 1.1.2.
 
 [[file:chirp_mask3.png]]
+
+** Resources
+
++ [[https://github.com/dmeliza/chirp][The project website]]
++ [[file:doc/chirp-manual.html][The current version of the manual]]
++ [[https://github.com/dmeliza/chirp/wiki][The project wiki]]
 
