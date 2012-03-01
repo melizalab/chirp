@@ -4,19 +4,10 @@
 from setuptools import setup, find_packages
 from distutils.extension import Extension
 from numpy.distutils.core import setup,Extension
-import sys, os
-import os.path as op
+import sys, os, glob
 
 ext_libs = ['fftw3']
 ext_incl = []
-
-if sys.platform=='darwin':
-    ext_incl.append('/opt/local/include')
-    app_options=dict(app=['chirp.py'])
-elif sys.platform=='win32':
-    app_options=dict(app=['chirp.py'])
-else:
-    app_options=dict()
 
 # --- Distutils setup and metadata --------------------------------------------
 
@@ -50,6 +41,35 @@ of the following programs:
 + cpitch :: determine the pitch of recordings
 + ccompare :: compare libraries of recordings using pitch or spectrograms
 """
+
+# --- customization for different platforms
+
+if sys.platform=='darwin':
+    ext_incl.append('/opt/local/include')
+    app_options=dict(app=['chirp.py'],
+                     options=dict(py2app=dict(plist=dict(
+                                                CFBundleName = "chirp",
+                                                CFBundleShortVersionString = VERSION,
+                                                CFBundleGetInfoString = "Chirp %s" % VERSION,
+                                                CFBundleExecutable = "chirp",
+                                                CFBundleIdentifier = "org.meliza.chirp",
+                                                CFBundleDocumentTypes=[dict(CFBundleTypeExtensions=["wav"],
+                                                                            CFBundleTypeName="Wave Soundfile",
+                                                                            CFBundleTypeRole="Viewer"),
+                                                                       dict(CFBundleTypeExtensions=["ebl"],
+                                                                            CFBundleTypeName="Extended Label File",
+                                                                            CFBundleTypeRole="Editor"),
+                                                                       dict(CFBundleTypeExtensions=["plg"],
+                                                                            CFBundleTypeName="Pitch Logfile",
+                                                                            CFBundleTypeRole="Viewer"),]
+                                  )))
+
+                )
+elif sys.platform=='win32':
+    app_options=dict(app=['chirp.py'])
+else:
+    app_options=dict()
+
 
 _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
 _dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],

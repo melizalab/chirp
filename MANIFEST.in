@@ -1,0 +1,3 @@
+include chirp.cfg COPYING
+recursive-include doc *.org *.html *.png
+recursive-include examples *.wav *.ebl SConstruct

@@ -50,7 +50,7 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE write database import script
 
-* TODO chirp (main gui) [8/13]
+* TODO chirp (main gui) [9/13]
 
 ** DONE propagate any changes to backend code
 
@@ -58,7 +58,7 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE config file using my backend instead of wx.Config
 
-** TODO add dialog to set pitch parameters
+** DEFERRED add dialog to set pitch parameters
 
 ** DONE allow holes in polygons?
 
@@ -72,7 +72,7 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE load configuration from file
 
-** TODO fix open dialogs in app
+** DONE fix open dialogs in app
 
 should remember last directory
 

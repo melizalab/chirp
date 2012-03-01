@@ -7,6 +7,8 @@
 #+BABEL: :exports code
 #+LaTeX_CLASS: koma-article
 #+LATEX_HEADER: \usepackage{amsmath,graphicx,hyperref}
+#+LATEX_HEADER: \usepackage[AUTO]{inputenc}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
 
 *Chirp* is a set of related tools for analyzing and comparing
 bioacoustic recordings.  The central component is a pitch-detection
@@ -15,31 +17,38 @@ A number of features enable the algorithm to make stable estimates
 even from very noisy signals.  Performance is greatly improved by
 masking out noise in the spectrotemporal domain.  A graphical user
 interface (/chirp/) is provided for examining recordings and creating
-masks.  A command-line script (/cpitch/) performs the pitch
-calculations and is suited for batch processing.  The third major
-component (/ccompare/) is a system for making quantitative comparisons
-between recordings; these can be based on the pitch estimates, or on
-the signal spectrograms, or on user-defined algorithms.
+masks.  The GUI can run batch pitch analyses and perform pairwise
+comparisons using pitch and other methods for large sets of
+recordings.  Command-line scripts are also provided for these batch
+analyses.
 
 * Installation instructions
 
+*Chirp* can be installed as a standalone application on Mac OS X and
+Windows, or as a python distribution under OS X or *nix. The standalone
+application consists only of the GUI; the distribution includes the
+GUI as well as several useful command-line scripts.
+
 ** Prerequisites
 
-*Chirp* is written almost entirely in Python, but it requires some
-external packages to calculate spectrograms and geometric
-transformations.  The minimum requirements are:
+The Python distribution of *chirp* requires some external packages to
+calculate spectrograms and geometric transformations. These packages
+do not need to be installed for the standalone applications. The
+minimum requirements are:
 
 1. Python (>=2.6,<3)
 2. Numpy (>=1.3)
 3. Shapely (>=1.2); requires GEOS (>=3.1)
-4. libtfr (>=1.0.1; https://github.com/dmeliza/libtfr); requires fftw
-   (http://www.fftw.org/; version 3.2+)
+4. fftw (>= 3.2; http://www.fftw.org/)
 
 To run the chirp GUI, these packages are also required:
 
 1. wxPython (>=2.8)
 2. matplotlib (>=1.0)
 3. pyaudio (>=0.2.4, optional - allows audio playback)
+
+On *nix, most of these programs are available as part of the operating
+system or can be installed through your favorite package manager.
 
 *** OS X (MacPorts)
 
@@ -50,7 +59,6 @@ following shell commands (as root, or using sudo):
 #+begin_src sh
 port install python26 py26-shapely fftw-3
 port install py26-numpy -atlas
-easy_install libtfr
 #+end_src
 
 Replace python26 with python27 if desired. For the optional
@@ -62,38 +70,31 @@ CFLAGS="-I/opt/local/include" easy_install \
  http://people.csail.mit.edu/hubert/pyaudio/packages/pyaudio-0.2.4.tar.gz
 #+end_src
 
-(note that the location/version of pyaudio may change; check
+There are some issues installing wxpython on 64-bit machines. Also,
+the location/version of pyaudio may change; check
 http://people.csail.mit.edu/hubert/pyaudio/ if the last command above
-doesn't work)
+doesn't work.
 
 * Usage
 
-*Chirp* consists of a number of interlinked programs that perform
-specific tasks.  This modular design makes it easier to set up batch
-processing jobs and to add new functionality.  The following sections
-describe how to use each of the components, using examples from the
-/examples/ subdirectory.
+The main entry point for *chirp* is a graphical user interface
+(/chirp/) for examining spectrograms of vocalizations and identifying
+regions of interest.  The pitch of the signal in these regions (or in
+the whole recording) can be analyzed, either directly in the GUI or as
+a batch job applied to a collection of recordings.  The /chirp/ GUI
+also supports running large batches of comparisons between pairs of
+recordings using a variety of algorithms.
 
-** chirp
-
-The /chirp/ program is a graphical interface for examining
-spectrograms of vocalizations and identifying regions of interest.
-Regions may be temporal, defined by a start and stop time, or they may
-be spectrotemporal, defined by a two-dimensional polygonal mask.
-
-The interface for drawing masks is highly flexible.  Masks can be
-combined, split, and trimmed.  Pitch calculations can be run in the
-GUI to iteratively refine mask shapes.  Masks and intervals are stored
-in /ebl/ files, a flexible format based on GIS's "Well Known Text".
-
-*** Basic usage
-
-To start /chirp/, run it from the command-line, optionally specifying
-a wave file to inspect.
+The standalone application can be run by double-clicking the icon for
+the program. If installed as a distribution, chirp can be started from
+the command-line, optionally specifying a wave file to inspect.
 
 #+begin_src sh
 chirp examples/KENB_MZ000162_sono_1_124570_134767_m12.wav
 #+end_src
+
+To open a file in the standalone application, drag the WAV file onto
+the icon, or start the application and then open a file from the menu.
 
 If a file called 'chirp.cfg' is in the current directory, /chirp/ will
 load configuration data from this file.  An example config file is
@@ -104,12 +105,15 @@ When a new file is opened, /chirp/ will calculate the spectrogram. If
 a file with a corresponding name and the /ebl/ extension exists, any
 regions saved in this file will also be loaded.
 
-**** Spectrogram display and navigation
+** Spectrogram display and navigation
 
 On loading a wave file, the interface will probably look something
-like this:
+like \ref{fig:chirp-nomask}.
 
-[[file:doc/chirp_nomask.png]]
+#+CAPTION:    The chirp GUI showing the spectrogram of a superb starling flight call
+#+LABEL:      fig:chirp-nomask
+#+ATTR_LaTeX: placement=[h!] width=0.5\textwidth
+[[file:chirp_nomask.png]]
 
 Immediately beneath the spectrogram are controls that manipulate the
 appearance of the spectrogram.
@@ -150,7 +154,11 @@ the right mouse button and drag to select the range of interest.  The
 view will zoom in to those frequencies.  To zoom back out, press Shift
 and the up arrow key.
 
-**** Selecting temporal and spectrotemporal segments
+To play the recording, press the 'p' button.  If a temporal segment is
+selected, only that segment of the signal will be played.  This
+functionality requires pyaudio.
+
+** Selecting temporal and spectrotemporal segments
 
 Segments identify regions of interest in the signal.  They can be
 temporal or spectrotemporal.
@@ -182,7 +190,7 @@ left mouse button, then move the mouse to create an outline around the
 region of interest.  Click the left mouse button to close the polygon.
 Press 's' to save the segment.
 
-**** Manipulating segments
+** Manipulating segments
 
 When a segment is saved with the 's' key, an entry will appear in the
 listbox below the spectrogram, and the area associated with the
@@ -214,13 +222,17 @@ from the largest one.  Finally, you can select two segments and use
 the Split button to divide the two polygons into mutually disjoint
 regions.
 
-See [[*Mask%20design%20considerations][Mask design considerations]] for further notes on making good masks.
+One of the primary purposes for the spectrotemporal segments is to
+mask out noise for the pitch tracking algorithm. See
+[[*Mask%20design%20considerations][Mask design considerations]] for
+further notes on making good masks.
 
-**** File operations
+** File operations
 
 Elements can be stored to disk for further editing and for use in
 later analysis steps.  Both interval and spectrotemporal elements are
-stored in an /enhanced label/ (/ebl/) file. Select "Save Elements"
+stored in an /enhanced label/ (/ebl/) file.  The format of this file
+is based on the GIS "Well Known Text" standard. Select "Save Elements"
 from the File menu, or type Ctrl-S (Command-S on Mac).  The current
 display parameters can also be saved from the File menu ("Save
 Parameters").  Note that the comments in the configuration file are
@@ -228,26 +240,41 @@ lost in this process, so you may prefer to edit the file by hand.
 
 To facilitate analyzing large libraries of recordings, shortcuts are
 provided for iterating through the files in a directory.  Use Ctrl-N
-and Ctrl-B to move to the next or previous file in the current
-directory.  Make sure to save the /ebl/ file before moving to another
-file.
+and Ctrl-B to open the next or previous file in the current directory.
+Make sure to save the /ebl/ file before moving to another file.
 
-*** Pitch calculation
+** Calculating pitch
 
-You can run the pitch tracking algorithm from within /chirp/ using the
-"Calculate Pitch" menu item under "Analysis".  This is a
-computationally intensive operation and the program will be
-nonresponsive until it's finished.  On completion, the results will be
-overlaid on the spectrogram as a series of white and black markers.
-Black markers indicate time frames where the posterior variance of the
-estimate is too high. A separate series of markers is shown for each
-analysis chain (see [[*Pitch%20tracking%20parameters][Pitch tracking parameters]] for more information).
-You can also load the results of a pitch calculation from a /plg/ file
-using the "Open File" menu item, or, if the /plg/ file has the same
-base name as the wave file, with "Load Pitch Data".  In this case only
-a single set of markers will be shown.
+Many bioacoustic signals are tonal, consisting of one or more
+sinusoidal elements.  Tonal signals are harmonic if they consist of
+sinusoids whose frequencies are integer multiples of the lowest or
+fundamental frequency.  The higher harmonics are also called
+overtones.  The fundamental frequency is correlated with the
+perception of pitch, or the highness/lowness of a sound.  There is
+some evidence that animals also perceive harmonic sounds in terms of
+their pitch, and pitch is a useful low-dimensional representation of
+many bioacoustic signals.
 
-**** Mask design considerations
+Pitch is often modulated in time, and /chirp/ is able to track pitch
+through a signal.  You can run the pitch tracking algorithm from
+within /chirp/ using the "Calculate Pitch" menu item under "Analysis".
+This is a computationally intensive operation and the program will be
+nonresponsive until it's finished.  If temporal and/or spectrotemporal
+segments have been defined, the pitch will be calculated separately
+for each segment; otherwise, the pitch will be tracked throughout the
+whole signal.
+
+On completion, the results will be overlaid on the spectrogram as a
+series of white and black markers. Black markers indicate time frames
+where the posterior variance of the estimate is too high. A separate
+series of markers is shown for each analysis chain (see [[*Pitch%20tracking%20parameters][Pitch tracking
+parameters]] for more information).  You can also load the results of a
+pitch calculation from a /plg/ file using the "Open File" menu item,
+or, if the /plg/ file has the same base name as the wave file, with
+"Load Pitch Data".  In this case only a single set of markers will be
+shown.
+
+*** Mask design considerations
 
 For recordings of exceptional quality, it may not be necessary to do
 any masking.  Near-field recordings, obtained by placing a microphone
@@ -318,9 +345,12 @@ the fundamental frequency (FF).  Even harmonics you can't see in the
 spectrogram may be powerful enough to contribute positively.  On the
 other hand, frequencies lower than the fundamental are only going to
 interfere.  I usually follow closely below the FF and then take the
-mask well above the highest visible harmonic, as shown below:
+mask well above the highest visible harmonic, as shown in \ref{fig:chirp-mask1}:
 
-[[file:doc/chirp_mask2.png]]
+#+CAPTION:    The spectrogram of the flight call has been masked
+#+LABEL:      fig:chirp-mask1
+#+ATTR_LaTeX: placement=[h!] width=0.5\textwidth
+[[file:chirp_mask2.png]]
 
 Unfortunately, as you can see from the pitch estimates (white and
 black circles), for this signal the tracker gets off the FF at a
@@ -329,13 +359,16 @@ harmonic, and the variance of the estimate is high (indicated by the
 black symbols).  The first step I'll take is to subtract out the areas
 between the harmonics where the spectrogram smears.  It's easy to do
 this by drawing out that region with the mouse and then using the 'x'
-key to subtract. As shown in the next figure, these regions can be
+key to subtract. As shown in the next figure (\ref{fig:chirp-mask2}), these regions can be
 entirely enclosed within the mask, and it often doesn't take a lot to
 get the algorithm back on track.  The variance is still a little bad
 in the middle hairpin, but the central moment (see [[*Pitch%20tracking%20theory][Pitch tracking
 theory]]) is still pretty much right on.
 
-[[file:doc/chirp_mask3.png]]
+#+CAPTION:    The mask has been refined to fix some pitch doubling errors
+#+LABEL:      fig:chirp-mask2
+#+ATTR_LaTeX: placement=[h!] width=0.5\textwidth
+[[file:chirp_mask3.png]]
 
 More examples showing how masks can deal with other kinds of
 interference are in the examples directory.  Sometimes no amount of
@@ -368,13 +401,53 @@ to first adjust the parameters until most of the recordings give good
 estimates, then draw broadband masks, adjust the parameters again, and
 then fine-tune the masks as a final step.
 
-** cpitch
+*** Batch pitch calculations
 
-Although it's possible to calculate pitch traces in /chirp/, when
-you've settled on a final set of parameters and masks, the /cpitch/
-program is much more convenient for batch processing. It generates the
-/plg/ output files that are used in later stages of analysis, and which can
-be read into third-party analysis software.  Usage is straightforward:
+When you run the pitch tracker in /chirp/ the results are overlaid on
+the spectrogram but they are not saved to disk.  This allows you to
+fine-tune the masks without overwriting saved data.  Typically you
+will draw masks for each of the signals in your data set, saving them
+to /ebl/ files that have the same names as the recording files.  To
+run the pitch tracker on a large set of recordings and output the
+results to files, you can use the batch analysis dialog in /chirp/
+(Analysis/Batch Analysis/Calculate Pitch; \ref{fig:chirp-batchp}), or you can use the
+/cpitch/ command-line script (not available for standalone
+installations).
+
+#+CAPTION:    The batch pitch processing dialog
+#+LABEL:      fig:chirp-batchp
+#+ATTR_LaTeX: placement=[h!] width=0.3\textwidth
+[[file:chirp_batchp.png]]
+
+In the batch analysis window, add files to analyze to the list by
+clicking "Add Files".  You can select multiple files in the file
+dialog. To remove them from the list, select them and click "Remove
+Files".  Select a configuration file to use in the analysis.  By
+default, the analysis will use whatever configuration file the main
+program is using.  If no configuration file is supplied, default
+values will be used.  It's recommended that you create a configuration
+file for every data set and alter it as needed. See [[Configuration file]]
+for more information on this file.
+
+The analysis can be split across multiple processors or
+cores. Increase the number in this field (the maximum is set by the
+number of cores available) to speed up analysis of large datasets.
+Select "Use mask files" if you want the tracker to use masks stored in
+/ebl/ files.  The /ebl/ files need to have the same name and be in the
+same directory as the recording.  "Skip completed" will check to see
+if the output file is newer than the recording or mask file, and won't
+run the tracker if it is.  Select this option to resume an aborted
+analysis or to update after changing a subset of the masks.
+
+Click "Start" to begin the analysis.  The progress indicator will
+advance as recordings are analyzed.  You can cancel the batch at any
+point, but the program will wait until any currently-running analyses
+are completed.
+
+**** Command-line batch processing
+
+If you installed *chirp* as a Python distribution, you can also run
+analyzes on the command line using /cpitch/.  The syntax is as follows:
 
 #+begin_src sh
 cpitch -c <configfile> -m <maskfile> <wavfile>
@@ -391,11 +464,11 @@ cpitch -c chirp.cfg -m examples/KENB_MZ000162_sono_1_124570_134767_m12.ebl \
   examples/KENB_MZ000162_sono_1_124570_134767_m12.wav > examples/KENB_MZ000162_sono_1_124570_134767_m12.plg
 #+end_src
 
-The output of cpitch is a "pitch logfile" or /plg/ file.  The logfile
-shows the parameters and progress of the pitch analysis.  All of the
-parameters are given on lines that start with an '*' or a '+'. The
-pitch estimates are given in a table.  The table will always contain
-the following columns:
+The output of /cpitch/ (or the batch analyzer) is a "pitch logfile" or
+/plg/ file.  The logfile shows the parameters and progress of the
+pitch analysis.  All of the parameters are given on lines that start
+with an '*' or a '+'. The pitch estimates are given in a table.  The
+table will always contain the following columns:
 
 + time :: the time of the analysis frame, measured from the start of
           the signal
@@ -412,15 +485,10 @@ If the backtracing algorithm is enabled, the table will also contain:
            posterior distribution
 + p.map.sd :: the standard deviation of p.map across chains
 
-*** Batch processing
-
-It's expected that most users will have a large library of recordings
-to analyze. Rather than manually run /cpitch/ for each file, it's a
-good idea to set up a batch processing system, especially as this
-opens up the possibility of running multiple analyses in
-parallel. Many such systems are available.  The *chirp* package
-supplies an example that uses /scons/ (http://www.scons.org), a freely
-available build system similar to Make.  The build process is
+To run /cpitch/ on many files, you will need to set up a batch
+processing system.  Many such systems are available.  The *chirp*
+package supplies an example that uses /scons/ (http://www.scons.org),
+a freely available build system similar to Make.  The build process is
 controlled by the SConstruct file in the examples subdirectory.  You
 can place this file in any directory with /wav/ and /ebl/ files and
 run the following command (you will need to have installed /scons/):
@@ -508,109 +576,88 @@ they are reweighted, and the process continues to the end of the
 signal.  The distribution of the particles at any point in time is an
 approximation to the posterior distribution of the pitch.
 
-Options in the configuration file control the number of particles in
-the simulation, and the number of independent simulations (or chains)
-used to produce the estimate.  The posterior distribution can be
-summarized by its mean and standard deviation, and optionally by the
-maximum a posteriori (or MAP) of the distribution, which is calculated
-by backtracing through the distribution to find the most likely path.
-Backtracing can significantly improve the quality and stability of the
-estimates, though it is extremely intensive computationally [O(N^2)].
+Options in the configuration file (see [[Configuration file]]) control the
+number of particles in the simulation, and the number of independent
+simulations (or chains) used to produce the estimate.  The posterior
+distribution can be summarized by its mean and standard deviation, and
+optionally by the maximum a posteriori (or MAP) of the distribution,
+which is calculated by backtracing through the distribution to find
+the most likely path.  Backtracing can significantly improve the
+quality and stability of the estimates, though it is extremely
+intensive computationally [O(N^2)].
+** Comparing signals
 
-*** Pitch tracking parameters
-
-All adjustable parameters of the pitch tracking algorithm are set in a
-configuration file.  An example, 'chirp.cfg', is provided in the root
-directory of the package.  Each option and parameter is documented,
-with some discussion of the effects on the analysis.  Consult this
-file for the most up-to-date description of the parameters and their
-effects.  The following options are the most relevant to the pitch
-tracking algorithm:
-
-+ freq_range :: sets the range of frequencies that are *input* to the analysis
-+ pitch_range :: sets the range of frequencies that are considered as
-                 possible *outputs* of the analysis.  This range
-                 should almost always be smaller than *freq_range*
-+ nfft :: sets the frequency resolution of the spectrogram, and the
-          number of pitch hypotheses
-+ shift :: sets the temporal shift between frames
-+ winsize :: sets the spectrotemporal resolution of the spectrogram
-             calculation
-+ lobes :: sets the number of harmonic lobes in the template. Set between
-           1 to 2 times the number of visible harmonics
-+ lobe_decay :: adjusts the contribution of higher harmonics to the
-                template. Small values can help avoid pitch doubling
-                errors, but reduce the contribution of high harmonics
-+ max_jump :: sets the maximum amount the pitch can change between
-              frames. This is a hard upper limit.
-+ remask_likelihood :: determines whether the mask is only used on the
-     spectrogram (False) or also on the likelihood (True); that is, if
-     after the spectrogram is correlated with the template, if the
-     mask is used to rule out pitch values outside the mask.  This can
-     greatly increase stability in many cases, but at the cost of
-     increased sensitivity to the mask shape.  Bad masks are much more
-     likely to result in bad traces
-+ particles :: sets the number of particles used to simulate the
-               posterior distribution. Increase to get better
-               estimates, at the cost of more computations (especially
-               when using the backtrace filter)
-+ chains :: sets the number of independent simulation chains. More
-            chains equals better estimates but more computations
-+ pow_thresh :: sets the minimum power for a frame to be included in
-                analysis. If the power is below this threshold at the
-                beginning or end of the signal, it will be
-                excluded. If it's below in the middle of the signal,
-                the tracker will be allowed to drift in those frames
-+ row_thresh :: similar to pow_thresh, but sets the minimum proportion
-                of frequency bands that must be above zero for a frame
-                to be included
-+ rwalk_scale :: when the tracker is allowed to drift, it adopts a
-                 random walk with a Gaussian distribution.  This is
-                 the variance of that Gaussian.
-+ btrace :: sets whether to run the backtrace filter
-
-** ccompare
-
-The /ccompare/ program performs pairwise comparisons between
-recordings.  Several different methods of comparison are supplied in
-the *chirp* package. The pitch traces calculated by /cpitch/ can be used as
-the basis for a dynamic time warping algorithm that provides excellent
-performance for tonal signals.  A spectrographic cross-correlation
-(SPCC) method is supplied, with an option for denoising the signals
-using the masks created in /chirp/.
-
-Users can also supply additional methods for comparison by registering
-them as plugins.
+*Chirp* can also quantitatively measure the similarity between pairs
+of recordings.  Such measurements can be used to track how vocal
+behaviors are transmitted between animals, or how an individual's
+vocal behavior changes over time.  Several different methods of
+comparison are supplied, including spectrographic cross-correlation
+and dynamic time warping.  Additional comparison methods can be used
+in *chirp* via a plugin system.
 
 *** Basic usage
 
-As with the batch processing described previously, /ccompare/ operates
-on all the recordings in the current directory.  It loads the
-recordings (or a derived quantity like the pitch traces) into memory,
-and then performs all the pairwise comparisons (or half of them, if
-the comparison metric is symmetric).  It can split the work between
-multiple processes to increase speed on multicore machines.  For
-example, to compare the example recordings using dynamic time warping
-of the pitch traces:
+Comparisons can be run from the /chirp/ GUI or from a command-line
+script.  To access the graphical interface, select Analysis/Batch
+Analysis/Compare Signals from the menu (\ref{fig:chirp-batchc}).
+
+#+CAPTION:    The batch comparison dialog
+#+LABEL:      fig:chirp-batchc
+#+ATTR_LaTeX: placement=[h!] width=0.3\textwidth
+[[file:chirp_batchc.png]]
+
+First, select a directory to analyze.  This directory should contain
+all the signals you want to compare. A comparison will be made of each
+pair of signals, so the total number of comparisons will be on the
+order of the square of the number of signals in the directory.
+Different comparison methods may require different files; for example,
+the /pitch_dtw/ comparison uses the /plg/ files generated by the pitch
+tracking algorithm, whereas the /masked_spcc/ method requires the
+recording files and the /ebl/ mask files.
+
+Next, select a configuration file.  By default /chirp/ will pick the
+configuration file currently loaded in the GUI, or use preset defaults
+if no configuration file is selected.
+
+You can increase the number of independent processes, up to the number
+of cores in the computer, to speed up the comparison operation. Select
+a comparison method (see below for details on the methods supplied
+with *chirp*) and a storage format.  Using the sqlite format is highly
+recommended, as you can resume an interrupted job and more easily
+import data into other programs (see [[Storage formats]] for more
+information).  A flat text file format is also supported.  For either
+format, select a file to store the result into.  With the sqlite
+format, this can be an existing database, and multiple comparison
+methods can be stored in the same file.
+
+The "Restrict to files in database" option is only supported for
+database storage format.  It tells /chirp/ to look for a table in the
+output database called "signals".  This table should have at least two
+fields, one called "filename" and the other called "id".  The files in
+the analysis directory will be checked against this table and only
+analyzed if they are there.  Otherwise, the table will be created.
+
+The "Skip completed pairs" option is also only supported by database
+storage formats.  If selected and the output table already exists in
+the database, only the pairs that are missing from that table will be
+compared.  This allows you to resume an interrupted batch.
+
+To run the analysis on the command-line, use the script /ccompare/:
 
 #+begin_src sh
-ccompare -c ../chirp.cfg -m pitch_dtw -j 8 > pitch_comparisons.clg
+ccompare [OPTIONS] [-c ../chirp.cfg] -m <method> -s <storage> <directory>
 #+end_src
 
-As with scons, the '-j' parameter controls the number of processes
-that will run in parallel. Like /cpitch/, the main output of the
-program needs to be redirected into a file.  An indicator of the
-analysis's progress will be output to the console.  If you have the
-the progressbar python package installed, this will be a nice progress
-bar.
+As with the graphical interface, /ccompare/ operates on all the files
+in a directory.  You must supply the path of this directory, as well
+as a comparison method ('-m' flag) and a storage format/location ('-s'
+flag).  Type 'ccompare -h' to get a list of the supported methods and
+storage formats, as well as other command-line options.  Specify
+storage format and location using the name of the method and the
+target location (e.g., 'sqlite:comparisons.db' or 'file:comparisons.clg').
 
-The file output contains a number of comment lines, which start with
-asterisks, and two tables.  The first is a list of all the recordings
-the program analyzed, and a unique integer ID.  The second table can
-be very long; it has fields for the ID of the reference and target
-recordings, and any number of statistics for the comparison between
-those recordings.  The number and meaning of the statistics will
-depend on the comparison methods.
+The following sections decribe the comparison methods included with
+*chirp*.
 
 *** Spectrographic cross-correlation
 
@@ -627,7 +674,8 @@ There are a number of issues with using SPCC for comparing bioacoustic
 recordings, especially ones obtained under noisy conditions.  On the
 one hand, SPCC is extremely sensitive to differences in frequency and
 rates of frequency modulation.  If one signal is only tens of Hz
-higher than another, their spectrograms will fail to overlap.
+higher than another, their spectrograms may fail to overlap, depending
+on the resolution of the spectrogram.
 Similarily, if two frequency-modulated signals change at slightly
 different rates, they will fail to overlap except at a single time
 point.  Thus, small differences in the frequency or duration of
@@ -642,19 +690,10 @@ band across both spectrograms, leading to increased SPCC values.
 In general, SPCC should be avoided whenever possible.  For some
 signals (lacking strong tonal characteristics, for example), or for a
 preliminary analysis, it may still have some use.  *Chirp* includes a
-basic SPCC algorithm, and an extended algorithm that can use masks in
-/ebl/ files to mask out noise or restrict analysis to specific
-temporal segments.  To use the basic algorithm on the example files:
-
-#+begin_src sh
-ccompare -c ../chirp.cfg -m spcc > spcc_comparisons.clg
-#+end_src
-
-And to use the extended algorithm:
-
-#+begin_src sh
-ccompare -c ../chirp.cfg -m masked_spcc > spccm_comparisons.clg
-#+end_src
+basic SPCC algorithm ('spcc'), and an extended algorithm that can use
+masks in /ebl/ files to mask out noise or restrict analysis to
+specific temporal segments ('masked_spcc').  To use the basic
+algorithm on the example files:
 
 Both algorithms have options that can be set in the configuration
 file.  The output is a single number, the peak correlation
@@ -713,7 +752,121 @@ an exponentially increasing penalty for larger differences.  The
 distance measures will be extremely large, but they will be finite,
 which can make later clustering analyses much more tractable.
 
+*** Storage formats
+
+The file output contains a number of comment lines, which start with
+asterisks, and two tables.  The first is a list of all the recordings
+the program analyzed, and a unique integer ID.  The second table can
+be very long; it has fields for the ID of the reference and target
+recordings, and any number of statistics for the comparison between
+those recordings.  The number and meaning of the statistics will
+depend on the comparison methods.
+
+The sqlite storage format consists of a single sqlite database file
+(version 3; http://www.sqlite.org/).  The file does not have to exist
+when the comparison starts.  If the file contains a table called
+'signals', /ccompare/ will use this table to assign ID numbers to each
+of the files it compares.  If the 'restrict' option is enabled, only
+files in this table will be used; otherwise if there are files that
+are not in the table they will be added.  If the 'signals' table does
+not exist it will be created.
+
+Each comparison method will generate a table with the name of the
+method.  Thus, you can store the results of multiple comparison
+methods in the same file, and the signals will be indexed with the
+same ID numbers.  Each generated table will have a 'ref' and a 'tgt'
+field, which identify the pair of recordings being compared, and one
+or more additional fields, the outputs of the methods.  Some methods
+produce more than one output field.
+
+Sqlite databases can be accessed by many different analysis programs,
+including R, using SQL queries.  You may need to install additional
+packages. For example, to import data from the pitch_dtw table in the
+field 'superb.db' into an R data.frame:
+
+#+begin_src R
+require(RSQLite)
+drv <- dbDriver("SQLite")
+con <- dbConnect(drv, dbname = "superb.db")
+data <- dbGetQuery(con,'SELECT ref, tgt, dist from pitch_dtw ORDER BY ref, tgt')
+#+end_src
+
+*** Comparison method and storage plugins
+
+For users interested in extending the functionality of the comparison
+algorithm, plugins can be supplied by external packages using Python's
+/pkg_resources/ entry points.  Comparison methods should register a
+class under the entry point "chirp.compare.method".  Consult the
+source in chirp/compare/base_comparison.py for the interface this
+class should implement.  Additional storage formats can be provided
+using the "chirp.compare.storage" entry point; consult
+chirp/compare/file_storage.py and chirp/compare/sqlite_storage.py for
+examples.
+
+This functionality is not available with the standalone versions of
+the program.
+
+** Configuration file
+
+All adjustable parameters in *chirp* are set in a configuration file.
+The file is a simple text file divided into sections, each section
+pertaining to a different program or operation.  An example
+configuration file ('chirp.cfg') is provided in the examples directory
+(or as a separate zip file for standalone installs).  Each option and
+parameter is documented, with some discussion of the effects on the
+analysis.  Consult this file for the most up-to-date description of
+the parameters and their effects.
+
+*** Pitch tracking parameters
+
++ freq_range :: sets the range of frequencies that are *input* to the analysis
++ pitch_range :: sets the range of frequencies that are considered as
+                 possible *outputs* of the analysis.  This range
+                 should almost always be smaller than *freq_range*
++ nfft :: sets the frequency resolution of the spectrogram, and the
+          number of pitch hypotheses
++ shift :: sets the temporal shift between frames
++ winsize :: sets the spectrotemporal resolution of the spectrogram
+             calculation
++ lobes :: sets the number of harmonic lobes in the template. Set between
+           1 to 2 times the number of visible harmonics
++ lobe_decay :: adjusts the contribution of higher harmonics to the
+                template. Small values can help avoid pitch doubling
+                errors, but reduce the contribution of high harmonics
++ max_jump :: sets the maximum amount the pitch can change between
+              frames. This is a hard upper limit.
++ remask_likelihood :: determines whether the mask is only used on the
+     spectrogram (False) or also on the likelihood (True); that is, if
+     after the spectrogram is correlated with the template, if the
+     mask is used to rule out pitch values outside the mask.  This can
+     greatly increase stability in many cases, but at the cost of
+     increased sensitivity to the mask shape.  Bad masks are much more
+     likely to result in bad traces
++ particles :: sets the number of particles used to simulate the
+               posterior distribution. Increase to get better
+               estimates, at the cost of more computations (especially
+               when using the backtrace filter)
++ chains :: sets the number of independent simulation chains. More
+            chains equals better estimates but more computations
++ pow_thresh :: sets the minimum power for a frame to be included in
+                analysis. If the power is below this threshold at the
+                beginning or end of the signal, it will be
+                excluded. If it's below in the middle of the signal,
+                the tracker will be allowed to drift in those frames
++ row_thresh :: similar to pow_thresh, but sets the minimum proportion
+                of frequency bands that must be above zero for a frame
+                to be included
++ rwalk_scale :: when the tracker is allowed to drift, it adopts a
+                 random walk with a Gaussian distribution.  This is
+                 the variance of that Gaussian.
++ btrace :: sets whether to run the backtrace filter
+
 ** Utility programs
+
+In addition to the command-line scripts for batch processing, the
+Python distribution of *chirp* includes the following utility
+programs.  Their functionality may be added to the standalone program
+if enough people ask for it.
 
 *** cplotpitch
 
@@ -741,7 +894,7 @@ bandpass filters.
 The algorithms for this program are already developed and simply need
 to be adapted to work in the *chirp* architecture.
 
-** other features
+** Other features
 
 + Display spectrograms on log-frequency grid
 + More diagnostics for pitch tracking in the GUI - plotting
@@ -750,9 +903,9 @@ to be adapted to work in the *chirp* architecture.
 
 * Acknowledgements and References
 
-- The time-frequency reassignment code is distributed in a separate
-  package, *libtfr*.  Consult its documentation for more information
-  about the algorithm.
+- The time-frequency reassignment code is also distributed in a
+  separate package, *libtfr*.  Consult its documentation for more
+  information about the algorithm.
 
 - The harmonic template algorithm is mostly based on the following two
   papers:
@@ -796,6 +949,10 @@ details.
 As noted throughout the sources, some code is adapted from various
 other sources; their licences are known or believed to be compatible
 with the GPL version 2.
+
+If you use *chirp* in a scientific publication, you are kindly
+requested to cite the following article: [CONTACT DAN MELIZA FOR
+LATEST INFORMATION]
 
 THE PROGRAMS ARE PROVIDED "AS IS" WITHOUT WARRANTY OF MERCANTABILITY
 OR FITNESS FOR A PARTICULAR PURPOSE OR ANY OTHER WARRANTY, EXPRESS OR

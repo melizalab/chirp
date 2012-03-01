@@ -28,6 +28,7 @@ spec_methods = ['hanning','tfr']
 colormaps = ['jet','Greys','hot']
 _el_ext = geom.elementlist.default_extension
 _pitch_ext = plg._default_extension
+_config_ext = '.cfg'
 
 # checklist control
 from wx.lib.mixins.listctrl import CheckListCtrlMixin, ListCtrlAutoWidthMixin
@@ -207,7 +208,6 @@ class ChirpGui(wx.Frame):
         m_next_file = menu_file.Append(-1, "&Next File\tCtrl-N", "Next File")
         m_prev_file = menu_file.Append(-1, "&Previous File\tCtrl-B", "Previous File")
         m_save = menu_file.Append(wx.ID_SAVE, "&Save Elements\tCtrl-S", "Save Elements")
-        m_open_params = menu_file.Append(-1, "Open &Configuration...", "Open Configuration...")
         m_save_params = menu_file.Append(-1, "Save Configuration...", "Save Configuration...")
         m_exit = menu_file.Append(wx.ID_EXIT, "E&xit\tCtrl-X", "Exit")
         self.Bind(wx.EVT_MENU, self.on_open, m_open)
@@ -216,7 +216,6 @@ class ChirpGui(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.on_save, m_save)
         self.Bind(wx.EVT_MENU, self.on_save_params, m_save_params)
-        self.Bind(wx.EVT_MENU, self.on_open_params, m_open_params)
         self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
         menu_edit = wx.Menu()
@@ -363,16 +362,29 @@ class ChirpGui(wx.Frame):
         return controls
 
     def load_file(self, fname):
-        fp = audio.wavfile(fname)
-        sig,Fs = fp.read(), fp.sampling_rate / 1000
-        self.filename = fname
-        self.SetTitle(fname)
-        self.spec.clear()
-        self.list.DeleteAllItems()
-        self.spec.plot_data(sig, Fs)
-        el = self.load_elements(fname)
-        if el: self.status.SetStatusText("Opened file %s; loaded %d elements" % (fname, len(el)))
-        else: self.status.SetStatusText("Opened file %s" % fname)
+        file_type = os.path.splitext(fname)[1]
+        if file_type==_el_ext:
+            el = self.load_elements(fname)
+            if el: self.status.SetStatusText("Loaded %d elements from %s" % (len(el), fname))
+        elif file_type==_pitch_ext:
+            try:
+                self.spec.plot_plg(fname)
+                self.status.SetStatusText("Loaded pitch data from %s" % fname)
+            except Exception, e:
+                self.status.SetStatusText("Error reading pitch data from %s" % fname)
+        elif file_type==_config_ext:
+            self.load_params(fname)
+        else:
+            fp = audio.wavfile(fname)
+            sig,Fs = fp.read(), fp.sampling_rate / 1000
+            self.filename = fname
+            self.SetTitle(fname)
+            self.spec.clear()
+            self.list.DeleteAllItems()
+            self.spec.plot_data(sig, Fs)
+            el = self.load_elements(fname)
+            if el: self.status.SetStatusText("Opened file %s; loaded %d elements" % (fname, len(el)))
+            else: self.status.SetStatusText("Opened file %s" % fname)
 
     def load_elements(self, fname):
         el = None
@@ -477,23 +489,12 @@ class ChirpGui(wx.Frame):
 
     def on_open(self, event):
         fdlg = wx.FileDialog(self, "Select a file to open",
-                             wildcard="WAV files (*.wav)|*.wav|Element files (*.ebl)|*.ebl|Pitch files (*.plg)|*.plg",
+                             wildcard="WAV files (*.wav)|*.wav|Element files (*.ebl)|*.ebl|Pitch files (*.plg)|*.plg|Configuration files (*.cfg)|*.cfg",
                              style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         val = fdlg.ShowModal()
         if val==wx.ID_OK:
             infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
-            file_type = os.path.splitext(infile)[1]
-            if file_type==_el_ext:
-                el = self.load_elements(infile)
-                if el: self.status.SetStatusText("Loaded %d elements from %s" % (len(el), infile))
-            elif file_type==_pitch_ext:
-                try:
-                    self.read_plg(infile)
-                    self.status.SetStatusText("Loaded pitch data from %s" % infile)
-                except Exception:
-                    self.status.SetStatusText("Error reading pitch data from %s" % infile)
-            else:
-                self.load_file(infile)
+            self.load_file(infile)
 
     def _next_file(self, step=1):
         if self.filename is None: return
@@ -526,13 +527,7 @@ class ChirpGui(wx.Frame):
             el.write(outfile)
             self.status.SetStatusText("Wrote %d elements to %s" % (len(el), outfile))
 
-    def on_open_params(self, event):
-        fdlg = wx.FileDialog(self, "Select a configuration file",
-                             wildcard="Config files (*.cfg)|*.cfg",
-                             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        val = fdlg.ShowModal()
-        if not val==wx.ID_OK: return
-        infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
+    def load_params(self, infile):
         self.configfile = config.configoptions(infile)
         # this is sort of kludgy, but it's not too much
         sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
@@ -631,28 +626,37 @@ class ChirpGui(wx.Frame):
     def on_exit(self, event):
         self.Destroy()
 
+class ChirpApp(wx.App):
 
-def main(argv=None):
-    import sys, getopt
-    from ..version import version
-    if argv is None:
+    def OnInit(self):
+        import sys, getopt
         argv = sys.argv[1:]
 
-    configfile = os.path.join(os.getcwd(),"chirp.cfg")  # load in current directory if it exists
-    opts,args = getopt.getopt(argv,'hc:')
-    for o,a in opts:
-        if o =='-h':
-            print __doc__
-            return 0
-        elif o =='-c':
-            configfile=a
+        configfile = os.path.join(os.getcwd(),"chirp.cfg")  # load in current directory if it exists
+        opts,args = getopt.getopt(argv,'hc:')
+        for o,a in opts:
+            if o =='-h':
+                print __doc__
+                return 0
+            elif o =='-c':
+                configfile=a
 
-    print "Starting chirp version", version
-    app = wx.PySimpleApp()
-    app.frame = ChirpGui(configfile=configfile)
-    if len(args) > 0:
-        app.frame.load_file(args[0])
-    app.frame.Show()
+        self.frame = ChirpGui(configfile=configfile)
+        if len(args) > 0:
+            self.frame.load_file(args[0])
+        self.SetTopWindow(self.frame)
+        self.frame.Show()
+        return True
+
+    def MacOpenFile(self, filename):
+        self.frame.load_file(filename)
+
+    def MacReopenApp(self):
+        """Called when the doc icon is clicked, and ???"""
+        self.GetTopWindow().Raise()
+
+def main(argv=None):
+    app = ChirpApp(redirect=False)
     app.MainLoop()
     return 0
 
