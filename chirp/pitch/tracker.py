@@ -200,7 +200,7 @@ class tracker(_configurable):
         spec = libtfr.tfr_spec(signal, options['nfft'], options['shift'], options['winsize'],
                                options['tfr_order'], options['tfr_tm'], options['tfr_flock'],
                                options['tfr_tlock'], fgrid=self.template.fgrid)
-        return spec, libtfr.tgrid(signal.size, Fs, options['shift'], options['winsize']), self.template.fgrid * Fs
+        return spec, libtfr.tgrid(spec, Fs, options['shift']), self.template.fgrid * Fs
 
 
     def spectrogram_options_str(self):

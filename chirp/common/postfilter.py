@@ -74,7 +74,10 @@ def ind_endpoints(ind):
     Given a 1D logical array, returns the first and last points that are True
     """
     q = nx.nonzero(ind)[0]
-    return q[0], q[-1]
+    if q.size > 0:
+        return q[0], q[-1]
+    else:
+        return None
 
 # Variables:
 # End:

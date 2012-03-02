@@ -41,7 +41,7 @@ class spectrogram(_configurable):
             wfun = getattr(nx,self.options['spec_method'])
             w = wfun(Np)
             S = stft(signal, w, shift, nfft)
-        t = tgrid(signal.size, Fs, shift, Np)
+        t = tgrid(S, Fs, shift)
         extent = (0, t[-1], 0, Fs / 2)
         return S,extent
 

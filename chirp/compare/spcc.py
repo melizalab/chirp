@@ -76,7 +76,7 @@ def linspect(signal, Fs, frange, N, shift):
     nfft = int(1.0 * Fs / df)
     S = stft(signal, hanning(nfft), shift)
     F,ind = fgrid(Fs,nfft,frange)
-    T = tgrid(signal.size, Fs, shift, nfft)
+    T = tgrid(S, Fs, shift)
     return S[ind,:], F, T
 
 def spectcc(ref, tgt, biased_norm=True):

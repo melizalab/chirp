@@ -44,18 +44,20 @@ def load_data(basename, filterer=None):
     from ..common import plg
     fp = wavfile(basename + ".wav")
     signal,Fs = fp.read(), fp.sampling_rate
-    if os.path.exists(basename + '.plg'):
-        pitch = plg.read(basename + '.plg')
-        if filterer is not None:
-            ind = postfilter.ind_endpoints(filterer(pitch))
-            pitch = pitch[ind[0]:ind[1]+1]
+    if not os.path.exists(basename + '.plg'):
+        return signal,Fs/1000.,None,None
+
+    pitch = plg.read(basename + '.plg')
+    if filterer is not None:
+        ind = postfilter.ind_endpoints(filterer(pitch))
+        if ind is None:
+            return signal,Fs/1000.,None,None
+        pitch = pitch[ind[0]:ind[1]+1]
         t = pitch['time']
-        if 'p.map' in pitch.dtype.names:
-            p = pitch['p.map']
-        else:
-            p = pitch['p.mmse']
+    if 'p.map' in pitch.dtype.names:
+        p = pitch['p.map']
     else:
-        t,p = None,None
+        p = pitch['p.mmse']
     return signal,Fs/1000.,t,p
 
 class plotter(_configurable):
