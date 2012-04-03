@@ -16,6 +16,9 @@ Created 2011-08-06
 import re
 _el_rx = re.compile(r"\*+ .*lement ([0-9]+)")
 
+class Error(Exception):
+    pass
+
 _default_extension = '.plg'
 
 class pitchtrace(object):
@@ -115,6 +118,8 @@ def read(filename):
             elif line[0] not in ('*','+','-'):
                 values = (current_element,) + tuple(float(x) for x in line.split())
                 records.append(values)
+            elif line.find("error") > -1:
+                raise Error, "Pitch file %s has an error: %s" % (filename, line)
 
     field_types = ('i4',) + ('f8',)*len(field_names)
     field_names.insert(0,'element')
