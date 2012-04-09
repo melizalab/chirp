@@ -22,7 +22,7 @@ class pluginset(object):
         self.defaults = defaults or tuple()
 
     def iter_entry_points(self):
-        from . import pitch_dtw, spcc, masked_spcc
+        from . import pitch_dtw, spcc
         from pkg_resources import iter_entry_points as iep
         for ep in iep(self.entry_point_name):
             yield ep
