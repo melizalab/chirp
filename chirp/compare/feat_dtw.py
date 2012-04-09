@@ -28,7 +28,7 @@ class feat_dtw(base_comparison, _configurable):
     options = dict(cost_matrix = [(1,1,1),(1,2,2),(2,1,2)],
                    metric = 'euclidean',
                    dynamic_cost = True)
-    config_sections = ('spectrogram','dtw',)
+    config_sections = ('dtw',)
 
     def __init__(self, configfile=None, **kwargs):
         self.readconfig(configfile)
@@ -71,11 +71,11 @@ class feat_dtw(base_comparison, _configurable):
 ** Dynamic cost matrix = %(dynamic_cost)s""" % self.options
         return out
 
-def euclidean(x,y):
+def dist_euclidean(x,y):
     """
     Compute euclidean distance matrix for all pairs of time points in
     two time series. Time series can be multivariate, with
-    observations in columns.
+    observations in rows and variables in columns.
     """
     T = (x - y[:,nx.newaxis])
     if T.ndim > 2:
@@ -83,7 +83,21 @@ def euclidean(x,y):
     else:
         return T**2
 
-metrics = {'euclidean' : euclidean}
+def dist_cos(x,y):
+    """
+    Compute distance matrix for all pairs of time points in two time
+    series as the cosine of the angle between vectors at each
+    time. Inputs must be multivariate, with observations in rows and
+    variables in columns.
+    """
+    if not (x.ndim == 2 and y.ndim == 2):
+        raise ValueError, "inputs must be multivariate, observations x variables"
+    xpow = nx.sqrt((x**2).sum(1))
+    ypow = nx.sqrt((y**2).sum(1))
+    return 1 - nx.asarray(nx.asmatrix(y) * nx.asmatrix(x).T) / nx.outer(ypow,xpow)
+
+metrics = {'euclidean' : dist_euclidean,
+           'cos': dist_cos}
 
 def dtw_cost_dynamic(nref,ntgt,extra_steps=0):
     """

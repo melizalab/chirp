@@ -18,6 +18,9 @@ from shapely.ops import cascaded_union
 from shapely.geometry import Polygon  # for convenience
 from .config import _configurable
 
+class Error(Exception):
+    pass
+
 class elementlist(list):
     """
     An elementlist is a collection of elements, which can be either
@@ -88,11 +91,11 @@ class elementlist(list):
                 try:
                     fileversion = line.split()[-1]
                 except ValueError, e:
-                    raise ValueError, "Unable to parse version number of %s" % filename
+                    raise Error, "Unable to parse version number of %s" % filename
             else:
-                raise ValueError, "Unable to parse version number of %s" % filename
+                raise Error, "Unable to parse version number of %s" % filename
             if fileversion is None or StrictVersion(cls.__version__) != StrictVersion(fileversion):
-                raise ValueError, \
+                raise Error, \
                     "File version (%s) doesn't match class version (%s) " % (cls.__version__, fileversion)
 
             out = cls()
@@ -141,6 +144,19 @@ class masker(_configurable):
             cols |= (tgrid >= i0) & (tgrid <= i1)
         imask[:,cols] = True
         return imask
+
+    def cut(self, spec, elems, tgrid, fgrid):
+        """
+        Construct a mask composed of all the elements in the
+        elementlist, then apply the mask to the spectrogram. Frames at
+        either end of the signal where there's no overlap with the
+        mask are dropped.  Raises an error if no frames remain.
+        """
+        imask = self.mask(elems, tgrid, fgrid)
+        idx = imask.sum(0).nonzero()[0]
+        if idx.size < 1:
+            raise Error, "mask is too small to use cut()"
+        return (spec * imask)[:,idx[0]:idx[-1]+1]
 
     def split(self, spec, elems, tgrid, fgrid, cout=None):
         """
@@ -244,7 +260,7 @@ def vertices_to_polygon(vertices):
         poly2 = poly.buffer(tol)
         if poly2.geom_type=='Polygon' and poly2.is_valid:
             return geometry.Polygon(rescale(poly2.exterior.coords,bounds)[0])
-    raise Exception, "Couldn't simplify polygon"
+    raise Error, "Couldn't simplify polygon"
 
 
 def polygon_components(*polys):
@@ -259,7 +275,7 @@ def polygon_components(*polys):
             for geom in poly.geoms:
                 yield geom
         else:
-            raise ValueError, "Object %s is not a polygon or multipolygon", poly
+            raise Error, "Object %s is not a polygon or multipolygon", poly
 
 def split_polygons(p1, p2):
     return p1.difference(p2), p2.difference(p1), p1.intersection(p2)

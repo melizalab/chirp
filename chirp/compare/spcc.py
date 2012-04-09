@@ -6,6 +6,7 @@ compare signals using spectrographic cross-correlation.
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
+import os
 from ..common.config import _configurable
 from .base_comparison import base_comparison
 
@@ -20,12 +21,14 @@ class spcc(base_comparison, _configurable):
     window:      the windowing function to use
     biased_norm: use a biased (but more robust) normalization
     """
-    _descr = "spectrographic cross-correlation (requires .wav files)"
+    _descr = "spectrographic crosscorrelation (requires wav; ebl optional)"
     file_extension = ".wav"
-    options = dict(nfreq=100,
-                   shift=50,
+    options = dict(spec_method='hanning',
+                   nfreq=100,
+                   window_shift=1.5, # this is in ms
                    freq_range=(750.0,10000.0),
-                   window='hanning',
+                   powscale='linear',
+                   mask='box',
                    biased_norm=True
                    )
     config_sections = ('spectrogram','spcc',)
@@ -36,17 +39,41 @@ class spcc(base_comparison, _configurable):
 
     def load_signal(self, locator, dtype='d'):
         """
-        Loads the signal and computes the linear spectrogram.
+        Loads the signal and computes the spectrogram.
 
-        dtype: the data type to store the output in. Default is
-               single-precision to reduce storage requirements.
+        dtype: the data type to store the output in. Use
+               single-precision floats if needed to reduce storage
+               requirements.
         """
         from ..common.audio import wavfile
+        from ..common.signal import spectrogram
+        from ..common.libtfr import fgrid, dynamic_range
+        from ..common.geom import elementlist, masker
+        from numpy import linspace, log10
+
         fp = wavfile(locator)
         signal = fp.read()
         Fs = fp.sampling_rate
-        spec = linspect(signal, Fs, self.options['freq_range'],
-                        self.options['nfreq'], self.options['shift'])[0]
+
+        speccr = spectrogram(**self.options)
+        # adjust window size to get correct number of frequency bands
+        df = 1. * (self.options['freq_range'][1]-self.options['freq_range'][0])/self.options['nfreq']
+        nfft = int(Fs / df)
+
+        spec,extent = speccr.linspect(signal, Fs / 1000, nfft=nfft)
+        F,ind = fgrid(Fs,nfft,self.options['freq_range']) # in Hz
+        spec = spec[ind,:]
+        T = linspace(extent[0],extent[1],spec.shape[1]) # in ms
+
+        if self.options['mask'] != 'none':
+            eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
+            if os.path.exists(eblfile):
+                mask = elementlist.read(eblfile)
+                spec = masker(boxmask=self.options['mask']=='box').cut(spec,mask,T,F / 1000.)
+
+        if self.options['powscale'].startswith('log'):
+            # should really calculate dynamic range of the signal for non 16 bit PCM
+            spec = log10(dynamic_range(spec, 96))
         return spec.astype(dtype)
 
     def compare(self, ref, tgt):
@@ -63,21 +90,11 @@ class spcc(base_comparison, _configurable):
 * SPCC parameters:
 ** Frequency bands = %(nfreq)d
 ** Frequency range %(freq_range)s
-** Window shift = %(shift)d
-** Window type = %(window)s""" % self.options
+** Window shift = %(window_shift).2f
+** Spectrogram method = %(spec_method)s
+** Spectrogram power scale = %(powscale)s
+** Spectrogram masking = %(mask)s""" % self.options
         return out
-
-def linspect(signal, Fs, frange, N, shift):
-    """ Compute STFT of signal and time/frequency grid """
-    from numpy import hanning, linspace
-    from ..common.libtfr import stft, fgrid, tgrid
-    # have to derive NFFT from N
-    df = 1. * (frange[1]-frange[0])/N
-    nfft = int(1.0 * Fs / df)
-    S = stft(signal, hanning(nfft), shift)
-    F,ind = fgrid(Fs,nfft,frange)
-    T = tgrid(S, Fs, shift)
-    return S[ind,:], F, T
 
 def spectcc(ref, tgt, biased_norm=True):
     """

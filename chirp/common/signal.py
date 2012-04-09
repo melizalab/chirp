@@ -8,6 +8,9 @@ Created 2011-08-30
 """
 from .config import _configurable
 
+class Error(Exception):
+    pass
+
 class spectrogram(_configurable):
     """ Computes spectrograms of signals. """
 
@@ -21,34 +24,39 @@ class spectrogram(_configurable):
                    mtm_nw = 2.5)
     config_sections = ('spectrogram',)
 
-    def __init__(self, configfile=None):
+    def __init__(self, configfile=None, **kwargs):
         self.readconfig(configfile)
+        self.options.update(kwargs)
 
-    def linspect(self, signal, Fs):
+    def linspect(self, signal, Fs, nfft=None):
         """ Calculate the spectrogram on a linear power scale.  """
         import numpy as nx
         from .libtfr import stft, tfr_spec, tgrid
-        Np = int(Fs * self.options['window_len'])
         shift = int(self.options['window_shift'] * Fs)
-        nfft = int(2**nx.ceil(nx.log2(Np)))
+        if not nfft:
+            Np = int(Fs * self.options['window_len'])
+            nfft = int(2**nx.ceil(nx.log2(Np)))
+        else:
+            Np = nfft
         if self.options['spec_method']=='tfr':
             S = tfr_spec(signal, nfft, shift, Np,
                          K=self.options['tfr_order'], tm=self.options['tfr_tm'],
                          flock=self.options['tfr_flock'], tlock=self.options['tfr_tlock'])
-        elif self.options['spec_method']=='mtm':
-            S = mtm_spec(signal, nfft, shift, self.options['mtm_nw'])
         else:
-            wfun = getattr(nx,self.options['spec_method'])
-            w = wfun(Np)
+            try:
+                wfun = getattr(nx,self.options['spec_method'])
+                w = wfun(Np)
+            except Exception, e:
+                raise Error, "invalid window function %s: %s" % (self.options['spec_method'], e)
             S = stft(signal, w, shift, nfft)
         t = tgrid(S, Fs, shift)
         extent = (0, t[-1], 0, Fs / 2)
         return S,extent
 
-    def dbspect(self, signal, Fs, dBrange=96):
+    def dbspect(self, signal, Fs, dBrange=96, *args, **kwargs):
         from numpy import log10
         from libtfr import dynamic_range
-        S,extent = self.linspect(signal, Fs)
+        S,extent = self.linspect(signal, Fs, *args, **kwargs)
         return log10(dynamic_range(S, dBrange)), extent
 
 

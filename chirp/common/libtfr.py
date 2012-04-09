@@ -101,7 +101,7 @@ def fgrid(Fs,nfft,fpass):
 
     Example:
 
-    If Fs=1000, and nfft=1048, an fft calculation of a real signal
+    If Fs=1000, and nfft=1024, an fft calculation of a real signal
     generates 512 frequencies between 0 and 500 (i.e. Fs/2) Hz. Now if
     fpass=(0,100), findx will contain the indices in the frequency grid
     corresponding to frequencies < 100 Hz.
@@ -143,7 +143,7 @@ def tgrid(S, Fs, shift):
     from numpy import arange, ndarray
     if isinstance(S, ndarray):
         if S.ndim == 1: raise ValueError, "Input must be a scalar or a 2D numpy array"
-        return arange(0, 1./Fs * S.shape[1] * shift, 1./Fs * shift)
+        return arange(0, 1./Fs * S.shape[1] * shift, 1./Fs * shift)[:S.shape[1]]
     else:
         return arange(0, 1./Fs * S, 1./Fs * shift)
 

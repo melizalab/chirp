@@ -16,8 +16,9 @@ class _entrypoint(object):
 
 class pluginset(object):
 
-    def __init__(self, entry_point_name, defaults=None):
+    def __init__(self, entry_point_name, defaults=None, description=None):
         self.entry_point_name = entry_point_name
+        self.descr = description
         self.defaults = defaults or tuple()
 
     def iter_entry_points(self):
@@ -37,10 +38,11 @@ class pluginset(object):
         for ep in self.iter_entry_points():
             if ep.name.lower() == name.lower():
                 return ep.load()
-        raise ImportError, "No entry point for %s in group %s" % (name.lower(), entry_point_name)
+        raise ImportError, "No such method %s" % name.lower()
 
     def make_scriptdoc(self):
-        out = "Available storage formats:"
+        out = ""
+        if self.descr: out += "Available %s:" % self.descr
         for ep in self.iter_entry_points():
             cls = ep.load()
             out += "\n%15s    %s" % (cls.__name__, cls._descr)
@@ -49,15 +51,15 @@ class pluginset(object):
 
 from .pitch_dtw import pitch_dtw
 from .spcc import spcc
-from .masked_spcc import masked_spcc
 methods = pluginset('chirp.compare.method',(('pitch_dtw',pitch_dtw),
-                                            ('masked_spcc',masked_spcc),
-                                            ('spcc',spcc)))
+                                            ('spcc',spcc)),
+                    'comparison methods')
 
 from .file_storage import file_storage
 from .sqlite_storage import sqlite_storage
 storage = pluginset('chirp.compare.storage',(('sqlite',sqlite_storage),
-                                             ('file',file_storage)))
+                                             ('file',file_storage)),
+                    'storage formats')
 
 # Variables:
 # End:

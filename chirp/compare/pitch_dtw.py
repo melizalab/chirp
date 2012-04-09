@@ -54,11 +54,6 @@ class pitch_dtw(feat_dtw):
             ind = postfilter.ind_endpoints(ind)
             return pest[self.options['estimator']][ind[0]:ind[1]+1]
 
-    @property
-    def compare_stat_fields(self):
-        """ Return a tuple of the names for the statistics returned by compare() """
-        return ("dlen","dist","dnorm")
-
     def options_str(self):
         out = feat_dtw.options_str(self) + "\n** Estimator = %(estimator)s" % self.options
         return out
