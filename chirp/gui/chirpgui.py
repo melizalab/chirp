@@ -383,6 +383,12 @@ class ChirpGui(wx.Frame):
             self.list.DeleteAllItems()
             self.spec.plot_data(sig, Fs)
             el = self.load_elements(fname)
+            if self.configfile.getboolean('gui','auto_load_plg',False):
+                pitchfile = os.path.splitext(fname)[0] + _pitch_ext
+                try:
+                    self.spec.plot_plg(pitchfile)
+                except:
+                    pass
             if el: self.status.SetStatusText("Opened file %s; loaded %d elements" % (fname, len(el)))
             else: self.status.SetStatusText("Opened file %s" % fname)
 
