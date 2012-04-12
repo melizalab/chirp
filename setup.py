@@ -11,7 +11,7 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.1.2'
+VERSION = '1.1.2-drr1'
 
 cls_txt = \
 """
@@ -95,7 +95,8 @@ setup(
   install_requires=['distribute'],
   entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                        'cplotpitch = chirp.misc.plotpitch:main',
-                                       'ccompare = chirp.compare.ccompare:main'],
+                                       'ccompare = chirp.compare.ccompare:main',
+                                       'cpitchstats = chirp.misc.pitchstats:main'],
                   'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
   **app_options
 )
