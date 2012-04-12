@@ -16,8 +16,6 @@ from .TSViewer import XRubberbandPainter
 from .SpecViewer import SpecViewer, SpecHandler
 from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
-from .BatchPitch import BatchPitch
-from .BatchCompare import BatchCompare
 
 from matplotlib.figure import Figure
 from matplotlib import cm
@@ -224,8 +222,10 @@ class ChirpGui(wx.Frame):
 
         menu_batch = wx.Menu()
         m_batch_pitch = menu_batch.Append(-1, "Calculate &Pitch...", "Calculate Pitch")
+        m_batch_stats = menu_batch.Append(-1, "Calculate &Statistics...", "Calculate Statistics")
         m_batch_compare = menu_batch.Append(-1, "&Compare Signals...", "Compare Signals")
         self.Bind(wx.EVT_MENU, self.on_batch_pitch, m_batch_pitch)
+        self.Bind(wx.EVT_MENU, self.on_batch_stats, m_batch_stats)
         self.Bind(wx.EVT_MENU, self.on_batch_compare, m_batch_compare)
 
         menu_analysis = wx.Menu()
@@ -611,11 +611,19 @@ class ChirpGui(wx.Frame):
         self.spec.remove_trace()
 
     def on_batch_pitch(self, event):
+        from .BatchPitch import BatchPitch
         dlg = BatchPitch(self)
         dlg.config.SetPath(self.configfile.filename)
         dlg.Show()
 
+    def on_batch_stats(self, event):
+        from .BatchStats import BatchStats
+        dlg = BatchStats(self)
+        dlg.config.SetPath(self.configfile.filename)
+        dlg.Show()
+
     def on_batch_compare(self, event):
+        from .BatchCompare import BatchCompare
         dlg = BatchCompare(self)
         dlg.config.SetPath(self.configfile.filename)
         dlg.Show()

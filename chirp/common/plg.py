@@ -119,8 +119,10 @@ def read(filename):
                 values = (current_element,) + tuple(float(x) for x in line.split())
                 records.append(values)
             elif line.find("error") > -1:
-                raise Error, "Pitch file %s has an error: %s" % (filename, line)
+                raise Error, "file has an error: %s" % (line)
 
+    if len(records)==0:
+        raise Error, "file contains no data"
     field_types = ('i4',) + ('f8',)*len(field_names)
     field_names.insert(0,'element')
     return rec.fromrecords(records,dtype={'names':field_names,'formats':field_types})
