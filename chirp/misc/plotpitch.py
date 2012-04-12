@@ -3,15 +3,16 @@
 # Copyright (C) 2010 Daniel Meliza <dan // meliza.org>
 # Created 2010-03-15
 """
-Plot spectrograms of all the calls and associated pitch data in the
-current directory.
+Plot spectrograms and overlaid pitch traces of a collection of signals.
 
 Usage:
-cplotpitch [-c config] <outfile>
+cplotpitch [-c config] [-@] <files> <outfile>
 
-Produces a PDF file with the spectrogram of each wav file in the
-current directory, overlaid with pitch traces from each corresponding
-plg file.
+Optional arguments:
+
+-c       specify a chirp.cfg file with configurable options
+-@       plot files from standard in (separated by newlines)
+         instead of command line (useful for pipes from find, etc)
 """
 
 _scriptname = "cplotpitch"
@@ -87,7 +88,7 @@ class plotter(_configurable):
         return p
 
 @_tools.consumer
-def multiplotter(outfile, config, cout=None):
+def multiplotter(outfile, config, cout=None, show_pitch=True):
     """
     A coroutine for plotting a bunch of motifs on the same page. A
     useful entry point for scripts that want to do something similar
@@ -105,9 +106,14 @@ def multiplotter(outfile, config, cout=None):
         return subplots(_nrows,_ncols,sharex=True,sharey=True, figsize=_figsize)
 
     def figfun(fig):
+        maxx = max(ax.dataLim.x1 for ax in fig.axes)
         ax = fig.axes[0]
         ax.set_xticklabels('')
         ax.set_yticklabels('')
+        ax.set_xlim(0,maxx)
+        for ax in fig.axes:
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
         fig.subplots_adjust(left=0.05, right=0.95, wspace=0)
         pp.savefig(fig)
         close_figure(fig)
@@ -121,6 +127,7 @@ def multiplotter(outfile, config, cout=None):
     filt = postfilter.pitchfilter(configfile=config)
     print >> cout, filt.options_str()
 
+    print >> cout, "* Plotting signals:"
     try:
         # first call to yield won't return anything
         ax = None
@@ -128,12 +135,16 @@ def multiplotter(outfile, config, cout=None):
             # receives filename from caller and returns last axes
             basename = yield ax
             ax = axg.next()
-            print "** %s" % basename
 
-            signal,Fs,t,p = load_data(basename, filt)
+            try:
+                signal,Fs,t,p = load_data(basename, filt)
+                print >> cout, "** %s" % basename
+            except Exception, e:
+                print >> cout, "** %s: error loading data (%s)" % (basename, e)
+                continue
             spec,extent = spectrogram.dbspect(signal,Fs)
             plt.plot_spectrogram(ax, spec, extent)
-            if t is not None:
+            if show_pitch and t is not None:
                 plt.plot_trace(ax, t,p)
 
         # loop will break when caller sends stop()
@@ -151,8 +162,9 @@ def main(argv=None, cout=None):
     if cout is None:
         cout = sys.stdout
 
+    signals = None
     config = configoptions()
-    opts,args = getopt.getopt(sys.argv[1:], 'c:hv')
+    opts,args = getopt.getopt(sys.argv[1:], 'c:hv@')
     for o,a in opts:
         if o == '-h':
             print __doc__
@@ -162,16 +174,24 @@ def main(argv=None, cout=None):
             return -1
         elif o == '-c':
             config.read(a)
+        elif o == '-@':
+            signals = (f.strip() for f in sys.stdin.readlines())
+
     if len(args) < 1:
         print __doc__
         sys.exit(-1)
+    if not signals:
+        if len(args) < 2:
+            print __doc__
+            sys.exit(-1)
+        signals = args[:-1]
 
     print >> cout, "* Program: cplotpitch"
     print >> cout, "** Version: %s" % version
-    print >> cout, "* Plotting files in directory: %s" % os.getcwd()
+    print >> cout, "** Output file: %s" % args[-1]
 
-    plotter = multiplotter(args[0], config, cout)
-    for fname in sorted(glob.iglob("*.wav")):
+    plotter = multiplotter(args[-1], config, cout)
+    for fname in signals:
         basename = os.path.splitext(fname)[0]
         ax = plotter.send(basename)
         ax.set_title(basename, ha='left', position=(0.0,1.0), fontsize=4)
