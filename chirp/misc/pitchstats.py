@@ -22,11 +22,11 @@ class summary(_configurable):
 
     options = dict(estimator = 'p.map')
     config_options = ('pitchstats',)
-    template = '\t'.join(('%(file)s','%(nelements)d','%(duration)3.2f',
-                          '%(pitch.mean)3.4f','%(pitch.std)3.4f',
-                          '%(pitch.median)3.4f','%(pitch.max)3.4f','%(pitch.min)3.4f',
-                          '%(pow.mean)3.4f','%(dropped.points)d'))
-    header = '\t'.join(('file','nelements','duration','mean','std','median','max','min','pow','dropped'))
+    template = ('%(file)s','%(nelements)d','%(duration)3.2f',
+                '%(pitch.mean)3.4f','%(pitch.std)3.4f',
+                '%(pitch.median)3.4f','%(pitch.max)3.4f','%(pitch.min)3.4f',
+                '%(pow.mean)3.4f','%(dropped.points)d')
+    header = ('file','nelements','duration','mean','std','median','max','min','pow','dropped')
 
 
     def __init__(self, configfile=None, **kwargs):
@@ -64,21 +64,25 @@ class summary(_configurable):
                 'pow.mean' : nx.mean(pfilt['stim.pow']),
                 'dropped.points' : p.size - pfilt.size}
 
-    def summarize(self, files, cout, header=True):
+    def summarize(self, files, cout, delim='\t', header=True):
         """
         Calculate summary statistics for a bunch of files and output to a stream.
         """
         if header:
-            cout.write(self.header)
+            cout.write(delim.join(self.header))
             cout.write('\n')
         for f in files:
+            basename = os.path.split(os.path.splitext(f)[0])[1]
             try:
                 pstats = self(f)
-                pstats['file'] = os.path.split(os.path.splitext(f)[0])[1]
-                cout.write(self.template % pstats)
+                pstats['file'] = basename
+                cout.write(delim.join(self.template) % pstats)
                 cout.write('\n')
             except Exception, e:
-                cout.write("# Error in %s: %s\n" % (f, e))
+                if delim == ',':
+                    cout.write("%s,ERROR,%s\n" % (basename,e))
+                else:
+                    cout.write("# Error in %s: %s\n" % (basename, e))
 
 
 def main(argv=None, cout=None, cerr=None, **kwargs):
