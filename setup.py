@@ -62,7 +62,10 @@ if sys.platform=='darwin':
                                                                        dict(CFBundleTypeExtensions=["plg"],
                                                                             CFBundleTypeName="Pitch Logfile",
                                                                             CFBundleTypeRole="Viewer"),]
-                                  )))
+                                                ),
+                                              frameworks=['/opt/local/lib/libgeos_c.dylib']
+                                              )
+                                  )
 
                 )
 elif sys.platform=='win32':
