@@ -76,10 +76,15 @@ class BatchStats(wx.Frame):
         if len(files)==0:
             self.status.SetStatusText("No files selected")
             return
+        out   = self.outfile.GetPath()
+        if len(out)==0:
+            self.status.SetStatusText("No output file selected")
+            return
+        if not os.path.isabs(out):
+            out = os.path.join(os.path.split(files[0])[0], out)
         cfg   = self.config.GetPath()
         if len(cfg)==0:
             cfg = None
-        out   = self.outfile.GetPath()
 
         # load classes
         summarizer = pitchstats.summary(cfg)
