@@ -16,7 +16,7 @@ _scriptdoc = \
 """
 ccompare.py [-c <config.cfg>] [-j workers] [-m METHOD]
             [--skip-completed] [--restrict]
-            [-s STORAGE:LOCATION] [SIGNAL_PATH]
+            [-s STORAGE::LOCATION] [SIGNAL_PATH]
 
 Perform pairwise comparisons between all signals in the directory
 SIGNAL_PATH
@@ -178,25 +178,27 @@ def main(argv=None, cout=None):
         compare_class = methods.load(method)
         print >> cout, "* Comparison method: %s %s" % (method, compare_class)
     except ImportError, e:
-        print >> cout, "* ERROR: %s" % e
+        print >> cout, "* ERROR: bad method descriptor: %s" % e
         return -1
 
     comparator = compare_class(configfile=config)
     print >> cout, comparator.options_str()
 
     try:
-        if store_descr is None or store_descr.startswith('file'):
-            store_name, store_loc = 'file', cout
+        if store_descr is None:
+            sparts = ('file', cout)
         else:
-            store_name, store_loc = store_descr.split(':')
-        storage_class = storage.load(store_name)
-        print >> cout, "* Storage system: %s %s " % (store_name, storage_class)
-        storager = storage_class(comparator, location=store_loc, signals=signal_dir, **store_options)
+            sparts = store_descr.split('::')
+        storage_class = storage.load(sparts[0])
+        print >> cout, "* Storage system: %s %s " % (sparts[0], storage_class)
+        storager = storage_class(comparator,
+                                 location=sparts[1] if len(sparts)>1 else None,
+                                 signals=signal_dir, **store_options)
     except ImportError, e:
-        print >> cout, "* ERROR: %s" % e
+        print >> cout, "* ERROR: bad storage descriptor: %s " % e
         return -1
-    except ValueError:
-        print >> cout, "* ERROR: Bad storage descriptor syntax (use STORAGE:LOCATION)"
+    except ValueError, e:
+        print >> cout, "* ERROR: bad storage descriptor: %s" % e
         return -1
 
     print >> cout, storager.options_str()

@@ -29,7 +29,7 @@ PRIMARY KEY (`id` ASC AUTOINCREMENT))
 """
 
 class sqlite_storage(_base_storage):
-    _descr = "sqlite database (LOCATION: database file)"
+    _descr = "sqlite database (LOCATION: file[:table])"
     _preferred_extension = ".db"
     signal_table = "signals"
 
@@ -38,15 +38,21 @@ class sqlite_storage(_base_storage):
         Initialize the storage object with the location where the data
         is stored.
 
-        @param location  the path of a sqlite database (created as needed)
+        @param location  storage location: file[:table] (created as needed)
         @param signals   the directory where the signals are located
         @param restrict  if True, only include signals already stored in the database;
                          if False, signals will be added to the database
         @param skip      if True, pairs() will only return uncompleted calculations
         """
         _base_storage.__init__(self, comparator)
-        self.location = location
-        self.table_name = type(comparator).__name__
+        if location is None:
+            raise ValueError, "must specify a database file"
+        locparts = location.split(':')
+        self.location = locparts[0]
+        if len(locparts) > 1:
+            self.table_name = locparts[1]
+        else:
+            self.table_name = type(comparator).__name__
         self.restrict = restrict
         self.skip = skip
         self._load_signals(signals or '.')
@@ -137,10 +143,10 @@ class sqlite_storage(_base_storage):
 ** File pattern = %s
 ** Add files to database = %s
 ** Skip pairs already in database = %s
-** Writing to table %s:%s (fields: %s)""" % (self.location, self.file_pattern,
-                                             not self.restrict, self.skip,
-                                             self.location, self.table_name,
-                                             ",".join(self.compare_stat_fields))
+** Writing to table %s (fields: %s)""" % (self.location, self.file_pattern,
+                                          not self.restrict, self.skip,
+                                          self.table_name,
+                                          ",".join(self.compare_stat_fields))
         return out
 
     def write_metadata(self, data):

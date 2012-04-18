@@ -38,14 +38,14 @@ class pluginset(object):
         for ep in self.iter_entry_points():
             if ep.name.lower() == name.lower():
                 return ep.load()
-        raise ImportError, "No such method %s" % name.lower()
+        raise ImportError, "No such plugin %s" % name.lower()
 
     def make_scriptdoc(self):
         out = ""
         if self.descr: out += "Available %s:" % self.descr
         for ep in self.iter_entry_points():
             cls = ep.load()
-            out += "\n%15s    %s" % (cls.__name__, cls._descr)
+            out += "\n%15s    %s" % (ep.name.lower(), cls._descr)
         return out
 
 

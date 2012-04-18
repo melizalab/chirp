@@ -12,7 +12,7 @@ from .base_storage import base_storage as _base_storage
 from ..common import _tools
 
 class file_storage(_base_storage):
-    _descr = "standard out (default; skip and restrict options unsupported)"
+    _descr = "file stream (LOCATION: [file]; skip/restrict unsupported)"
     _preferred_extension = ".clg"
 
     def __init__(self, comparator, location, signals=None, **kwargs):
@@ -22,9 +22,12 @@ class file_storage(_base_storage):
         object that will be doing the comparisons (comparator), to
         determine the file extension and the fields of the output.
         """
+        import sys
         _base_storage.__init__(self, comparator)
         if isinstance(location,basestring):
             self.cout = open(location,'wt')
+        elif location is None:
+            self.cout = sys.stdout
         else:
             self.cout = location
         self._load_signals(signals or '.')
@@ -66,8 +69,8 @@ class file_storage(_base_storage):
 * Storage parameters:
 ** Location = %s
 ** File pattern = %s
-** Writing to standard out (fields: %s)""" % (self.cout.name, self.file_pattern,
-                                              ",".join(self.compare_stat_fields))
+** Fields: %s""" % (self.cout.name, self.file_pattern,
+                    ",".join(self.compare_stat_fields))
         return out
 
     def write_metadata(self, data):
