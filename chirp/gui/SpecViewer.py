@@ -21,10 +21,10 @@ class SpecHandler(TSViewer.TSDataHandler, _configurable):
     Data handler subclass for spectrograms. The plot_data() method
     will compute the spectrogram of a signal.
     """
-    options = dict(colormap = 'Greys',
-                   freq_range = (0.0, 10000.0),  # Hz frequency, gets displayed in kHz
+    options = dict(colormap = 'hot',
+                   freq_range = (0.0, 15000.0),  # Hz frequency, gets displayed in kHz
                    dynrange = 60,)
-    config_sections = ('spectrogram',)
+    config_sections = ('spectrogram','gui',)
 
     def __init__(self, configfile=None):
         self.spectrogram = spectrogram(configfile=configfile)

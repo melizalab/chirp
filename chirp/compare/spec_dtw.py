@@ -21,7 +21,9 @@ class spec_dtw(feat_dtw, spcc):
     """
     _descr = "DTW of spectrograms (requires wav; ebl optional)"
     file_extension = ".wav"
-    options = dict(feat_dtw.options,**spcc.options)
+    options = dict(feat_dtw.options,
+                   metric='cosine',
+                   **spcc.options)
     config_sections = ('spectrogram','dtw','spcc','spec_dtw',)
 
     def __init__(self, configfile=None, **kwargs):

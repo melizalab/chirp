@@ -97,6 +97,7 @@ class spcc(base_comparison, _configurable):
 ** Window shift = %(window_shift).2f
 ** Spectrogram method = %(spec_method)s
 ** Spectrogram power scale = %(powscale)s
+** Use biased norm = %(biased_norm)s
 ** Spectrogram masking = %(mask)s""" % self.options
         return out
 
@@ -135,10 +136,6 @@ def spectcc(ref, tgt, biased_norm=True):
     # denominator
     # * for the shorter signal, it's just the L2 norm
     # * for the longer signal, can use L2 norm, or a moving sum
-    #   L2 norm (biased_norm) is simpler, but can bias CC downward if
-    #   there are strong signals outside the match area This can be a
-    #   good penalty for differences in duration.
-    #   With running sum, it's important to use signals that have little zero-padding.
     d1 = norm(ref)
     if biased_norm:
         d2 = norm(tgt)

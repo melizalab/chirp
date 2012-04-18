@@ -16,7 +16,7 @@ class spectrogram(_configurable):
 
     options = dict(spec_method = 'tfr',
                    window_len = 12.0,  # in ms
-                   window_shift = 1.5,  # also in ms
+                   window_shift = 0.7,  # also in ms
                    tfr_order = 5,
                    tfr_tm = 6.0,
                    tfr_flock = 0.01,
