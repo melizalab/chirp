@@ -65,15 +65,19 @@ class spcc(base_comparison, _configurable):
         spec = spec[ind,:]
         T = linspace(extent[0],extent[1],spec.shape[1]) # in ms
 
+        # first convert the spectrogram to its final scale
+        if self.options['powscale'].startswith('log'):
+            # TODO calculate dynamic range of the signal for non 16 bit PCM?
+            spec = log10(dynamic_range(spec, 96))
+            # recenter spectrogram
+            spec -= spec.mean()
+
         if self.options['mask'] != 'none':
             eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
             if os.path.exists(eblfile):
                 mask = elementlist.read(eblfile)
                 spec = masker(boxmask=self.options['mask']=='box').cut(spec,mask,T,F / 1000.)
 
-        if self.options['powscale'].startswith('log'):
-            # should really calculate dynamic range of the signal for non 16 bit PCM
-            spec = log10(dynamic_range(spec, 96))
         return spec.astype(dtype)
 
     def compare(self, ref, tgt):
