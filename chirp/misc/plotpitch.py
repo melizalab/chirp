@@ -173,6 +173,9 @@ def main(argv=None, cout=None):
             print "%s version %s" % (_scriptname, version)
             return -1
         elif o == '-c':
+            if not os.path.exists(a):
+                print >> cout, "ERROR: config file %s doesn't exist" % a
+                return -1
             config.read(a)
         elif o == '-@':
             signals = (f.strip() for f in sys.stdin.readlines())
