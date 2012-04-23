@@ -291,9 +291,6 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     maskfile = None
 
     opts,args = getopt.getopt(argv, 'hvc:m:')
-    if len(args) < 1:
-        print _scriptdoc
-        return -1
 
     for o,a in opts:
         if o == '-h':
@@ -303,9 +300,15 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
             print "cpitch version %s" % version
             return -1
         elif o == '-c':
+            if not os.path.exists(a):
+                print >> cout, "ERROR: config file %s doesn't exist" % a
+                return -1
             config.read(a)
         elif o == '-m':
             maskfile = a
+    if len(args) < 1:
+        print _scriptdoc
+        return -1
 
     print >> cout, "* Program: cpitch"
     print >> cout, "** Version: %s" % version

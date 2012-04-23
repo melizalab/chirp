@@ -148,6 +148,9 @@ def main(argv=None, cout=None):
             print "cpitch version %s" % version
             return -1
         elif o == '-c':
+            if not os.path.exists(a):
+                print >> cout, "ERROR: config file %s doesn't exist" % a
+                return -1
             config.read(a)
         elif o == '-m':
             method = a
@@ -180,7 +183,6 @@ def main(argv=None, cout=None):
     except ImportError, e:
         print >> cout, "* ERROR: bad method descriptor: %s" % e
         return -1
-
     comparator = compare_class(configfile=config)
     print >> cout, comparator.options_str()
 
