@@ -87,18 +87,19 @@ make a PDF
 
 ** DEFERRED znote
 
-** DEFERRED interval splitter
+** STARTED interval splitter
 
 * DONE auxiliary programs [1/1]
 
 ** DONE cplotpitch (plot spectrograms and pitch overlay)
 
-* TODO release checking [1/4]
+* TODO release checking [4/4]
 
 ** DONE check numpy dependency for versions
 
-** STARTED documentation
+** DONE documentation
+** DONE py2app
+** CANCELED py2exe
 
-** TODO py2app
-
-** TODO py2exe
+Indefinitely deferred; getting the program even working under windows
+will be a complete nightmare.

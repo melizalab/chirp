@@ -56,28 +56,43 @@ class elementlist(list):
 
     @property
     def polys(self):
-        """ Return a list of the polygons in the elementlist """
+        """ list of the polygons in the elementlist """
         return [p for p in self if self.element_type(p)=='poly']
 
     @property
     def multipolygon(self):
-        """ Return a multipolygon with all the component polygons """
+        """ multipolygon with all the component polygons """
         return cascaded_union(self.polys)
 
     @property
     def intervals(self):
-        """ Return a list of all the intervals in the elementlist """
+        """ list of all the intervals in the elementlist """
         return [p for p in self if self.element_type(p)=='interval']
 
+    @property
+    def range(self):
+        """ the temporal interval that encompasses all the elements """
+        if len(self)==0: return None, None
+        return min([x[0] for x in self.intervals] + [x.bounds[0] for x in self.polys]),\
+            max([x[1] for x in self.intervals] + [x.bounds[2] for x in self.polys])
+    
     @staticmethod
     def element_type(el):
-        """ Return type of the element (currently poly or interval) """
+        """
+        Return type of the element:
+        interval - a two-element array indicating start and stop times
+        poly - a polygon (simple or complex)
+        geom - a non-polygonal geometry
+
+        Raises geom.Error if the type is not known
+        """
         if isinstance(el,(tuple,list)):
             return 'interval'
         elif isinstance(el, geometry.Polygon):
             return 'poly'
-        else:
-            return None
+        elif isinstance(el, geometry.base.BaseGeometry):
+            return 'geom'
+        raise Error, "unknown element type"
 
 
     @classmethod

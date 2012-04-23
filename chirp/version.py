@@ -1,7 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 
-version = "1.1.2"
+version = "1.1.2-csplit"
 
 def lib_versions():
     import sys
