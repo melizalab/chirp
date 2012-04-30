@@ -28,6 +28,5 @@ Copyright (C) 2011-2012 Dan Meliza <dan // meliza.org>
 Project site: http://github.com/dmeliza/chirp
 """ % lib_versions()
 
-
 # Variables:
 # End:

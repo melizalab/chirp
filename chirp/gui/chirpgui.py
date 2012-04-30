@@ -383,7 +383,7 @@ class ChirpGui(wx.Frame):
             self.list.DeleteAllItems()
             self.spec.plot_data(sig, Fs)
             el = self.load_elements(fname)
-            if self.configfile.getboolean('gui','auto_load_plg',False):
+            if self.configfile.getboolean('gui','auto_load_plg',True):
                 pitchfile = os.path.splitext(fname)[0] + _pitch_ext
                 try:
                     self.spec.plot_plg(pitchfile)
@@ -503,18 +503,20 @@ class ChirpGui(wx.Frame):
             self.load_file(infile)
 
     def _next_file(self, step=1):
+        from ..common import _tools
         if self.filename is None: return
         pn,fn = os.path.split(self.filename)
-        files = sorted(glob(os.path.join(pn, "*.wav")))
+        # glob is very slow for large directories
+        files = sorted((x for x in os.listdir(pn) if x.endswith('.wav')), key=_tools.alnumkey)
         try:
-            idx = files.index(self.filename)
+            idx = files.index(fn)
         except ValueError:
             idx = -1
 
         idx += step
         if idx < 0 or idx >= len(files):
             return
-        self.load_file(files[idx])
+        self.load_file(os.path.join(pn,files[idx]))
 
     def on_next_file(self, event):
         """ Open next file in current directory """
