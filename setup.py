@@ -11,7 +11,7 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.1.2-drr1'
+VERSION = '1.1.2-drr2'
 
 cls_txt = \
 """
