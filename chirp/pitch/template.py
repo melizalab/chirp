@@ -44,7 +44,7 @@ class harmonic(object):
         pitch_range = kwargs.get('pitch_range')
         freq_range = kwargs.get('freq_range')
         nfreq = kwargs.get('nfft')
-        lobes = kwargs.get('lobes',6)
+        lobes = kwargs.get('lobes',7)
         decay = kwargs.get('lobe_decay',0.85)
         neg_ampl = kwargs.get('neg_ampl',0.35)
         neg_width = kwargs.get('neg_width',9)
@@ -131,7 +131,7 @@ def normalize_lobes(psd, lobes, decay, thresh=1e-10, between=None):
     lobepos = []
     csum = lobestart = lobecount = 0
     for i,val in enumerate(psd):
-        if lobecount > lobes: break
+        if lobecount >= lobes: break
         if csum > thresh:
             if val > thresh:
                 csum += val

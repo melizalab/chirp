@@ -1,3 +1,7 @@
 *.pyo
 *.pyc
 *.so
+_*.c
+build/
+dist/
+chirp.egg-info/

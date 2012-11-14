@@ -75,7 +75,7 @@ class tracker(_configurable):
                    tfr_tlock=5,
                    pitch_range=(0.02,0.25),
                    freq_range=(0.01,0.4),
-                   lobes=6,
+                   lobes=7,
                    lobe_decay=0.85,
                    neg_ampl=0.35,
                    neg_width=9,

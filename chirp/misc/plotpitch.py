@@ -53,7 +53,7 @@ def load_data(basename, filterer=None):
         if ind is None:
             return signal,Fs/1000.,None,None
         pitch = pitch[ind[0]:ind[1]+1]
-        t = pitch['time']
+    t = pitch['time']
     if 'p.map' in pitch.dtype.names:
         p = pitch['p.map']
     else:
