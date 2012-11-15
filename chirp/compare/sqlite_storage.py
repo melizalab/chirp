@@ -152,6 +152,7 @@ import numpy
 def adapt_numpy(val):
     return val.tolist()
 sqlite3.register_adapter(numpy.int32,adapt_numpy)
+sqlite3.register_adapter(numpy.int64,adapt_numpy)
 sqlite3.register_adapter(numpy.float32,adapt_numpy)
 sqlite3.register_adapter(numpy.float64,adapt_numpy)
 

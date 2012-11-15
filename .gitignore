@@ -2,6 +2,8 @@
 *.pyc
 *.so
 _*.c
+.#*
 build/
 dist/
-chirp.egg-info/
+chirp.egg-info
+examples/
