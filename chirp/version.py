@@ -1,7 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 
-version = "1.1.2"
+version = "1.1.2-drr1"
 
 def lib_versions():
     import sys
@@ -27,7 +27,6 @@ geos/shapely: %(geos)s
 Copyright (C) 2011-2012 Dan Meliza <dan // meliza.org>
 Project site: http://github.com/dmeliza/chirp
 """ % lib_versions()
-
 
 # Variables:
 # End:
