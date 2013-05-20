@@ -97,7 +97,7 @@ except ImportError:
             if index % 10 == 0: sys.stderr.write("\r[ %s completed %d ]" % (self.title,index+1))
 
         def finish(self, index):
-            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index))
+            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index,index))
 
 
 

@@ -1,7 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- mode: python -*-
 
-version = "1.2.0a1"
+version = "1.2.0a2"
 
 def lib_versions():
     import sys

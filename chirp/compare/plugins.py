@@ -49,10 +49,11 @@ class pluginset(object):
         return out
 
 
-from .pitch_dtw import pitch_dtw
+from .pitch_dtw import pitch_dtw, pitch_cc
 from .spcc import spcc
 from .spec_dtw import spec_dtw
 methods = pluginset('chirp.compare.method',(('pitch_dtw',pitch_dtw),
+                                            ('pitch_cc',pitch_cc),
                                             ('spcc',spcc),
                                             ('spec_dtw',spec_dtw)),
                     'comparison methods')

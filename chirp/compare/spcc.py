@@ -115,6 +115,11 @@ def spectcc(ref, tgt, biased_norm=True):
     from numpy.fft import fft,ifft
     from numpy.linalg import norm
 
+    assert ref.ndim == tgt.ndim
+    if ref.ndim == 1:
+        ref.shape = (1,ref.size)
+        tgt.shape = (1,tgt.size)
+
     rfreq,rframes = ref.shape
     tfreq,tframes = tgt.shape
     assert tfreq==rfreq, "Spectrograms must have same number of frequency bands"

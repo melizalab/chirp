@@ -28,7 +28,16 @@ SIGNAL_PATH
 
 --skip-completed   skip completed calculations (database storage only)
 --restrict         restrict to signals stored in database table 'signals'
+--test             do a test run on the first two signals (no storage required)
 """
+
+def run_test(signal_dir, comparator, cout=None):
+    import os.path
+    from glob import glob
+    signals = glob(os.path.join(signal_dir,'*' + comparator.file_extension))[:2]
+    ref,tgt = [comparator.load_signal(f) for f in signals]
+    results = comparator.compare(ref, tgt)
+    print signals[0], signals[1], results
 
 def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None):
     """
@@ -136,11 +145,12 @@ def main(argv=None, cout=None):
     from ..common.config import configoptions
     config = configoptions()
 
-    opts,args = getopt.getopt(argv, 'hvc:m:s:j:',['skip-completed','restrict'])
+    opts,args = getopt.getopt(argv, 'hvc:m:s:j:',['skip-completed','restrict','test'])
 
     method = None
     store_descr = None
     store_options = dict()
+    do_test = False
 
     nworkers = 1
     for o,a in opts:
@@ -165,6 +175,8 @@ def main(argv=None, cout=None):
             store_options['skip'] = True
         elif o == '--restrict':
             store_options['restrict'] = True
+        elif o == '--test':
+            do_test = True
 
     if len(args)==0:
         signal_dir = os.getcwd()
@@ -188,6 +200,8 @@ def main(argv=None, cout=None):
         return -1
     comparator = compare_class(configfile=config)
     print >> cout, comparator.options_str()
+
+    if do_test: return run_test(signal_dir, comparator, cout=cout)
 
     try:
         if store_descr is None:
