@@ -71,7 +71,9 @@ class pitch_cc(base_comparison, _configurable):
 
     def compare(self, ref, tgt):
         from .spcc import spectcc
-        return (spectcc(ref, tgt).sum(0).max(),)
+        R = ref - ref.mean()
+        T = tgt - tgt.mean()
+        return (spectcc(R, T, biased_norm=True).sum(0).max(),)
 
     def options_str(self):
         out = "** Estimator = %(estimator)s" % self.options
