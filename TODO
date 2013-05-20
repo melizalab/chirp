@@ -50,25 +50,18 @@ filtering.  Will need to run entire analysis to know for sure
 
 ** DONE write database import script
 
-* TODO chirp (main gui) [9/13]
-
+* DONE chirp (main gui) [9/9]
 ** DONE propagate any changes to backend code
 
 ** DONE calculate pitch in GUI
 
 ** DONE config file using my backend instead of wx.Config
 
-** DEFERRED add dialog to set pitch parameters
-
 ** DONE allow holes in polygons?
 
 ** DONE fix next/previous
 
 ** DONE shortcut key for subtracting off regions
-
-** DEFERRED log spectrogram display?
-
-** DEFERRED more efficient spectrogram display, eliminate matplotlib dependency
 
 ** DONE load configuration from file
 
@@ -81,19 +74,17 @@ should remember last directory
 too much trouble trying to load package data in standalone apps - just
 make a PDF
 
-** DEFERRED PDF generation in chirp?
-
-* DEFERRED csplitter [0/2]
+* DEFERRED csplitter [1/2]
 
 ** DEFERRED znote
 
-** STARTED interval splitter
+** DONE interval splitter
 
 * DONE auxiliary programs [1/1]
 
 ** DONE cplotpitch (plot spectrograms and pitch overlay)
 
-* TODO release checking [4/4]
+* DONE release checking [4/4]
 
 ** DONE check numpy dependency for versions
 
@@ -103,3 +94,12 @@ make a PDF
 
 Indefinitely deferred; getting the program even working under windows
 will be a complete nightmare.
+
+* Future directions
+
+** DEFERRED add dialog to set pitch parameters
+** DEFERRED log spectrogram display?
+** DEFERRED more efficient spectrogram display, eliminate matplotlib dependency
+** DEFERRED PDF generation in chirp?
+** DEFERRED multiple passes with particle filter?
+** DEFERRED treat rate of change as a free (or even time-varying) parameter that we try to estimate?

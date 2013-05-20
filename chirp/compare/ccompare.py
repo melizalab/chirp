@@ -10,7 +10,7 @@ Created 2011-08-30
 from .plugins import methods, storage
 from ..common.progress import progressbar
 import multiprocessing
-
+import sys
 
 _scriptdoc = \
 """
@@ -95,8 +95,11 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
             if stop_signal.value: break
             refdata = d[ref]
             tgtdata = d[tgt]
-            results = comparator.compare(refdata, tgtdata)
-            dq.put((ref,tgt) + results)
+            try:
+                results = comparator.compare(refdata, tgtdata)
+                dq.put((ref,tgt) + results)
+            except Exception, e:
+                cout.write("Error comparing %s to %s: %s\n" % (ref, tgt, e))
         dq.put(None)
 
     for i in xrange(nworkers):
@@ -219,7 +222,7 @@ def main(argv=None, cout=None):
         return -2
     print >> cout, "* Running comparisons:"
     progbar = progressbar(title='Comparing:')
-    run_comparisons(storager, comparator, data, mgr, progbar, nworkers=nworkers)
+    run_comparisons(storager, comparator, data, mgr, progbar, nworkers=nworkers, cout=cout)
     return 0
 
 # Variables:
