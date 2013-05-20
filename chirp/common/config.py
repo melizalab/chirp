@@ -119,5 +119,6 @@ class _configurable(object):
         else:
             raise TypeError, "%s is not a configoptions object or a filename"
 
+
 # Variables:
 # End:

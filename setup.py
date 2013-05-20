@@ -11,7 +11,7 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.1.2'
+VERSION = '1.2.0a1'
 
 cls_txt = \
 """
@@ -100,6 +100,7 @@ setup(
                                        'cplotpitch = chirp.misc.plotpitch:main',
                                        'ccompare = chirp.compare.ccompare:main',
                                        'csplit = chirp.split.csplit:main'],
+                                       'cpitchstats = chirp.misc.pitchstats:main'],
                   'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
   **app_options
 )
