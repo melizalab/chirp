@@ -6,13 +6,17 @@
 Plot spectrograms and overlaid pitch traces of a collection of signals.
 
 Usage:
-cplotpitch [-c config] [-@] <files> <outfile>
+cplotpitch [-c CONFIG] [-p PITCHDIR] [-@] FILES OUTFILE
+
+FILES   a collection of wave files to plot. If a plg file with the same
+        basename exists in PITCHDIR, plots the overlaid pitch trace
 
 Optional arguments:
 
 -c       specify a chirp.cfg file with configurable options
 -@       plot files from standard in (separated by newlines)
          instead of command line (useful for pipes from find, etc)
+-p       look for pitch files in PITCHDIR (default same directory as each file)
 """
 
 _scriptname = "cplotpitch"
@@ -36,7 +40,7 @@ _figsize = (11,6)
 _nrows = 6
 _ncols = 3
 
-def load_data(basename, filterer=None):
+def load_data(basename, filterer=None, pitchdir=None):
     """
     Load data from wav and plg files. If filterer is not None, filters
     pitch trace.
@@ -45,10 +49,15 @@ def load_data(basename, filterer=None):
     from ..common import plg
     fp = wavfile(basename + ".wav")
     signal,Fs = fp.read(), fp.sampling_rate
-    if not os.path.exists(basename + '.plg'):
+
+    if isinstance(pitchdir, basestring):
+        plgfile = os.path.join(pitchdir, os.path.split(basename)[1] + '.plg')
+    else:
+        plgfile = basename + '.plg'
+    if not os.path.exists(plgfile):
         return signal,Fs/1000.,None,None
 
-    pitch = plg.read(basename + '.plg')
+    pitch = plg.read(plgfile)
     if filterer is not None:
         ind = postfilter.ind_endpoints(filterer(pitch))
         if ind is None:
@@ -88,7 +97,7 @@ class plotter(_configurable):
         return p
 
 @_tools.consumer
-def multiplotter(outfile, config, cout=None, show_pitch=True):
+def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
     """
     A coroutine for plotting a bunch of motifs on the same page. A
     useful entry point for scripts that want to do something similar
@@ -137,7 +146,7 @@ def multiplotter(outfile, config, cout=None, show_pitch=True):
             ax = axg.next()
 
             try:
-                signal,Fs,t,p = load_data(basename, filt)
+                signal,Fs,t,p = load_data(basename, filt, pitchdir)
                 print >> cout, "** %s" % basename
             except Exception, e:
                 print >> cout, "** %s: error loading data (%s)" % (basename, e)
@@ -163,8 +172,9 @@ def main(argv=None, cout=None):
         cout = sys.stdout
 
     signals = None
+    pitchdir = None
     config = configoptions()
-    opts,args = getopt.getopt(sys.argv[1:], 'c:hv@')
+    opts,args = getopt.getopt(sys.argv[1:], 'c:p:hv@')
     for o,a in opts:
         if o == '-h':
             print __doc__
@@ -172,6 +182,8 @@ def main(argv=None, cout=None):
         elif o == '-v':
             print "%s version %s" % (_scriptname, version)
             return -1
+        elif o == '-p':
+            pitchdir = a
         elif o == '-c':
             if not os.path.exists(a):
                 print >> cout, "ERROR: config file %s doesn't exist" % a
@@ -191,9 +203,10 @@ def main(argv=None, cout=None):
 
     print >> cout, "* Program: cplotpitch"
     print >> cout, "** Version: %s" % version
+    print >> cout, "** Loading pitch from %s" % (pitchdir or "same directory as signal")
     print >> cout, "** Output file: %s" % args[-1]
 
-    plotter = multiplotter(args[-1], config, cout)
+    plotter = multiplotter(args[-1], config, cout, pitchdir=pitchdir)
     for fname in signals:
         basename = os.path.splitext(fname)[0]
         ax = plotter.send(basename)

@@ -31,11 +31,11 @@ class splitter(_configurable):
     def __init__(self, configfile=None, **kwargs):
         self.readconfig(configfile)
         self.options.update(kwargs)
-    
+
     def splitfile(self, wavfile, lblfile, cout=None):
         """
         Split the signal in <wavfile> into the elements in <lblfile>.
-        
+
         yields (extracted signal, sampling_rate)
         """
         elems = geom.elementlist.read(lblfile)
@@ -44,7 +44,7 @@ class splitter(_configurable):
                 elems = [elems.range]
             else:
                 raise NotImplementedError, "merging polygons not implemented"
-        
+
         with audio.wavfile(wavfile,'r') as fp:
             signal, Fs = fp.read(), fp.sampling_rate / 1000.
             for i,elem in enumerate(elems):
@@ -66,7 +66,7 @@ class splitter(_configurable):
 ** Boxmask polygons = %(boxmask)s
 ** Merge elements = %(merge_elements)s""" % self.options
         return out
-                
+
 def main(argv=None, cout=None, cerr=None, **kwargs):
     import os, sys
     from ..version import version
@@ -82,7 +82,7 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
     config = configoptions()
 
     opts,args = getopt.getopt(argv, 'hvc:')
-    
+
     for o,a in opts:
         if o == '-h':
             print _scriptdoc
@@ -102,7 +102,7 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
         maskfile = args[1]
     else:
         maskfile = basename + ".ebl"
-    
+
     print >> cout, "* Program: %s" % _scriptname
     print >> cout, "** Version: %s" % version
     print >> cout, "* Sound file: %s" % wavfile
@@ -112,10 +112,10 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
     print >> cout, splt.options_str()
 
     for i, signal, Fs in splt.splitfile(wavfile, maskfile, cout=cout):
-        outfile = "%s_e%03d.wav" % (basename, i)
+        outfile = "%s_e%03d.wav" % (os.path.split(basename)[1], i)
         print "** Writing extracted signal to %s" % outfile
         fp = audio.wavfile(outfile, 'w', sampling_rate=Fs * 1000)
         fp.write(signal)
-            
+
 # Variables:
 # End:
