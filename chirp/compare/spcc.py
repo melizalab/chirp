@@ -19,6 +19,7 @@ class spcc(base_comparison, _configurable):
     freq_range:  the range of frequencies to compare (in Hz)
     shift:       the number of time points to shift between analysis window
     window:      the windowing function to use
+    subtract_mean: subtract mean of spectrograms before doing CC
     biased_norm: use a biased (but more robust) normalization
     """
     _descr = "spectrographic crosscorrelation (requires wav; ebl optional)"
@@ -29,6 +30,7 @@ class spcc(base_comparison, _configurable):
                    freq_range=(750.0,10000.0),
                    powscale='linear',
                    mask='box',
+                   subtract_mean=False,
                    biased_norm=True
                    )
     config_sections = ('spectrogram','spcc',)
@@ -81,6 +83,9 @@ class spcc(base_comparison, _configurable):
         return spec.astype(dtype)
 
     def compare(self, ref, tgt):
+        if self.options['correct_mean']:
+            ref -= ref.mean()
+            tgt -= tgt.mean()
         cc = spectcc(ref, tgt, self.options['biased_norm'])
         return (cc.sum(0).max(),)
 
