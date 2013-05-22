@@ -15,12 +15,12 @@ class spcc(base_comparison, _configurable):
     Compute pairwise distances between motifs using spectrographic
     cross-correlation (SPCC). Configurable options:
 
-    nfreq:       the number of frequency bands to compare
-    freq_range:  the range of frequencies to compare (in Hz)
-    shift:       the number of time points to shift between analysis window
-    window:      the windowing function to use
-    subtract_mean: subtract mean of spectrograms before doing CC
-    biased_norm: use a biased (but more robust) normalization
+    nfreq:         the number of frequency bands to compare
+    freq_range:    the range of frequencies to compare (in Hz)
+    shift:         the number of time points to shift between analysis window
+    window:        the windowing function to use
+    subtract_mean: subtract mean of log spectrograms before doing CC
+    biased_norm:   use a biased (but more robust) normalization
     """
     _descr = "spectrographic crosscorrelation (requires wav; ebl optional)"
     file_extension = ".wav"
@@ -30,7 +30,7 @@ class spcc(base_comparison, _configurable):
                    freq_range=(750.0,10000.0),
                    powscale='linear',
                    mask='box',
-                   subtract_mean=False,
+                   subtract_mean=True,
                    biased_norm=True
                    )
     config_sections = ('spectrogram','spcc',)
@@ -72,7 +72,8 @@ class spcc(base_comparison, _configurable):
             # TODO calculate dynamic range of the signal for non 16 bit PCM?
             spec = log10(dynamic_range(spec, 96))
             # recenter spectrogram
-            spec -= spec.mean()
+            if self.options['subtract_mean']:
+                spec -= spec.mean()
 
         if self.options['mask'] != 'none':
             eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
@@ -83,9 +84,6 @@ class spcc(base_comparison, _configurable):
         return spec.astype(dtype)
 
     def compare(self, ref, tgt):
-        if self.options['correct_mean']:
-            ref -= ref.mean()
-            tgt -= tgt.mean()
         cc = spectcc(ref, tgt, self.options['biased_norm'])
         return (cc.sum(0).max(),)
 
