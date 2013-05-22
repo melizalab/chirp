@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 # -*- mode: python -*-
 """
 widget for viewing and browsing time series data, in particular

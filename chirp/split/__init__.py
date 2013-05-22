@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 # -*- mode: python -*-
 """
 modules for splitting and filtering functionality

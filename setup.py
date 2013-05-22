@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 # -*- mode: python -*-
 from setuptools import setup, find_packages
 from distutils.extension import Extension
@@ -11,7 +11,7 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.2.0a1'
+VERSION = '1.2.0'
 
 cls_txt = \
 """

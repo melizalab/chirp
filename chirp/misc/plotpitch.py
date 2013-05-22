@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 # -*- mode: python -*-
 # Copyright (C) 2010 Daniel Meliza <dan // meliza.org>
 # Created 2010-03-15
