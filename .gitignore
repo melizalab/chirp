@@ -7,3 +7,4 @@ build/
 dist/
 chirp.egg-info
 examples/
+/wiki/
