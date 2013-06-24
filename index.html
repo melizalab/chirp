@@ -1,157 +1,78 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-lang="en" xml:lang="en">
-<head>
-<title>chirp - pitch detection and comparison for bioacoustics</title>
-<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
-<meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-03-01 10:47:41 CST"/>
-<meta name="author" content="Dan Meliza"/>
-<meta name="description" content=""/>
-<meta name="keywords" content=""/>
-<style type="text/css">
- <!--/*--><![CDATA[/*><!--*/
-  html { font-family: Times, serif; font-size: 12pt; }
-  .title  { text-align: center; }
-  .todo   { color: red; }
-  .done   { color: green; }
-  .tag    { background-color: #add8e6; font-weight:normal }
-  .target { }
-  .timestamp { color: #bebebe; }
-  .timestamp-kwd { color: #5f9ea0; }
-  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
-  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
-  .center {margin-left:auto; margin-right:auto; text-align:center;}
-  p.verse { margin-left: 3% }
-  pre {
-	border: 1pt solid #AEBDCC;
-	background-color: #F3F5F7;
-	padding: 5pt;
-	font-family: courier, monospace;
-        font-size: 90%;
-        overflow:auto;
-  }
-  table { border-collapse: collapse; }
-  td, th { vertical-align: top;  }
-  th.right  { text-align:center;  }
-  th.left   { text-align:center;   }
-  th.center { text-align:center; }
-  td.right  { text-align:right;  }
-  td.left   { text-align:left;   }
-  td.center { text-align:center; }
-  dt { font-weight: bold; }
-  div.figure { padding: 0.5em; }
-  div.figure p { text-align: center; }
-  textarea { overflow-x: auto; }
-  .linenr { font-size:smaller }
-  .code-highlighted {background-color:#ffff00;}
-  .org-info-js_info-navigation { border-style:none; }
-  #org-info-js_console-label { font-size:10px; font-weight:bold;
-                               white-space:nowrap; }
-  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
-                                 font-weight:bold; }
-  /*]]>*/-->
-</style>
-<link rel="stylesheet" type="text/css" href="index.css" />
-<script type="text/javascript">
-<!--/*--><![CDATA[/*><!--*/
- function CodeHighlightOn(elem, id)
- {
-   var target = document.getElementById(id);
-   if(null != target) {
-     elem.cacheClassElem = elem.className;
-     elem.cacheClassTarget = target.className;
-     target.className = "code-highlighted";
-     elem.className   = "code-highlighted";
-   }
- }
- function CodeHighlightOff(elem, id)
- {
-   var target = document.getElementById(id);
-   if(elem.cacheClassElem)
-     elem.className = elem.cacheClassElem;
-   if(elem.cacheClassTarget)
-     target.className = elem.cacheClassTarget;
- }
-/*]]>*///-->
-</script>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>chirp by dmeliza</title>
 
-</head>
-<body>
-<div id="content">
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>chirp</h1>
+        <p>Pitch and spectral analysis and comparison of bioacoustic signals</p>
 
-<h1 class="title">chirp - pitch detection and comparison for bioacoustics</h1>
-
-<div id="outline-container-1" class="outline-3">
-<h3 id="sec-1">What is chirp? </h3>
-<div class="outline-text-3" id="text-1">
+        <p class="view"><a href="https://github.com/dmeliza/chirp">View the Project on GitHub <small>dmeliza/chirp</small></a></p>
 
 
-<p>
-Chirp is a suite of software for analyzing and comparing bioacoustic
-signals. It consists of the following semi-independent components:
-</p>
-<ul>
-<li>A graphical interface for viewing conventional and <a href="http://dmeliza.github.com/libtfrspec">time-frequency reassignment</a> spectrograms.
-<ul>
-<li>Select, play, and zoom in on temporal sections of recordings;
-    adjust spectrogram parameters interactively.
-</li>
-<li>Define temporal and spectrotemporal regions of interest; save in
-    simple text-based files for further analysis
-</li>
-</ul>
+        <ul>
+          <li><a href="https://github.com/dmeliza/chirp/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/dmeliza/chirp/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/dmeliza/chirp">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h2>
+<a name="what-is-chirp" class="anchor" href="#what-is-chirp"><span class="octicon octicon-link"></span></a>What is chirp?</h2>
 
-</li>
-<li>An advanced signal processing algorithm for tracking the pitch
-  (fundamental frequency) of tonal signals.  Designed for use with
-  noisy field recordings.
-</li>
-<li>A dynamic time-warping algorithm for quantitatively comparing the
-  pitch traces of signals.  Supports batch processing on multicore
-  machines for large datasets.
-</li>
-<li>Plugin architecture supporting additional algorithms for comparing
-  signals (currently includes spectrographic cross-correlation)
-</li>
-</ul>
-
-
-<p>
-The current version of chirp is 1.1.2.
-</p>
-<p>
-<img src="chirp_mask3.png"  alt="chirp_mask3.png" />
-</p>
-</div>
-
-</div>
-
-<div id="outline-container-2" class="outline-3">
-<h3 id="sec-2">Resources </h3>
-<div class="outline-text-3" id="text-2">
-
+<p>Chirp is a suite of software for analyzing and comparing bioacoustic
+signals. It consists of the following semi-independent components:</p>
 
 <ul>
-<li><a href="https://github.com/dmeliza/chirp">The project website</a>
-</li>
-<li><a href="doc/chirp-manual.html">The current version of the manual</a>
-</li>
-<li><a href="https://github.com/dmeliza/chirp/wiki">The project wiki</a>
-</li>
+<li>
+<p>A graphical interface for viewing conventional and <a href="http://dmeliza.github.com/libtfr">time-frequency
+reassignment</a> spectrograms.</p>
+
+<ul>
+<li>  Select, play, and zoom in on temporal sections of recordings;
+adjust spectrogram parameters interactively.</li>
+<li>  Define temporal and spectrotemporal regions of interest; save in
+simple text-based files for further analysis</li>
 </ul>
+</li>
+<li><p>An advanced signal processing algorithm for tracking the pitch
+(fundamental frequency) of tonal signals.  Designed for use with
+noisy field recordings.</p></li>
+<li><p>A dynamic time-warping algorithm for quantitatively comparing the
+pitch traces of signals.  Supports batch processing on multicore
+machines for large datasets.</p></li>
+<li><p>Plugin architecture supporting additional algorithms for comparing
+signals (currently includes spectrographic cross-correlation)</p></li>
+</ul><p>The current version of chirp is 1.2.0</p>
 
+<p><img src="chirp_mask3.png" alt="nil"></p>
 
-</div>
-</div>
-<div id="postamble">
-<p class="date">Date: 2012-03-01 10:47:41 CST</p>
-<p class="author">Author: Dan Meliza</p>
-<p class="creator">Org version 7.5 with Emacs version 23</p>
-<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
-</div>
-</div>
-</body>
+<h2>
+<a name="resources" class="anchor" href="#resources"><span class="octicon octicon-link"></span></a>Resources</h2>
+
+<ul>
+<li>  <a href="https://github.com/dmeliza/chirp">The project source code</a>
+</li>
+<li>  <a href="https://github.com/dmeliza/chirp/wiki">The project wiki</a> (includes tutorials)</li>
+</ul>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/dmeliza">dmeliza</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
 </html>
