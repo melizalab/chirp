@@ -1,0 +1,5 @@
+distribute==0.6.31
+matplotlib==1.2.1
+numpy==1.7.1
+wsgiref==0.1.2
+Shapely==1.2.17

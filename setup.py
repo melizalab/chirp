@@ -82,27 +82,27 @@ _libtfr = Extension('chirp.common._libtfr',sources=['libtfr/libtfr.c','libtfr/tf
 
 
 setup(
-  name = 'chirp',
-  version = VERSION,
-  description = short_desc,
-  long_description = long_desc,
-  classifiers = [x for x in cls_txt.split("\n") if x],
-  author = 'C Daniel Meliza',
-  author_email = '"dan" at the domain "meliza.org"',
-  maintainer = 'C Daniel Meliza',
-  maintainer_email = '"dan" at the domain "meliza.org"',
-  url = 'https://dmeliza.github.com/chirp',
-  download_url = 'https://github.com/dmeliza/chirp',
-  packages = find_packages(exclude=["*test*"]),
-  ext_modules = [_vitterbi,_dtw,_libtfr],
-  install_requires=['distribute'],
-  entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
-                                       'cplotpitch = chirp.misc.plotpitch:main',
-                                       'ccompare = chirp.compare.ccompare:main',
-                                       'csplit = chirp.split.csplit:main',
-                                       'cpitchstats = chirp.misc.pitchstats:main'],
-                  'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
-  **app_options
+    name = 'chirp',
+    version = VERSION,
+    description = short_desc,
+    long_description = long_desc,
+    classifiers = [x for x in cls_txt.split("\n") if x],
+    author = 'C Daniel Meliza',
+    author_email = '"dan" at the domain "meliza.org"',
+    maintainer = 'C Daniel Meliza',
+    maintainer_email = '"dan" at the domain "meliza.org"',
+    url = 'https://dmeliza.github.io/chirp',
+    download_url = 'https://github.com/dmeliza/chirp',
+    packages = find_packages(exclude=["*test*"]),
+    ext_modules = [_vitterbi,_dtw,_libtfr],
+    install_requires=['distribute',],
+    entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
+                                         'cplotpitch = chirp.misc.plotpitch:main',
+                                         'ccompare = chirp.compare.ccompare:main',
+                                         'csplit = chirp.split.csplit:main',
+                                         'cpitchstats = chirp.misc.pitchstats:main'],
+                    'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
+    **app_options
 )
 
 
