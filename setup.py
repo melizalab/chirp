@@ -3,7 +3,10 @@
 # -*- mode: python -*-
 from setuptools import setup, find_packages
 from distutils.extension import Extension
-from numpy.distutils.core import setup,Extension
+try:
+    from numpy.distutils.core import setup,Extension
+except:
+    pass
 import sys, os, glob
 
 ext_libs = ['fftw3']
@@ -95,7 +98,6 @@ setup(
     download_url = 'https://github.com/dmeliza/chirp',
     packages = find_packages(exclude=["*test*"]),
     ext_modules = [_vitterbi,_dtw,_libtfr],
-    install_requires=['distribute',],
     entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                          'cplotpitch = chirp.misc.plotpitch:main',
                                          'ccompare = chirp.compare.ccompare:main',
