@@ -8,12 +8,12 @@ Created 2010-04-27
 """
 
 _scriptdoc = """\
-pitch_stats.py [-c <config.cfg>] <plg-files>
+cpitchstats [-c <config.cfg>] <plg-files>
 
 Calculate summary statistics about pitch for each of <plg-files>
 
-Output is to stdout.  See documentation for
-configuration file details. """
+Output is to stdout. See documentation for config file details.
+"""
 
 import os
 from ..common.config import _configurable
@@ -98,8 +98,6 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
     import getopt
     from ..common.config import configoptions
     config = configoptions()
-
-    maskfile = None
 
     opts,args = getopt.getopt(argv, 'hvc:m:')
     if len(args) < 1:
