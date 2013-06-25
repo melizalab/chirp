@@ -10,7 +10,7 @@ from matplotlib.patches import Rectangle, Polygon, PathPatch
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 from numpy import asarray
-from ..common import geom
+from chirp.common import geom
 
 # defines the type(s) of a polygon patch
 polypatch = PathPatch

@@ -9,7 +9,7 @@ Created 2009-07-16
 """
 from __future__ import division
 import wx
-from . import TSViewer
+from chirp.gui import TSViewer
 
 from chirp.common.signal import spectrogram
 from chirp.common.config import _configurable

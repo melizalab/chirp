@@ -11,10 +11,10 @@ Created 2011-07-29
 import numpy as nx
 import os
 import libtfr
-from . import template, particle, vitterbi
-from ..common.plg import pitchtrace
-from ..common.config import _configurable
-from ..common.math import nandecibels
+from chirp import template, particle, vitterbi
+from chirp.common.plg import pitchtrace
+from chirp.common.config import _configurable
+from chirp.common.math import nandecibels
 
 _scriptdoc = """
 Usage: cpitch [-c <config.cfg>] [-m <mask.ebl>] <signal.wav>
@@ -273,7 +273,7 @@ def hz2rel(freqs, samplerate):
 def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     """ The script front-end """
     import sys
-    from ..version import version
+    from chirp.version import version
     if argv is None:
         argv = sys.argv[1:]
     if cout is None:
@@ -282,7 +282,7 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
         cerr = sys.stderr
 
     import getopt
-    from ..common.config import configoptions
+    from chirp.common.config import configoptions
     config = configoptions()
 
     maskfile = None
@@ -336,7 +336,7 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     print >> cout, pt.particle_options_str()
 
     if maskfile is not None and os.path.exists(maskfile):
-        from ..common.geom import elementlist, masker
+        from chirp.common.geom import elementlist, masker
         print >> cout, "* Mask file:", maskfile
         elems = elementlist.read(maskfile)
         mask = masker(configfile=config, **kwargs)

@@ -7,10 +7,10 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 import numpy as nx
-from ..common import postfilter
-from ..common.config import _configurable
-from .base_comparison import base_comparison
-from .feat_dtw import feat_dtw
+from chirp.common import postfilter
+from chirp.common.config import _configurable
+from chirp.compare.base_comparison import base_comparison
+from chirp.compare.feat_dtw import feat_dtw
 
 
 class pitch_dtw(feat_dtw):
@@ -70,7 +70,7 @@ class pitch_cc(base_comparison, _configurable):
         return _load_plg(locator, self.filter, self.options['estimator'])
 
     def compare(self, ref, tgt):
-        from .spcc import spectcc
+        from chirp.compare.spcc import spectcc
         R = ref - ref.mean()
         T = tgt - tgt.mean()
         return (spectcc(R, T, biased_norm=True).sum(0).max(),)
@@ -90,7 +90,7 @@ def _load_plg(locator, filt, estimator):
     Load a pitch trace and filters it. If no points are
     reliable, returns None.
     """
-    from ..common import plg
+    from chirp.common import plg
     pest = plg.read(locator)
     ind = filt(pest)
     if not any(ind):

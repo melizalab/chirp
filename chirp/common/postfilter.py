@@ -7,7 +7,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-29
 """
 import numpy as nx
-from ..common.config import _configurable
+from chirp.common.config import _configurable
 
 
 class pitchfilter(_configurable):

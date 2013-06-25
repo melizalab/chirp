@@ -16,7 +16,7 @@ import numpy as nx
 from shapely import geometry, wkt
 from shapely.ops import cascaded_union
 from shapely.geometry import Polygon  # for convenience
-from .config import _configurable
+from chirp.common.config import _configurable
 
 
 class Error(Exception):

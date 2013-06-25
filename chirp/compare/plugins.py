@@ -52,17 +52,17 @@ class pluginset(object):
         return out
 
 
-from .pitch_dtw import pitch_dtw, pitch_cc
-from .spcc import spcc
-from .spec_dtw import spec_dtw
+from chirp.compare.pitch_dtw import pitch_dtw, pitch_cc
+from chirp.compare.spcc import spcc
+from chirp.compare.spec_dtw import spec_dtw
 methods = pluginset('chirp.compare.method', (('pitch_dtw', pitch_dtw),
                                             ('pitch_cc', pitch_cc),
                                             ('spcc', spcc),
                                             ('spec_dtw', spec_dtw)),
                     'comparison methods')
 
-from .file_storage import file_storage
-from .sqlite_storage import sqlite_storage
+from chirp.compare.file_storage import file_storage
+from chirp.compare.sqlite_storage import sqlite_storage
 storage = pluginset('chirp.compare.storage', (('sqlite', sqlite_storage),
                                              ('file', file_storage)),
                     'storage formats')

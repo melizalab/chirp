@@ -11,8 +11,8 @@ import os
 import wx
 import sys
 from .BatchPitch import FileListBox
-from ..misc import pitchstats
-from ..common.config import configoptions
+from chirp.misc import pitchstats
+from chirp.common.config import configoptions
 
 
 class BatchStats(wx.Frame):

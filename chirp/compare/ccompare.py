@@ -7,8 +7,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
-from .plugins import methods, storage
-from ..common.progress import progressbar
+from chirp.compare.plugins import methods, storage
+from chirp.common.progress import progressbar
 import multiprocessing
 import sys
 
@@ -137,14 +137,14 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
 def main(argv=None, cout=None):
     import sys
     import os
-    from ..version import version
+    from chirp.version import version
     if argv is None:
         argv = sys.argv[1:]
     if cout is None:
         cout = sys.stdout
 
     import getopt
-    from ..common.config import configoptions
+    from chirp.common.config import configoptions
     config = configoptions()
 
     opts, args = getopt.getopt(argv, 'hvc:m:s:j:', ['skip-completed', 'restrict', 'test'])

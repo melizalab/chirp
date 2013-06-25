@@ -8,8 +8,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-10-05
 """
 
-from .base_storage import base_storage as _base_storage
-from ..common import _tools
+from chirp.compare.base_storage import base_storage as _base_storage
+from chirp.common import _tools
 
 
 class file_storage(_base_storage):

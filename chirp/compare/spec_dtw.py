@@ -7,8 +7,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 import os.path
-from .feat_dtw import feat_dtw
-from .spcc import spcc
+from chirp.compare.feat_dtw import feat_dtw
+from chirp.compare.spcc import spcc
 
 
 class spec_dtw(feat_dtw, spcc):

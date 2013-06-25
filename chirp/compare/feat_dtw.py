@@ -9,8 +9,8 @@ Created 2011-09-01
 """
 
 import numpy as nx
-from ..common.config import _configurable
-from .base_comparison import base_comparison
+from chirp.common.config import _configurable
+from chirp.compare.base_comparison import base_comparison
 
 
 class feat_dtw(base_comparison, _configurable):

@@ -14,7 +14,7 @@ spcc:             compare signals using spectrographic cross-correlation
 Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 Created 2011-08-02
 """
-from .plugins import methods
+from chirp.compare.plugins import methods
 
 __doc__ = __doc__ % methods.entry_point_name
 

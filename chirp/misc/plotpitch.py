@@ -24,8 +24,8 @@ _scriptname = "cplotpitch"
 import os
 import numpy as nx
 import matplotlib
-from ..common.config import configoptions, _configurable
-from ..common import postfilter, _tools
+from chirp.common.config import configoptions, _configurable
+from chirp.common import postfilter, _tools
 
 figparams = {'dpi': 300}
 matplotlib.rc('font', size=10)
@@ -47,7 +47,7 @@ def load_data(basename, filterer=None, pitchdir=None):
     pitch trace.
     """
     from ewave import wavfile
-    from ..common import plg
+    from chirp.common import plg
     fp = wavfile(basename + ".wav")
     signal, Fs = fp.read(), fp.sampling_rate
 
@@ -109,9 +109,9 @@ def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
     matplotlib.use('PDF')
     from matplotlib.backends.backend_pdf import PdfPages as multipdf
     from matplotlib.pyplot import close as close_figure
-    from ..version import version
-    from ..common.graphics import axgriditer
-    from ..common.signal import spectrogram
+    from chirp.version import version
+    from chirp.common.graphics import axgriditer
+    from chirp.common.signal import spectrogram
 
     def gridfun(**kwargs):
         from matplotlib.pyplot import subplots
@@ -169,7 +169,7 @@ def main(argv=None, cout=None):
     import sys
     import getopt
     import glob
-    from ..version import version
+    from chirp.version import version
 
     if argv is None:
         argv = sys.argv[1:]

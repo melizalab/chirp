@@ -35,7 +35,7 @@ def split(signal, element, Fs, **kwargs):
     Returns a 1D time series at the same sampling rate as the
     input signal.
     """
-    from ..common.geom import elementlist
+    from chirp.common.geom import elementlist
     time_ramp = kwargs.get('time_ramp', 0)
 
     if elementlist.element_type(element) == 'interval':

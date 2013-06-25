@@ -7,8 +7,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 import os
-from ..common.config import _configurable
-from .base_comparison import base_comparison
+from chirp.common.config import _configurable
+from chirp.compare.base_comparison import base_comparison
 
 
 class spcc(base_comparison, _configurable):
@@ -50,8 +50,8 @@ class spcc(base_comparison, _configurable):
         """
         from ewave import wavfile
         from libtfr import fgrid, dynamic_range
-        from ..common.signal import spectrogram
-        from ..common.geom import elementlist, masker
+        from chirp.common.signal import spectrogram
+        from chirp.common.geom import elementlist, masker
         from numpy import linspace, log10
 
         fp = wavfile(locator)

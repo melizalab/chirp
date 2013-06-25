@@ -6,7 +6,7 @@ basic signal processing
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
-from .config import _configurable
+from chirp.common.config import _configurable
 
 
 class Error(Exception):

@@ -3,11 +3,10 @@
 """
 Display help information in HTML dialogs
 """
-from .. import version
+from chirp import version
 from matplotlib import __version__ as mplver
 import wx
 import wx.html
-import sys
 
 vers = dict(wxver=wx.VERSION_STRING,
             mplver=mplver, **version.lib_versions())

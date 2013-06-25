@@ -11,8 +11,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org> Created
 import os
 import sqlite3
 import glob
-from .base_storage import base_storage as _base_storage
-from ..common import _tools
+from chirp.compare.base_storage import base_storage as _base_storage
+from chirp.common import _tools
 
 sql_create_filelist = """\
 CREATE TABLE IF NOT EXISTS %s (

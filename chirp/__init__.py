@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- mode: python -*-
 
-from .common import plg, clg, audio
-from .version import __doc__
+from chirp.common import plg, clg, audio
+from chirp.version import __doc__
 
 # Variables:
 # End:

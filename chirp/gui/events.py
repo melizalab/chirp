@@ -9,7 +9,7 @@ Created 2012-02-16
 
 import wx
 import threading
-from ..common.progress import consumer
+from chirp.common.progress import consumer
 
 myEVT_STAGE = wx.NewEventType()
 EVT_STAGE = wx.PyEventBinder(myEVT_STAGE, 1)

@@ -7,8 +7,8 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-29
 """
 from matplotlib.lines import Line2D
-from ..common import plg, geom, postfilter
-from ..pitch import tracker as ptracker
+from chirp.common import plg, geom, postfilter
+from chirp.pitch import tracker as ptracker
 
 
 class PitchOverlayMixin(object):

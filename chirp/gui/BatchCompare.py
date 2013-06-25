@@ -11,9 +11,9 @@ import os
 import wx
 import sys
 import threading
-from .events import EVT_STAGE, myEVT_STAGE, EVT_COUNT, BatchEvent, BatchConsumer
-from ..compare import plugins, ccompare
-from ..common.config import configoptions
+from chirp.gui.events import EVT_STAGE, myEVT_STAGE, EVT_COUNT, BatchEvent, BatchConsumer
+from chirp.compare import plugins, ccompare
+from chirp.common.config import configoptions
 
 
 class StagedBatchConsumer(BatchConsumer):

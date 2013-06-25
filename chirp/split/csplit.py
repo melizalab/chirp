@@ -73,7 +73,7 @@ class splitter(_configurable):
 def main(argv=None, cout=None, cerr=None, **kwargs):
     import os
     import sys
-    from ..version import version
+    from chirp.version import version
     if argv is None:
         argv = sys.argv[1:]
     if cout is None:
@@ -82,7 +82,7 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
         cerr = sys.stderr
 
     import getopt
-    from ..common.config import configoptions
+    from chirp.common.config import configoptions
     config = configoptions()
 
     opts, args = getopt.getopt(argv, 'hvc:')

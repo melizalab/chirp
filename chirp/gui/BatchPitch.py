@@ -9,8 +9,8 @@ Created 2012-02-13
 
 import os
 import wx
-from .events import EVT_COUNT, BatchEvent, BatchConsumer, threading
-from ..pitch import batch
+from chirp.gui.events import EVT_COUNT, BatchEvent, BatchConsumer, threading
+from chirp.pitch import batch
 
 
 class FileListBox(wx.Panel):

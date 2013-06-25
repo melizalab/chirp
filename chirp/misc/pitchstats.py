@@ -16,7 +16,7 @@ Output is to stdout. See documentation for config file details.
 """
 
 import os
-from ..common.config import _configurable
+from chirp.common.config import _configurable
 
 
 class summary(_configurable):
@@ -31,7 +31,7 @@ class summary(_configurable):
 
     def __init__(self, configfile=None, **kwargs):
         """ Initialize the object with a config file """
-        from ..common import postfilter
+        from chirp.common import postfilter
         self.readconfig(configfile)
         self.options.update(kwargs)
         self.postfilter = postfilter.pitchfilter(configfile, **kwargs)
@@ -43,7 +43,7 @@ class summary(_configurable):
         not.
         """
         import numpy as nx
-        from ..common import plg
+        from chirp.common import plg
         estimator = self.options['estimator']
 
         p = plg.read(plgfile)
@@ -87,7 +87,7 @@ class summary(_configurable):
 
 def main(argv=None, cout=None, cerr=None, **kwargs):
     import sys
-    from ..version import version
+    from chirp.version import version
     if argv is None:
         argv = sys.argv[1:]
     if cout is None:
@@ -96,7 +96,7 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
         cerr = sys.stderr
 
     import getopt
-    from ..common.config import configoptions
+    from chirp.common.config import configoptions
     config = configoptions()
 
     opts, args = getopt.getopt(argv, 'hvc:m:')
