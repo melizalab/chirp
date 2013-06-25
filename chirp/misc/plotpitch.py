@@ -24,21 +24,22 @@ _scriptname = "cplotpitch"
 import os
 import numpy as nx
 import matplotlib
-from ..common.config import configoptions,_configurable
+from ..common.config import configoptions, _configurable
 from ..common import postfilter, _tools
 
-figparams = { 'dpi' : 300 }
+figparams = {'dpi': 300}
 matplotlib.rc('font', size=10)
 matplotlib.rc('xtick', labelsize=8)
 matplotlib.rc('ytick', labelsize=8)
-matplotlib.rc('axes',labelsize=10,titlesize=10)
+matplotlib.rc('axes', labelsize=10, titlesize=10)
 matplotlib.rc('ytick.major', size=2)
 matplotlib.rc('xtick.major', size=2)
 matplotlib.rc('figure.subplot', top=0.95, hspace=0.35)
 
-_figsize = (11,6)
+_figsize = (11, 6)
 _nrows = 6
 _ncols = 3
+
 
 def load_data(basename, filterer=None, pitchdir=None):
     """
@@ -48,35 +49,36 @@ def load_data(basename, filterer=None, pitchdir=None):
     from ewave import wavfile
     from ..common import plg
     fp = wavfile(basename + ".wav")
-    signal,Fs = fp.read(), fp.sampling_rate
+    signal, Fs = fp.read(), fp.sampling_rate
 
     if isinstance(pitchdir, basestring):
         plgfile = os.path.join(pitchdir, os.path.split(basename)[1] + '.plg')
     else:
         plgfile = basename + '.plg'
     if not os.path.exists(plgfile):
-        return signal,Fs/1000.,None,None
+        return signal, Fs / 1000., None, None
 
     pitch = plg.read(plgfile)
     if filterer is not None:
         ind = postfilter.ind_endpoints(filterer(pitch))
         if ind is None:
-            return signal,Fs/1000.,None,None
-        pitch = pitch[ind[0]:ind[1]+1]
+            return signal, Fs / 1000., None, None
+        pitch = pitch[ind[0]:ind[1] + 1]
     t = pitch['time']
     if 'p.map' in pitch.dtype.names:
         p = pitch['p.map']
     else:
         p = pitch['p.mmse']
-    return signal,Fs/1000.,t,p
+    return signal, Fs / 1000., t, p
+
 
 class plotter(_configurable):
 
     options = dict(colormap='Greys',
                    dynrange=60,
-                   freq_range=(750.,10000.),
+                   freq_range=(750., 10000.),
                    pitch_color='r')
-    config_sections = ('spectrogram','cplotpitch')
+    config_sections = ('spectrogram', 'cplotpitch')
 
     def __init__(self, configfile=None):
         self.readconfig(configfile)
@@ -87,14 +89,15 @@ class plotter(_configurable):
         img = ax.imshow(spec, extent=extent, cmap=cmap, origin='lower')
         Smax = spec.max()
         img.set_clim((Smax - self.options['dynrange'] / 10, Smax))
-        ax.set_ylim(tuple(f/1000. for f in self.options['freq_range']))
+        ax.set_ylim(tuple(f / 1000. for f in self.options['freq_range']))
         return img
 
     def plot_trace(self, ax, t, p):
         ax.hold(True)
-        p = ax.plot(t,p,self.options['pitch_color'])
+        p = ax.plot(t, p, self.options['pitch_color'])
         ax.hold(False)
         return p
+
 
 @_tools.consumer
 def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
@@ -112,14 +115,14 @@ def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
 
     def gridfun(**kwargs):
         from matplotlib.pyplot import subplots
-        return subplots(_nrows,_ncols,sharex=True,sharey=True, figsize=_figsize)
+        return subplots(_nrows, _ncols, sharex=True, sharey=True, figsize=_figsize)
 
     def figfun(fig):
         maxx = max(ax.dataLim.x1 for ax in fig.axes)
         ax = fig.axes[0]
         ax.set_xticklabels('')
         ax.set_yticklabels('')
-        ax.set_xlim(0,maxx)
+        ax.set_xlim(0, maxx)
         for ax in fig.axes:
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
@@ -146,15 +149,15 @@ def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
             ax = axg.next()
 
             try:
-                signal,Fs,t,p = load_data(basename, filt, pitchdir)
+                signal, Fs, t, p = load_data(basename, filt, pitchdir)
                 print >> cout, "** %s" % basename
             except Exception, e:
                 print >> cout, "** %s: error loading data (%s)" % (basename, e)
                 continue
-            spec,extent = spectrogram.dbspect(signal,Fs)
+            spec, extent = spectrogram.dbspect(signal, Fs)
             plt.plot_spectrogram(ax, spec, extent)
             if show_pitch and t is not None:
-                plt.plot_trace(ax, t,p)
+                plt.plot_trace(ax, t, p)
 
         # loop will break when caller sends stop()
     finally:
@@ -163,7 +166,9 @@ def multiplotter(outfile, config, cout=None, show_pitch=True, pitchdir=None):
 
 
 def main(argv=None, cout=None):
-    import sys, getopt, glob
+    import sys
+    import getopt
+    import glob
     from ..version import version
 
     if argv is None:
@@ -174,8 +179,8 @@ def main(argv=None, cout=None):
     signals = None
     pitchdir = None
     config = configoptions()
-    opts,args = getopt.getopt(sys.argv[1:], 'c:p:hv@')
-    for o,a in opts:
+    opts, args = getopt.getopt(sys.argv[1:], 'c:p:hv@')
+    for o, a in opts:
         if o == '-h':
             print __doc__
             return -1
@@ -210,7 +215,7 @@ def main(argv=None, cout=None):
     for fname in signals:
         basename = os.path.splitext(fname)[0]
         ax = plotter.send(basename)
-        ax.set_title(basename, ha='left', position=(0.0,1.0), fontsize=4)
+        ax.set_title(basename, ha='left', position=(0.0, 1.0), fontsize=4)
 
     return 0
 

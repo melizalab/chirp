@@ -16,10 +16,12 @@ Created 2011-08-06
 import re
 _el_rx = re.compile(r"\*+ .*lement ([0-9]+)")
 
+
 class Error(Exception):
     pass
 
 _default_extension = '.plg'
+
 
 class pitchtrace(object):
     """
@@ -41,19 +43,19 @@ class pitchtrace(object):
         """
         self.tgrid = tgrid
 
-        if self.nframes != pmmse.shape[0]: raise ValueError, "Dimensions of MMSE estimate don't match time grid"
-        if self.nframes != pvar.shape[0]: raise ValueError, "Dimensions of variance estimate don't match time grid"
-        if pmmse.shape[1] != pvar.shape[1]: raise ValueError, "Number of chains doesn't match for mean and variance"
+        if self.nframes != pmmse.shape[0]: raise ValueError("Dimensions of MMSE estimate don't match time grid")
+        if self.nframes != pvar.shape[0]: raise ValueError("Dimensions of variance estimate don't match time grid")
+        if pmmse.shape[1] != pvar.shape[1]: raise ValueError("Number of chains doesn't match for mean and variance")
 
         self.pmmse = pmmse
         self.pvar  = pvar
         self.estimates = dict()
 
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if v is None: continue
-            if self.nframes != v.shape[0]: raise ValueError, "Dimensions of %s don't match time grid" % k
+            if self.nframes != v.shape[0]: raise ValueError("Dimensions of %s don't match time grid" % k)
             if v.ndim > 1 and self.nchains != v.shape[1]:
-                raise ValueError, "Wrong number of chains for %s (needs to be 1 or %d)" % (k, self.nchains)
+                raise ValueError("Wrong number of chains for %s (needs to be 1 or %d)" % (k, self.nchains))
             self.estimates[k] = v
 
     @property
@@ -71,12 +73,12 @@ class pitchtrace(object):
         Returns a recarray, averaging across chains as needed.
         """
         from numpy import sqrt, rec
-        fields = ['time','p.sd','p.mmse']
+        fields = ['time', 'p.sd', 'p.mmse']
         values = [self.tgrid, sqrt(_reduce(self.pvar)), _reduce(self.pmmse)]
         if self.nchains > 1:
             fields.append("p.mmse.sd")
             values.append(self.pmmse.std(1))
-        for k,v in self.estimates.items():
+        for k, v in self.estimates.items():
             fields.append(k)
             values.append(_reduce(v))
             if v.ndim > 1:
@@ -93,7 +95,7 @@ class pitchtrace(object):
         rec = self.torec()
         print >> cout, "\t".join(rec.dtype.names)
 
-        fmt = ["%6.2f"] + [_fmt(v) for k,v in rec.dtype.descr[1:]]
+        fmt = ["%6.2f"] + [_fmt(v) for k, v in rec.dtype.descr[1:]]
         savetxt(cout, rec, delimiter="\t", fmt=fmt)
 
 
@@ -108,28 +110,30 @@ def read(filename):
     current_element = -1
     field_names = None
     records = []
-    with open(filename,'rt') as fp:
+    with open(filename, 'rt') as fp:
         for line in fp:
             m = _el_rx.match(line)
             if m:
                 current_element = int(m.group(1))
             elif line.startswith("time"):
                 field_names = line.split()
-            elif line[0] not in ('*','+','-'):
+            elif line[0] not in ('*', '+', '-'):
                 values = (current_element,) + tuple(float(x) for x in line.split())
                 records.append(values)
             elif line.find("error") > -1:
-                raise Error, "file has an error: %s" % (line)
+                raise Error("file has an error: %s" % (line))
 
-    if len(records)==0:
-        raise Error, "file contains no data"
-    field_types = ('i4',) + ('f8',)*len(field_names)
-    field_names.insert(0,'element')
-    return rec.fromrecords(records,dtype={'names':field_names,'formats':field_types})
+    if len(records) == 0:
+        raise Error("file contains no data")
+    field_types = ('i4',) + ('f8',) * len(field_names)
+    field_names.insert(0, 'element')
+    return rec.fromrecords(records, dtype={'names': field_names, 'formats': field_types})
+
 
 def _reduce(x):
-    if x.ndim==1: return x
+    if x.ndim == 1: return x
     return x.mean(1)
+
 
 def _fmt(dchar):
     if 'i' in dchar: return "%d"

@@ -13,12 +13,12 @@ matplotlib.use('WXAgg')
 # set display parameters; this is especially important for the standalone app
 mpl_params = {'axes.hold': False,
               'axes.linewidth': 0.5,
-              'ytick.labelsize' : 'small',
-              'ytick.direction' : 'out',
-              'xtick.labelsize' : 'small',
-              'xtick.direction' : 'out',
-              'image.aspect' : 'auto',
-              'image.origin' : 'lower',
+              'ytick.labelsize': 'small',
+              'ytick.direction': 'out',
+              'xtick.labelsize': 'small',
+              'xtick.direction': 'out',
+              'image.aspect': 'auto',
+              'image.origin': 'lower',
               }
 matplotlib.rcParams.update(mpl_params)
 
@@ -27,12 +27,15 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from collections import deque
 
+
 class defaultstack(deque):
     def __init__(self, *args, **kwargs):
         super(defaultstack, self).__init__(*args)
-        self.default = kwargs.get("default",None)
+        self.default = kwargs.get("default", None)
+
     def pop(self):
         return super(defaultstack, self).pop() if self else self.default
+
     def peek(self):
         return super(defaultstack, self).__getitem__(-1) if self else self.default
 
@@ -44,14 +47,14 @@ class FigCanvas(FigureCanvasWxAgg):
 
     """
     def __init__(self, parent, id, figure=None, size=(7.0, 3.0), dpi=100):
-        if figure==None:
+        if figure is None:
             figure = Figure(size, dpi)
         super(FigCanvas, self).__init__(parent, id, figure)
 
         self.figure.set_edgecolor('black')
         self.figure.set_facecolor('white')
         self.SetBackgroundColour(wx.WHITE)
-        self.axes = self.figure.add_axes((0.05,0.1,0.92,0.85))
+        self.axes = self.figure.add_axes((0.05, 0.1, 0.92, 0.85))
 
         # monkey patch for middle button capture
         self.Bind(wx.EVT_MIDDLE_DOWN, self._onMiddleButtonDown)
@@ -76,13 +79,13 @@ class FigCanvas(FigureCanvasWxAgg):
 
     def transform_data(self, point):
         """ Convert canvas location to data location """
-        x,y = point
+        x, y = point
         y = self.figure.bbox.height - y
-        return self.axes.transData.inverted().transform_point((x,y))
+        return self.axes.transData.inverted().transform_point((x, y))
 
     def transform_canvas(self, point):
         """ Convert data location to canvas location """
-        x,y = self.axes.transData.transform_point(point)
+        x, y = self.axes.transData.transform_point(point)
         return x, self.figure.bbox.height - y
 
     def figure_enter_event(self, event):
@@ -95,7 +98,7 @@ class FigCanvas(FigureCanvasWxAgg):
         y = self.figure.bbox.height - evt.GetY()
         evt.Skip()
         self.CaptureMouse()
-        super(FigCanvas,self).button_press_event(x, y, 2, guiEvent=evt)
+        super(FigCanvas, self).button_press_event(x, y, 2, guiEvent=evt)
 
     def _onMiddleButtonUp(self, evt):
         """End measuring on an axis."""
@@ -103,7 +106,7 @@ class FigCanvas(FigureCanvasWxAgg):
         y = self.figure.bbox.height - evt.GetY()
         evt.Skip()
         if self.HasCapture(): self.ReleaseMouse()
-        super(FigCanvas,self).button_release_event(x, y, 2, guiEvent=evt)
+        super(FigCanvas, self).button_release_event(x, y, 2, guiEvent=evt)
 
     # handle paint events
     def _onPaint(self, evt):
@@ -195,6 +198,7 @@ class Painter(object):
 
     def clearValue(self, dc, value):
         pass
+
 
 # convenience methods
 def addCheckableMenuItems(menu, items):

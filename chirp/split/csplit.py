@@ -21,12 +21,13 @@ outputting a new wave file for each element. If <mask.ebl> is not
 supplied, tries to use <signal.ebl>. See documentation for
 configuration file details."""
 
+
 class splitter(_configurable):
     """ Splits a recording into intervals """
 
-    options = dict(time_ramp = 2,
-                   boxmask = True,
-                   merge_elements = True)
+    options = dict(time_ramp=2,
+                   boxmask=True,
+                   merge_elements=True)
     config_sections = ('csplitter',)
 
     def __init__(self, configfile=None, **kwargs):
@@ -44,12 +45,12 @@ class splitter(_configurable):
             if self.options['boxmask']:
                 elems = [elems.range]
             else:
-                raise NotImplementedError, "merging polygons not implemented"
+                raise NotImplementedError("merging polygons not implemented")
 
         with ewave.wavfile(wavfile, 'r') as fp:
             signal, Fs = fp.read(), fp.sampling_rate / 1000.
-            for i,elem in enumerate(elems):
-                if geom.elementlist.element_type(elem)=='interval':
+            for i, elem in enumerate(elems):
+                if geom.elementlist.element_type(elem) == 'interval':
                     print >> cout, "** Element %d, interval bounds (%.2f, %.2f)" % (i, elem[0], elem[1])
                     fun = intervalsplit.split
                 elif self.options['boxmask']:
@@ -57,7 +58,7 @@ class splitter(_configurable):
                                                                                      elem.bounds[2])
                     fun = intervalsplit.split
                 else:
-                    raise NotImplementedError, "polygon extraction not implemented"
+                    raise NotImplementedError("polygon extraction not implemented")
                 yield i, fun(signal, elem, Fs, **self.options), Fs
 
     def options_str(self):
@@ -68,8 +69,10 @@ class splitter(_configurable):
 ** Merge elements = %(merge_elements)s""" % self.options
         return out
 
+
 def main(argv=None, cout=None, cerr=None, **kwargs):
-    import os, sys
+    import os
+    import sys
     from ..version import version
     if argv is None:
         argv = sys.argv[1:]
@@ -82,9 +85,9 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
     from ..common.config import configoptions
     config = configoptions()
 
-    opts,args = getopt.getopt(argv, 'hvc:')
+    opts, args = getopt.getopt(argv, 'hvc:')
 
-    for o,a in opts:
+    for o, a in opts:
         if o == '-h':
             print _scriptdoc
             return -1

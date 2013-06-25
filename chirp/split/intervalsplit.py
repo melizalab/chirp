@@ -7,6 +7,7 @@ Copyright (C) 2012 Dan Meliza <dmeliza@gmail.com>
 Created 2012-04-23
 """
 
+
 def ramp_signal(s, Fs, ramp):
     """
     Apply a squared cosine ramp to a signal. Modifies the signal in place.
@@ -17,9 +18,10 @@ def ramp_signal(s, Fs, ramp):
     """
     from numpy import linspace, pi, sin, cos
     n = ramp * Fs
-    t = linspace(0, pi/2, n)
-    s[:n] *= sin(t)**2
-    s[-n:] *= cos(t)**2
+    t = linspace(0, pi / 2, n)
+    s[:n] *= sin(t) ** 2
+    s[-n:] *= cos(t) ** 2
+
 
 def split(signal, element, Fs, **kwargs):
     """
@@ -34,12 +36,12 @@ def split(signal, element, Fs, **kwargs):
     input signal.
     """
     from ..common.geom import elementlist
-    time_ramp = kwargs.get('time_ramp',0)
-    
-    if elementlist.element_type(element)=='interval':
+    time_ramp = kwargs.get('time_ramp', 0)
+
+    if elementlist.element_type(element) == 'interval':
         start, stop = element[:2]
     else:
-        start,miny,stop,maxy = element.bounds
+        start, miny, stop, maxy = element.bounds
 
     start = max((start - time_ramp) * Fs, 0)
     stop  = min((stop + time_ramp) * Fs, signal.size)
@@ -48,7 +50,7 @@ def split(signal, element, Fs, **kwargs):
     if time_ramp > 0:
         ramp_signal(S, Fs, time_ramp)
     return S
-    
+
 
 # Variables:
 # End:

@@ -9,6 +9,7 @@ Created 2011-08-29
 import numpy as nx
 from ..common.config import _configurable
 
+
 class pitchfilter(_configurable):
     """
     Postfilters pitch estimates based on particle variance and
@@ -48,19 +49,19 @@ class pitchfilter(_configurable):
         """
         if isinstance(pitch, nx.recarray):
             fields = pitch.dtype.names
-            ind = nx.ones(pitch.size,dtype='bool')
+            ind = nx.ones(pitch.size, dtype='bool')
         else:
             fields = pitch.keys()
             # should be guaranteed a p.sd field with current version of library
-            ind = nx.ones(pitch['p.sd'].shape,dtype='bool')
+            ind = nx.ones(pitch['p.sd'].shape, dtype='bool')
 
         if 'p.sd' in fields and self.options['max_particle_sd'] > 0:
             ind &= pitch['p.sd'] < (0.001 * self.options['max_particle_sd'])
         if self.options['max_chain_sd'] > 0:
-            sd = [pitch[f] for f in fields if (f in ('p.mmse.sd','p.map.sd'))]
+            sd = [pitch[f] for f in fields if (f in ('p.mmse.sd', 'p.map.sd'))]
             if len(sd) > 0:
                 sd = nx.amax(sd, axis=0)
-                ind &= sd[:,nx.newaxis] < (0.001 * self.options['max_chain_sd'])
+                ind &= sd[:, nx.newaxis] < (0.001 * self.options['max_chain_sd'])
         return ind
 
     def options_str(self):
@@ -68,6 +69,7 @@ class pitchfilter(_configurable):
 * Postfilter parameters:
 ** Max particle SD: %(max_particle_sd)f
 ** Max chain SD: %(max_chain_sd)f """ % self.options
+
 
 def ind_endpoints(ind):
     """

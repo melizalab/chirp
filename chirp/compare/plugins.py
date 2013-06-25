@@ -6,6 +6,8 @@ comparison method and storage plugins
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
+
+
 class _entrypoint(object):
     def __init__(self, name, cls):
         self.name = name
@@ -13,6 +15,7 @@ class _entrypoint(object):
 
     def load(self):
         return self.cls
+
 
 class pluginset(object):
 
@@ -26,7 +29,7 @@ class pluginset(object):
         from pkg_resources import iter_entry_points as iep
         for ep in iep(self.entry_point_name):
             yield ep
-        for name,cls in self.defaults:
+        for name, cls in self.defaults:
             yield _entrypoint(name, cls)
 
     def names(self):
@@ -38,7 +41,7 @@ class pluginset(object):
         for ep in self.iter_entry_points():
             if ep.name.lower() == name.lower():
                 return ep.load()
-        raise ImportError, "No such plugin %s" % name.lower()
+        raise ImportError("No such plugin %s" % name.lower())
 
     def make_scriptdoc(self):
         out = ""
@@ -52,16 +55,16 @@ class pluginset(object):
 from .pitch_dtw import pitch_dtw, pitch_cc
 from .spcc import spcc
 from .spec_dtw import spec_dtw
-methods = pluginset('chirp.compare.method',(('pitch_dtw',pitch_dtw),
-                                            ('pitch_cc',pitch_cc),
-                                            ('spcc',spcc),
-                                            ('spec_dtw',spec_dtw)),
+methods = pluginset('chirp.compare.method', (('pitch_dtw', pitch_dtw),
+                                            ('pitch_cc', pitch_cc),
+                                            ('spcc', spcc),
+                                            ('spec_dtw', spec_dtw)),
                     'comparison methods')
 
 from .file_storage import file_storage
 from .sqlite_storage import sqlite_storage
-storage = pluginset('chirp.compare.storage',(('sqlite',sqlite_storage),
-                                             ('file',file_storage)),
+storage = pluginset('chirp.compare.storage', (('sqlite', sqlite_storage),
+                                             ('file', file_storage)),
                     'storage formats')
 
 # Variables:

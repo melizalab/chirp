@@ -11,6 +11,7 @@ Created 2011-10-05
 from .base_storage import base_storage as _base_storage
 from ..common import _tools
 
+
 class file_storage(_base_storage):
     _descr = "file stream (LOCATION: [file]; skip/restrict unsupported)"
     _preferred_extension = ".clg"
@@ -24,8 +25,8 @@ class file_storage(_base_storage):
         """
         import sys
         _base_storage.__init__(self, comparator)
-        if isinstance(location,basestring):
-            self.cout = open(location,'wt')
+        if isinstance(location, basestring):
+            self.cout = open(location, 'wt')
         elif location is None:
             self.cout = sys.stdout
         else:
@@ -41,8 +42,8 @@ class file_storage(_base_storage):
         """
         import os.path
         from glob import iglob
-        self.signals = [(i, f) for i,f in \
-                            enumerate(iglob(os.path.join(signal_dir,'*' + self.file_pattern)))]
+        self.signals = [(i, f) for i, f in
+                        enumerate(iglob(os.path.join(signal_dir, '*' + self.file_pattern)))]
 
     def output_signals(self):
         """
@@ -50,8 +51,8 @@ class file_storage(_base_storage):
         be necessary if this information is stored elsewhere.
         """
         print >> self.cout, "id\tlocation"
-        for id,loc in self.signals:
-            print >> self.cout, "%s\t%s" % (id,loc)
+        for id, loc in self.signals:
+            print >> self.cout, "%s\t%s" % (id, loc)
 
     @_tools.consumer
     def store_results(self):
@@ -76,4 +77,3 @@ class file_storage(_base_storage):
     def write_metadata(self, data):
         """ Provide metadata about the analysis. """
         print data
-

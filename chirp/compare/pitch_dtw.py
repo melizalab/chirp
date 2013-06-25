@@ -12,6 +12,7 @@ from ..common.config import _configurable
 from .base_comparison import base_comparison
 from .feat_dtw import feat_dtw
 
+
 class pitch_dtw(feat_dtw):
     """
     Compute pairwise distances between motifs using dynamic time
@@ -29,9 +30,8 @@ class pitch_dtw(feat_dtw):
     _descr = "dynamic time warping of pitch traces (requires .plg files)"
 
     file_extension = '.plg'
-    options = dict(estimator = 'p.map',
-                   **feat_dtw.options)
-    config_sections = ('spectrogram','dtw','pitch_dtw')
+    options = dict(estimator='p.map', **feat_dtw.options)
+    config_sections = ('spectrogram', 'dtw', 'pitch_dtw')
 
     def __init__(self, configfile=None, **kwargs):
         feat_dtw.__init__(self, configfile=configfile, **kwargs)
@@ -58,7 +58,7 @@ class pitch_cc(base_comparison, _configurable):
     _descr = "dynamic time warping of pitch traces (requires .plg files)"
 
     file_extension = '.plg'
-    options = dict(estimator = 'p.map')
+    options = dict(estimator='p.map')
     config_sections = ('pitch_cc')
 
     def __init__(self, configfile=None, **kwargs):
@@ -97,7 +97,7 @@ def _load_plg(locator, filt, estimator):
         return None
     else:
         ind = postfilter.ind_endpoints(ind)
-        return pest[estimator][ind[0]:ind[1]+1]
+        return pest[estimator][ind[0]:ind[1] + 1]
 
 # Variables:
 # End:

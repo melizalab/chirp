@@ -5,14 +5,14 @@ Display help information in HTML dialogs
 """
 from .. import version
 from matplotlib import __version__ as mplver
-import wx, wx.html
+import wx
+import wx.html
 import sys
 
-vers = dict(wxver = wx.VERSION_STRING,
-            mplver = mplver, **version.lib_versions())
+vers = dict(wxver=wx.VERSION_STRING,
+            mplver=mplver, **version.lib_versions())
 
-about_txt = \
-"""
+about_txt = """
 <p>This is Chirp version %(chirp)s, Copyright (C) 2012 Dan Meliza</p>
 
 <br/>
@@ -31,8 +31,7 @@ about_txt = \
 <p><a href="http://github.com/dmeliza/chirp">Project Site</a></p>
 """ % vers
 
-help_txt = \
-"""
+help_txt = """
 <table border="0" cellpadding="0">
 <tr>
 <td colspan="2">Spectrogram Navigation:</td>
@@ -59,24 +58,27 @@ help_txt = \
 </table>
 """
 
+
 class HtmlWindow(wx.html.HtmlWindow):
-    def __init__(self, parent, id, size=(600,400)):
-        wx.html.HtmlWindow.__init__(self,parent, id, size=size)
+
+    def __init__(self, parent, id, size=(600, 400)):
+        wx.html.HtmlWindow.__init__(self, parent, id, size=size)
         if "gtk2" in wx.PlatformInfo:
             self.SetStandardFonts()
 
     def OnLinkClicked(self, link):
         wx.LaunchDefaultBrowser(link.GetHref())
 
+
 class AboutBox(wx.Dialog):
     def __init__(self, parent=None, title='', text=''):
         wx.Dialog.__init__(self, parent, -1, title,
-            style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER)
-        hwin = HtmlWindow(self, -1, size=(400,200))
+                           style=wx.DEFAULT_DIALOG_STYLE | wx.THICK_FRAME | wx.RESIZE_BORDER)
+        hwin = HtmlWindow(self, -1, size=(400, 200))
         hwin.SetPage(text)
         btn = hwin.FindWindowById(wx.ID_OK)
         irep = hwin.GetInternalRepresentation()
-        hwin.SetSize((irep.GetWidth()+25, irep.GetHeight()+10))
+        hwin.SetSize((irep.GetWidth() + 25, irep.GetHeight() + 10))
         self.SetClientSize(hwin.GetSize())
         self.CentreOnParent(wx.BOTH)
         self.SetFocus()

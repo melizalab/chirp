@@ -10,14 +10,16 @@ Created 2011-09-08
 """
 import os.path
 
+
 def _read_signals(fp):
     signal_names = {}
     for line in fp:
         if line.startswith('*'): return signal_names
         else:
-            id,location = line.strip().split('\t')
+            id, location = line.strip().split('\t')
             signal_names[id] = os.path.splitext(os.path.split(location)[-1])[0]
-    raise RuntimeError, "Signal list wasn't terminated properly"
+    raise RuntimeError("Signal list wasn't terminated properly")
+
 
 def _yield_values(fp):
     # first line is fields
@@ -28,7 +30,7 @@ def _yield_values(fp):
 
 
 def read(filename):
-    fp = open(filename,'rt')
+    fp = open(filename, 'rt')
     for line in fp:
         if line.startswith("id"): break
 

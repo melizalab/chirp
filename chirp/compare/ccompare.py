@@ -12,8 +12,7 @@ from ..common.progress import progressbar
 import multiprocessing
 import sys
 
-_scriptdoc = \
-"""
+_scriptdoc = """
 ccompare.py [-c <config.cfg>] [-j workers] [-m METHOD]
             [--skip-completed] [--restrict]
             [-s STORAGE::LOCATION] [SIGNAL_PATH]
@@ -31,13 +30,15 @@ SIGNAL_PATH
 --test             do a test run on the first two signals (no storage required)
 """
 
+
 def run_test(signal_dir, comparator, cout=None):
     import os.path
     from glob import glob
-    signals = glob(os.path.join(signal_dir,'*' + comparator.file_extension))[:2]
-    ref,tgt = [comparator.load_signal(f) for f in signals]
+    signals = glob(os.path.join(signal_dir, '*' + comparator.file_extension))[:2]
+    ref, tgt = [comparator.load_signal(f) for f in signals]
     results = comparator.compare(ref, tgt)
     print signals[0], signals[1], results
+
 
 def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None):
     """
@@ -55,16 +56,16 @@ def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None
     task_queue = shm_manager.Queue()
     done_queue = shm_manager.Queue()
     data = shm_manager.dict()
-    stop_signal = shm_manager.Value(c_bool,False)
+    stop_signal = shm_manager.Value(c_bool, False)
 
-    def _load(tq,dq,d):
-        for id,loc in iter(tq.get,None):
+    def _load(tq, dq, d):
+        for id, loc in iter(tq.get, None):
             if stop_signal.value: break
             try:
                 d[id] = comparator.load_signal(loc)
                 dq.put(id)
             except Exception, e:
-                cout.write("** Error loading data from %s: %s\n" % (loc,e))
+                cout.write("** Error loading data from %s: %s\n" % (loc, e))
         dq.put(None)
 
     for i in xrange(nworkers):
@@ -72,8 +73,8 @@ def load_data(storager, comparator, shm_manager, consumer, nworkers=1, cout=None
         p.daemon = True
         p.start()
 
-    for id,loc in storager.signals:
-        task_queue.put((id,loc))
+    for id, loc in storager.signals:
+        task_queue.put((id, loc))
 
     for i in xrange(nworkers):
         task_queue.put(None)
@@ -97,16 +98,16 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
     from ctypes import c_bool
     task_queue = shm_manager.Queue()
     done_queue = shm_manager.Queue()
-    stop_signal = shm_manager.Value(c_bool,False)
+    stop_signal = shm_manager.Value(c_bool, False)
 
-    def _compare(tq,dq,d):
-        for ref,tgt in iter(tq.get,None):
+    def _compare(tq, dq, d):
+        for ref, tgt in iter(tq.get, None):
             if stop_signal.value: break
             refdata = d[ref]
             tgtdata = d[tgt]
             try:
                 results = comparator.compare(refdata, tgtdata)
-                dq.put((ref,tgt) + results)
+                dq.put((ref, tgt) + results)
             except Exception, e:
                 cout.write("Error comparing %s to %s: %s\n" % (ref, tgt, e))
         dq.put(None)
@@ -118,9 +119,9 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
 
     print >> cout, "** Comparison is symmetric: %s" % comparator.symmetric
     nq = 0
-    for ref,tgt in storager.pairs():
-        task_queue.put((ref,tgt))
-        nq +=1
+    for ref, tgt in storager.pairs():
+        task_queue.put((ref, tgt))
+        nq += 1
     print >> cout, "** Number of comparisons: %d " % nq
     for i in xrange(nworkers):
         task_queue.put(None)
@@ -134,7 +135,8 @@ def run_comparisons(storager, comparator, shm_dict, shm_manager, consumer,
 
 
 def main(argv=None, cout=None):
-    import sys,os
+    import sys
+    import os
     from ..version import version
     if argv is None:
         argv = sys.argv[1:]
@@ -145,7 +147,7 @@ def main(argv=None, cout=None):
     from ..common.config import configoptions
     config = configoptions()
 
-    opts,args = getopt.getopt(argv, 'hvc:m:s:j:',['skip-completed','restrict','test'])
+    opts, args = getopt.getopt(argv, 'hvc:m:s:j:', ['skip-completed', 'restrict', 'test'])
 
     method = None
     store_descr = None
@@ -153,7 +155,7 @@ def main(argv=None, cout=None):
     do_test = False
 
     nworkers = 1
-    for o,a in opts:
+    for o, a in opts:
         if o == '-h':
             print _scriptdoc + '\n' + methods.make_scriptdoc() + '\n\n' + storage.make_scriptdoc()
             return -1
@@ -170,7 +172,7 @@ def main(argv=None, cout=None):
         elif o == '-s':
             store_descr = a
         elif o == '-j':
-            nworkers = max(1,int(a))
+            nworkers = max(1, int(a))
         elif o == '--skip-completed':
             store_options['skip'] = True
         elif o == '--restrict':
@@ -178,7 +180,7 @@ def main(argv=None, cout=None):
         elif o == '--test':
             do_test = True
 
-    if len(args)==0:
+    if len(args) == 0:
         signal_dir = os.getcwd()
     else:
         signal_dir = args[0]
@@ -211,7 +213,7 @@ def main(argv=None, cout=None):
         storage_class = storage.load(sparts[0])
         print >> cout, "* Storage system: %s %s " % (sparts[0], storage_class)
         storager = storage_class(comparator,
-                                 location=sparts[1] if len(sparts)>1 else None,
+                                 location=sparts[1] if len(sparts) > 1 else None,
                                  signals=signal_dir, **store_options)
     except ImportError, e:
         print >> cout, "* ERROR: bad storage descriptor: %s " % e

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- mode: python -*-
-"""
-a simple particle filter implementation
+"""A simple particle filter implementation
 
 Much of the particle filter code is ported from SMCTC [1]
 
@@ -12,6 +11,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import numpy as nx
+
 
 class smc(object):
     """
@@ -51,10 +51,9 @@ class smc(object):
 
         self.loglike  = nx.log(nx.maximum(likelihood, nx.exp(min_loglike)))
         self.nvalues = likelihood.shape[0]
-        self.cproposal = nx.cumsum(proposal,axis=0)
+        self.cproposal = nx.cumsum(proposal, axis=0)
         self.cproposal /= nx.where(self.cproposal[-1] > 0, self.cproposal[-1], nx.nan)
         self.nframes = self.cproposal.shape[1]
-
 
     def initialize(self, nparticles, sampled=True, seed=3653268):
         """
@@ -66,13 +65,13 @@ class smc(object):
         """
         nx.random.seed(seed)
         if sampled:
-            csum = nx.cumsum(nx.exp(self.loglike[:,0]))
+            csum = nx.cumsum(nx.exp(self.loglike[:, 0]))
             csum /= csum[-1]
             self.particles = sample_cdf(csum, nparticles)
             self.weights = nx.zeros(nparticles)
         else:
-            self.particles = nx.random.randint(0,self.nvalues,nparticles)
-            self.weights = self.loglike[self.particles,0] - self.loglike[self.particles,0].max()
+            self.particles = nx.random.randint(0, self.nvalues, nparticles)
+            self.weights = self.loglike[self.particles, 0] - self.loglike[self.particles, 0].max()
         self.frame = 0
         self.particle_history = []
 
@@ -97,7 +96,7 @@ class smc(object):
             yield self.frame, self.particles, self.weights
         if keep_history:
             self.particle_history.append(self.particles.copy())
-        raise StopIteration, "End of proposal densities"
+        raise StopIteration("End of proposal densities")
 
     def iterate_all(self, *args, **kwargs):
         """
@@ -106,7 +105,6 @@ class smc(object):
         for g in self.iterate(*args, **kwargs):
             pass
 
-
     def move_particles(self, rwalk_scale=0.0):
         """
         Move particles using cumulative proposal density.  If the cdf
@@ -114,12 +112,12 @@ class smc(object):
         random walk.
         """
         np = self.particles.size
-        cdf = self.cproposal[:,self.frame]
+        cdf = self.cproposal[:, self.frame]
         if not nx.isfinite(cdf.sum()):
             if rwalk_scale > 0:
                 self.particles += nx.round(nx.random.normal(scale=rwalk_scale, size=np)).astype(self.particles.dtype)
         else:
-            self.particles += sample_cdf(self.cproposal[:,self.frame],np) - self.cproposal.shape[0] / 2
+            self.particles += sample_cdf(self.cproposal[:, self.frame], np) - self.cproposal.shape[0] / 2
 
     def update_weights(self):
         """
@@ -127,7 +125,7 @@ class smc(object):
         values. Invalid values get severely penalized (min_loglike).
         """
         valid = (self.particles >= 0) & (self.particles < self.nvalues)
-        self.weights[valid] += self.loglike[self.particles[valid],self.frame+1]
+        self.weights[valid] += self.loglike[self.particles[valid], self.frame + 1]
         self.weights[~valid] += self.min_loglike
 
     def rescale_and_resample(self):
@@ -153,17 +151,15 @@ class smc(object):
             # then replicate chosen particles
             self.particles = nx.repeat(self.particles, counts)
             # weights are equalized (because distribution of particles now reflects weights)
-            self.weights[:] = 0  #nx.log(1./np)
-
+            self.weights[:] = 0   # nx.log(1./np)
 
     def ess(self):
         """
         Calculate effective sample size
         """
         s1 = nx.exp(self.weights).sum()
-        s2 = nx.exp(2*self.weights).sum()
+        s2 = nx.exp(2 * self.weights).sum()
         return nx.exp(2 * nx.log(s1) - nx.log(s2))
-
 
     def density(self, particles=None, weights=None):
         """
@@ -175,7 +171,7 @@ class smc(object):
         if weights is None: weights = nx.exp(self.weights)
         pdf = nx.zeros(self.nvalues)
         wsum = 0.0
-        for p,w in izip(particles,weights):
+        for p, w in izip(particles, weights):
             if p < 0 or p >= self.nvalues: continue
             wsum += w
             pdf[p] += w
@@ -195,9 +191,10 @@ class smc(object):
             wsum = nx.sum(func(particles[ind]) * weights[ind])
         return wsum / nx.sum(weights[ind])
 
-def sample_cdf(cdf,N):
+
+def sample_cdf(cdf, N):
     """
-    Sample N values from cdf using U_{0,1} trick
+    Sample N values from cdf using U_{0, 1} trick
     """
     u01 = nx.random.uniform(size=N)
     return nx.searchsorted(cdf, u01)

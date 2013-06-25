@@ -10,6 +10,7 @@ import os
 from ..common.config import _configurable
 from .base_comparison import base_comparison
 
+
 class spcc(base_comparison, _configurable):
     """
     Compute pairwise distances between motifs using spectrographic
@@ -26,14 +27,14 @@ class spcc(base_comparison, _configurable):
     file_extension = ".wav"
     options = dict(spec_method='hanning',
                    nfreq=100,
-                   window_shift=1.5, # this is in ms
-                   freq_range=(750.0,10000.0),
+                   window_shift=1.5,   # this is in ms
+                   freq_range=(750.0, 10000.0),
                    powscale='linear',
                    mask='box',
                    subtract_mean=True,
                    biased_norm=True
                    )
-    config_sections = ('spectrogram','spcc',)
+    config_sections = ('spectrogram', 'spcc',)
 
     def __init__(self, configfile=None, **kwargs):
         self.readconfig(configfile)
@@ -59,13 +60,13 @@ class spcc(base_comparison, _configurable):
 
         speccr = spectrogram(**self.options)
         # adjust window size to get correct number of frequency bands
-        df = 1. * (self.options['freq_range'][1]-self.options['freq_range'][0])/self.options['nfreq']
+        df = 1. * (self.options['freq_range'][1] - self.options['freq_range'][0]) / self.options['nfreq']
         nfft = int(Fs / df)
 
-        spec,extent = speccr.linspect(signal, Fs / 1000, nfft=nfft)
-        F,ind = fgrid(Fs,nfft,self.options['freq_range']) # in Hz
-        spec = spec[ind,:]
-        T = linspace(extent[0],extent[1],spec.shape[1]) # in ms
+        spec, extent = speccr.linspect(signal, Fs / 1000, nfft=nfft)
+        F, ind = fgrid(Fs, nfft, self.options['freq_range'])   # in Hz
+        spec = spec[ind, :]
+        T = linspace(extent[0], extent[1], spec.shape[1])      # in ms
 
         # first convert the spectrogram to its final scale
         if self.options['powscale'].startswith('log'):
@@ -79,7 +80,7 @@ class spcc(base_comparison, _configurable):
             eblfile = os.path.splitext(locator)[0] + elementlist.default_extension
             if os.path.exists(eblfile):
                 mask = elementlist.read(eblfile)
-                spec = masker(boxmask=self.options['mask']=='box').cut(spec,mask,T,F / 1000.)
+                spec = masker(boxmask=self.options['mask'] == 'box').cut(spec, mask, T, F / 1000.)
 
         return spec.astype(dtype)
 
@@ -104,6 +105,7 @@ class spcc(base_comparison, _configurable):
 ** Spectrogram masking = %(mask)s""" % self.options
         return out
 
+
 def spectcc(ref, tgt, biased_norm=True):
     """
     Compute cross-correlation between two spectrograms.  This is
@@ -114,32 +116,32 @@ def spectcc(ref, tgt, biased_norm=True):
 
     returns the 2D cross-correlation, calculate sum of columns to get CC for each lag
     """
-    from numpy import conj,sqrt,convolve,ones
-    from numpy.fft import fft,ifft
+    from numpy import conj, sqrt, convolve, ones
+    from numpy.fft import fft, ifft
     from numpy.linalg import norm
 
     assert ref.ndim == tgt.ndim
     if ref.ndim == 1:
-        ref.shape = (1,ref.size)
-        tgt.shape = (1,tgt.size)
+        ref.shape = (1, ref.size)
+        tgt.shape = (1, tgt.size)
 
-    rfreq,rframes = ref.shape
-    tfreq,tframes = tgt.shape
-    assert tfreq==rfreq, "Spectrograms must have same number of frequency bands"
+    rfreq, rframes = ref.shape
+    tfreq, tframes = tgt.shape
+    assert tfreq == rfreq, "Spectrograms must have same number of frequency bands"
     # switch ref and tgt so that ref is always shorter
     if tframes < rframes:
-        tframes,rframes = rframes,tframes
-        tgt,ref = ref,tgt
+        tframes, rframes = rframes, tframes
+        tgt, ref = ref, tgt
 
-    sz = rframes+tframes-1
+    sz = rframes + tframes - 1
 
     # numerator
-    X   = conj(fft(ref,sz,axis=1))
-    X  *= fft(tgt,sz,axis=1)
+    X   = conj(fft(ref, sz, axis=1))
+    X  *= fft(tgt, sz, axis=1)
     num = ifft(X).real
     # restrict to valid frames (complete overlap)
-    ind = abs(rframes-tframes)+1
-    num = num[:,:ind]
+    ind = abs(rframes - tframes) + 1
+    num = num[:, :ind]
 
     # denominator
     # * for the shorter signal, it's just the L2 norm
@@ -148,7 +150,7 @@ def spectcc(ref, tgt, biased_norm=True):
     if biased_norm:
         d2 = norm(tgt)
     else:
-        d2 = sqrt(convolve((tgt**2).sum(0), ones(rframes), 'valid'))
+        d2 = sqrt(convolve((tgt ** 2).sum(0), ones(rframes), 'valid'))
     return num / d1 / d2
 
 

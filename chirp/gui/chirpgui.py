@@ -19,14 +19,16 @@ from chirp.gui.PitchOverlayMixin import PitchOverlayMixin
 
 from matplotlib.figure import Figure
 
-spec_methods = ['hanning','tfr']
-colormaps = ['jet','Greys','hot']
+spec_methods = ['hanning', 'tfr']
+colormaps = ['jet', 'Greys', 'hot']
 _el_ext = geom.elementlist.default_extension
 _pitch_ext = plg._default_extension
 _config_ext = '.cfg'
 
 # checklist control
 from wx.lib.mixins.listctrl import CheckListCtrlMixin, ListCtrlAutoWidthMixin
+
+
 class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
     def __init__(self, parent, frame=None):
         wx.ListCtrl.__init__(self, parent, -1, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
@@ -47,7 +49,7 @@ class CheckListCtrl(wx.ListCtrl, CheckListCtrlMixin, ListCtrlAutoWidthMixin):
         ncol = self.GetColumnCount()
         assert len(values) >= ncol, "Not enough values for add_selection"
         idx = self.InsertStringItem(sys.maxint, str(values[0]))
-        for i in range(1,ncol):
+        for i in range(1, ncol):
             self.SetStringItem(idx, i, values[i])
         self.CheckItem(idx)
         return idx
@@ -91,19 +93,19 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
 
         if key > 255:
             event.Skip()
-        elif chr(key)=='s':
+        elif chr(key) == 's':
             self.add_geometry(val)
-        elif chr(key)=='p' and self.handler.signal is not None:
-            if not hasattr(audio,'play_wave'):
+        elif chr(key) == 'p' and self.handler.signal is not None:
+            if not hasattr(audio, 'play_wave'):
                 print "chirp requires pyaudio to play audio"
                 return
             if isinstance(val, geom.Polygon):
                 tlim = self.axes.get_xlim()
             else:
                 tlim = val
-            i0,i1 = (int(x*self.handler.Fs) for x in tlim)
+            i0, i1 = (int(x * self.handler.Fs) for x in tlim)
             audio.play_wave(self.handler.signal[i0:i1], self.handler.Fs)
-        elif chr(key)=='x':
+        elif chr(key) == 'x':
             if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
@@ -111,7 +113,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 if not p2.is_empty: newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
-        elif chr(key)=='a':
+        elif chr(key) == 'a':
             if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
@@ -123,7 +125,6 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
             for p in newgeoms: self.add_geometry(p)
         else:
             event.Skip()
-
 
     def add_geometry(self, obj):
         """  Add a geometry (polygon or interval) to the spectrogram """
@@ -138,7 +139,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
             ptype = 'interval'
         self.selections.append(p)
         self.axes.add_patch(p)
-        return self.list.add_selection('',ptype,"%3.2f" % bounds[0], "%3.2f" % bounds[1],)
+        return self.list.add_selection('', ptype, "%3.2f" % bounds[0], "%3.2f" % bounds[1],)
 
     def delete_selection(self, *index):
         """ Removes elements from the underlying list, since we have access to it """
@@ -152,9 +153,10 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         self.delete_selection(*range(len(self.selections)))
 
     def get_selected(self):
-        return list(i for i,p in enumerate(self.selections) if p.get_lw() > self._element_lw_unselected)
+        return list(i for i, p in enumerate(self.selections) if p.get_lw() > self._element_lw_unselected)
+
     def set_selected(self, selections):
-        for i,p in enumerate(self.selections):
+        for i, p in enumerate(self.selections):
             if i in selections:
                 p.set_lw(self._element_lw_selected)
             else:
@@ -162,18 +164,19 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
 
     def get_element_color(self):
         return self._element_color
+
     def set_element_color(self, value):
-        if value==self._element_color: return
+        if value == self._element_color: return
         self._element_color = value
         for p in self.selections:
             p.set_facecolor(value)
     element_color = property(get_element_color, set_element_color)
 
     def set_colormap(self, value):
-        if value=='Greys':
+        if value == 'Greys':
             self.polygon.PEN = wx.BLACK_PEN
             self.element_color = 'g'
-        elif value in ('hot','jet'):
+        elif value in ('hot', 'jet'):
             self.polygon.PEN = wx.WHITE_PEN
             self.element_color = 'w'
         self.handler.colormap = value
@@ -190,7 +193,7 @@ class ChirpGui(wx.Frame):
     """ The main frame of the application """
     dpi = 100
 
-    def __init__(self, title='chirp', size=(1000,450), configfile=None):
+    def __init__(self, title='chirp', size=(1000, 450), configfile=None):
         super(ChirpGui, self).__init__(None, -1, title, size=size)
         # load configuration file if one's supplied
         self.configfile = config.configoptions(configfile)
@@ -276,7 +279,7 @@ class ChirpGui(wx.Frame):
         des = wx.Button(leftPanel, -1, 'Hide All', size=(100, -1))
         fdel = wx.Button(leftPanel, -1, 'Delete', size=(100, -1))
         fmrg = wx.Button(leftPanel, -1, 'Merge', size=(100, -1))
-        fsub = wx.Button(leftPanel, -1,  'Subtract', size=(100,-1))
+        fsub = wx.Button(leftPanel, -1, 'Subtract', size=(100, -1))
         fspl = wx.Button(leftPanel, -1, 'Split', size=(100, -1))
 
         self.Bind(wx.EVT_BUTTON, self.OnSelectAll, id=sel.GetId())
@@ -294,15 +297,15 @@ class ChirpGui(wx.Frame):
         vbox2.Add(sel, 0, wx.TOP, 5)
         vbox2.Add(des, 0, wx.TOP, 2)
         vbox2.Add((3, 10))
-        vbox2.Add(fdel,0, wx.TOP, 2)
-        vbox2.Add(fmrg,0, wx.TOP, 2)
-        vbox2.Add(fsub,0, wx.TOP, 2)
-        vbox2.Add(fspl,0, wx.TOP, 2)
+        vbox2.Add(fdel, 0, wx.TOP, 2)
+        vbox2.Add(fmrg, 0, wx.TOP, 2)
+        vbox2.Add(fsub, 0, wx.TOP, 2)
+        vbox2.Add(fspl, 0, wx.TOP, 2)
         leftPanel.SetSizer(vbox2)
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(leftPanel, 0, wx.EXPAND | wx.RIGHT, 5)
-        hbox.Add(self.list, 1, wx.EXPAND | wx.BOTTOM | wx.RIGHT | wx.TOP,5)
+        hbox.Add(self.list, 1, wx.EXPAND | wx.BOTTOM | wx.RIGHT | wx.TOP, 5)
         panel.SetSizer(hbox)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -363,10 +366,10 @@ class ChirpGui(wx.Frame):
 
     def load_file(self, fname):
         file_type = os.path.splitext(fname)[1]
-        if file_type==_el_ext:
+        if file_type == _el_ext:
             el = self.load_elements(fname)
             if el: self.status.SetStatusText("Loaded %d elements from %s" % (len(el), fname))
-        elif file_type==_pitch_ext:
+        elif file_type == _pitch_ext:
             try:
                 self.spec.plot_plg(fname)
                 self.status.SetStatusText("Loaded pitch data from %s" % fname)
@@ -402,14 +405,14 @@ class ChirpGui(wx.Frame):
             self.spec.draw()
         return el
 
-    def get_selected(self,obj_type=None):
+    def get_selected(self, obj_type=None):
         objs = []
         for i in self.list.selected:
             p = self.spec.selections[i]
             if obj_type:
-                if isinstance(p, obj_type): objs.append((i,p))
+                if isinstance(p, obj_type): objs.append((i, p))
             else:
-                objs.append((i,p))
+                objs.append((i, p))
         return objs
 
     def OnSelectAll(self, event):
@@ -428,7 +431,7 @@ class ChirpGui(wx.Frame):
 
     def OnSelectItem(self, event):
         sel = self.spec.get_selected()
-        if not sel==self.list.selected:
+        if not sel == self.list.selected:
             self.spec.set_selected(self.list.selected)
             self.spec.draw()
 
@@ -437,20 +440,20 @@ class ChirpGui(wx.Frame):
         if x:
             self.spec.delete_selection(*x)
             self.spec.draw()
-            self.status.SetStatusText("Deleted " + ', '.join(str(i+1) for i in x))
+            self.status.SetStatusText("Deleted " + ', '.join(str(i + 1) for i in x))
 
     def OnMerge(self, event):
         polys = self.get_selected(wxgeom.polypatch)
         if len(polys) < 2:
             self.status.SetStatusText("Select at least 2 spectrotemporal segments to merge.")
         else:
-            i,p1 = zip(*polys)
+            i, p1 = zip(*polys)
             p2 = geom.merge_polygons([wxgeom.path_to_poly(p) for p in p1])
             self.spec.delete_selection(*i)
             # if polygons are disjoint, may return a multipolygon; split into separate segments
             new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(p2)]
             self.spec.draw()
-            self.status.SetStatusText("Merged elements %s into %s" % (list(i for i,p in polys), new_elem))
+            self.status.SetStatusText("Merged elements %s into %s" % (list(i for i, p in polys), new_elem))
 
     def OnSubtract(self, event):
         """ Subtract smaller polygon(s) from larger """
@@ -458,27 +461,26 @@ class ChirpGui(wx.Frame):
         if len(polys) < 2:
             self.status.SetStatusText("Select at least 2 spectrotemporal segments.")
         else:
-            i1,p1 = zip(*polys)
-            i2,p2 = geom.subtract_polygons([wxgeom.path_to_poly(p) for p in p1])
+            i1, p1 = zip(*polys)
+            i2, p2 = geom.subtract_polygons([wxgeom.path_to_poly(p) for p in p1])
             self.spec.delete_selection(*i1)
             new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(p2)]
-            self.status.SetStatusText("Subtracted %d elements from element %d" % (len(i1)-1,i1[i2]))
+            self.status.SetStatusText("Subtracted %d elements from element %d" % (len(i1) - 1, i1[i2]))
 
     def OnSplit(self, event):
         polys = self.get_selected(wxgeom.polypatch)
         if len(polys) != 2:
             self.status.SetStatusText("Select two spectrotemporal segments to split.")
         else:
-            p1,p2 = (wxgeom.path_to_poly(p) for i,p in polys)
+            p1, p2 = (wxgeom.path_to_poly(p) for i, p in polys)
             if p1.disjoint(p2):
                 self.status.SetStatusText("Segments do not intersect.")
             else:
-                new_polys = geom.split_polygons(p1,p2)
+                new_polys = geom.split_polygons(p1, p2)
                 new_elem = [self.spec.add_geometry(p) for p in geom.polygon_components(*new_polys)]
-                self.spec.delete_selection(polys[1][0],polys[0][0])
+                self.spec.delete_selection(polys[1][0], polys[0][0])
                 self.spec.draw()
-                self.status.SetStatusText("Split elements %s into %s" % (list(i for i,p in polys), new_elem))
-
+                self.status.SetStatusText("Split elements %s into %s" % (list(i for i, p in polys), new_elem))
 
     def OnSpecControl(self, event):
         # this is sort of cheap - just check all the values against the handler's values
@@ -496,16 +498,16 @@ class ChirpGui(wx.Frame):
     def on_open(self, event):
         fdlg = wx.FileDialog(self, "Select a file to open",
                              wildcard="WAV files (*.wav)|*.wav|Element files (*.ebl)|*.ebl|Pitch files (*.plg)|*.plg|Configuration files (*.cfg)|*.cfg",
-                             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         val = fdlg.ShowModal()
-        if val==wx.ID_OK:
+        if val == wx.ID_OK:
             infile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
             self.load_file(infile)
 
     def _next_file(self, step=1):
         from chirp.common import _tools
         if self.filename is None: return
-        pn,fn = os.path.split(self.filename)
+        pn, fn = os.path.split(self.filename)
         # glob is very slow for large directories
         files = sorted((x for x in os.listdir(pn) if x.endswith('.wav')), key=_tools.alnumkey)
         try:
@@ -516,7 +518,7 @@ class ChirpGui(wx.Frame):
         idx += step
         if idx < 0 or idx >= len(files):
             return
-        self.load_file(os.path.join(pn,files[idx]))
+        self.load_file(os.path.join(pn, files[idx]))
 
     def on_next_file(self, event):
         """ Open next file in current directory """
@@ -538,7 +540,7 @@ class ChirpGui(wx.Frame):
     def load_params(self, infile):
         self.configfile = config.configoptions(infile)
         # this is sort of kludgy, but it's not too much
-        sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
+        sig, Fs = self.spec.handler.signal, self.spec.handler.Fs
         self.spec.handler = SpecHandler(self.configfile)
         self.spec.handler.set_axes(self.spec.axes)
         self.win_size.SetValue(str(self.spec.handler.window_len))
@@ -549,13 +551,12 @@ class ChirpGui(wx.Frame):
         if sig is not None:
             self.spec.handler.plot_data(sig, Fs)
 
-
     def on_save_params(self, event):
         fdlg = wx.FileDialog(self, "Choose file to save configuration to",
                              wildcard="Config files (*.cfg)|*.cfg",
-                             style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+                             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         val = fdlg.ShowModal()
-        if not val==wx.ID_OK: return
+        if not val == wx.ID_OK: return
         outfile = os.path.join(fdlg.GetDirectory(), fdlg.GetFilename())
         try:
             self.configfile.update('spectrogram',
@@ -592,7 +593,7 @@ class ChirpGui(wx.Frame):
         try:
             self.status.SetStatusText("Calculating pitch...")
             wx.BeginBusyCursor()
-            sig,Fs = self.spec.handler.signal, self.spec.handler.Fs
+            sig, Fs = self.spec.handler.signal, self.spec.handler.Fs
             self.spec.plot_calcd_pitch(sig, Fs, elems)
             self.status.SetStatusText("Calculating pitch...done")
         except Exception, e:
@@ -631,31 +632,33 @@ class ChirpGui(wx.Frame):
         dlg.Show()
 
     def on_help(self, event):
-        dlg = HelpWindow.AboutBox(self,"Chirp Controls",HelpWindow.help_txt)
+        dlg = HelpWindow.AboutBox(self, "Chirp Controls", HelpWindow.help_txt)
         dlg.Show()
 
     def on_about(self, event):
-        dlg = HelpWindow.AboutBox(self,"About Chirp",HelpWindow.about_txt)
+        dlg = HelpWindow.AboutBox(self, "About Chirp", HelpWindow.about_txt)
         dlg.ShowModal()
         dlg.Destroy()
 
     def on_exit(self, event):
         self.Destroy()
 
+
 class ChirpApp(wx.App):
 
     def OnInit(self):
-        import sys, getopt
+        import sys
+        import getopt
         argv = sys.argv[1:]
 
-        configfile = os.path.join(os.getcwd(),"chirp.cfg")  # load in current directory if it exists
-        opts,args = getopt.getopt(argv,'hc:')
-        for o,a in opts:
-            if o =='-h':
+        configfile = os.path.join(os.getcwd(), "chirp.cfg")  # load in current directory if it exists
+        opts, args = getopt.getopt(argv, 'hc:')
+        for o, a in opts:
+            if o == '-h':
                 print __doc__
                 return 0
-            elif o =='-c':
-                configfile=a
+            elif o == '-c':
+                configfile = a
 
         self.frame = ChirpGui(configfile=configfile)
         if len(args) > 0:
@@ -667,6 +670,7 @@ class ChirpApp(wx.App):
     def MacReopenApp(self):
         """Called when the doc icon is clicked, and ???"""
         self.GetTopWindow().Raise()
+
 
 def main(argv=None):
     app = ChirpApp(redirect=False)

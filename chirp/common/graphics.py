@@ -7,6 +7,7 @@ Copyright (C) 2011 Dan Meliza <dan // meliza.org>
 Created 2011-08-10
 """
 
+
 def axgriditer(gridfun=None, figfun=None, **figparams):
     """
     Generates axes for multiple gridded plots.  Initial call
@@ -28,20 +29,20 @@ def axgriditer(gridfun=None, figfun=None, **figparams):
     """
     if gridfun is None:
         from matplotlib.pyplot import subplots
-        gridfun = lambda : subplots(1,1)
+        gridfun = lambda: subplots(1, 1)
 
-    fig,axg = gridfun(**figparams)
+    fig, axg = gridfun(**figparams)
     try:
         while 1:
             for ax in axg.flat:
                 yield ax
             if callable(figfun): figfun(fig)
-            elif hasattr(figfun,'send'): figfun.send(fig)
+            elif hasattr(figfun, 'send'): figfun.send(fig)
             fig, axg = gridfun(**figparams)
     except:
         # cleanup and re-throw exception
         if callable(figfun): figfun(fig)
-        elif hasattr(figfun,'send'): figfun.send(fig)
+        elif hasattr(figfun, 'send'): figfun.send(fig)
         raise
 
 

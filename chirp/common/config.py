@@ -8,6 +8,7 @@ Created 2011-08-02
 """
 import ConfigParser
 
+
 class configoptions(object):
     """
     Wraps up ConfigParser with some useful type conversion and defaulting.
@@ -32,7 +33,7 @@ class configoptions(object):
 
     def write(self, fname):
         """ Write stored configuration to file. Note that all comments will be stripped """
-        self.config.write(open(fname,'wt'))
+        self.config.write(open(fname, 'wt'))
 
     def getdict(self, defaults, sections=('DEFAULT')):
         """
@@ -47,16 +48,16 @@ class configoptions(object):
         """
         from ast import literal_eval
         out = dict()
-        for k,v in defaults.iteritems():
+        for k, v in defaults.iteritems():
             for section in sections:
-                if self.config.has_option(section,k):
+                if self.config.has_option(section, k):
                     cval = self.config.get(section, k)
                     t = type(v)
-                    if t in (bool,tuple,list,dict,type(None),int,float):
+                    if t in (bool, tuple, list, dict, type(None), int, float):
                         try:
                             out[k] = literal_eval(cval)
                         except ValueError:
-                            raise ValueError, "Invalid value for %s" % k
+                            raise ValueError("Invalid value for %s" % k)
                     else:
                         out[k] = cval
             if k not in out:
@@ -71,15 +72,15 @@ class configoptions(object):
         """
         if not self.config.has_section(section):
             self.config.add_section(section)
-        for k,v in kwargs.iteritems():
-            if isinstance(v,basestring):
-                self.config.set(section,k,v)
+        for k, v in kwargs.iteritems():
+            if isinstance(v, basestring):
+                self.config.set(section, k, v)
             else:
-                self.config.set(section,k,repr(v))
+                self.config.set(section, k, repr(v))
 
     def get(self, section, option, default):
         """ Provide direct access to the ConfigParser object """
-        return self.config.get(section, option, { option : default })
+        return self.config.get(section, option, {option: default})
 
     def getboolean(self, section, option, default):
         """ Provide direct access to the ConfigParser object """
@@ -87,6 +88,7 @@ class configoptions(object):
             return self.config.getboolean(section, option)
         else:
             return default
+
 
 class _configurable(object):
     """
@@ -115,9 +117,9 @@ class _configurable(object):
         if isinstance(cfg, basestring):
             cfg = configoptions(configfile=cfg)
         if isinstance(cfg, configoptions):
-            self.options.update(cfg.getdict(self.options,self.config_sections))
+            self.options.update(cfg.getdict(self.options, self.config_sections))
         else:
-            raise TypeError, "%s is not a configoptions object or a filename"
+            raise TypeError("%s is not a configoptions object or a filename" % cfg)
 
 
 # Variables:

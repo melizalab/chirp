@@ -15,6 +15,8 @@ myEVT_STAGE = wx.NewEventType()
 EVT_STAGE = wx.PyEventBinder(myEVT_STAGE, 1)
 myEVT_COUNT = wx.NewEventType()
 EVT_COUNT = wx.PyEventBinder(myEVT_COUNT, 1)
+
+
 class BatchEvent(wx.PyCommandEvent):
     """Event to signal that a count value is ready"""
     def __init__(self, etype, eid, value=None):

@@ -10,8 +10,9 @@ Copyright (C) 2012 Dan Meliza <dmeliza@gmail.com>
 Created 2012-01-31
 """
 
+
 def consumer(func):
-    def wrapper(*args,**kw):
+    def wrapper(*args, **kw):
         gen = func(*args, **kw)
         gen.next()
         return gen
@@ -19,6 +20,7 @@ def consumer(func):
     wrapper.__dict__ = func.__dict__
     wrapper.__doc__  = func.__doc__
     return wrapper
+
 
 def alnumkey(s):
     """
@@ -28,7 +30,7 @@ def alnumkey(s):
     Use as a key in sorting filenames naturally
     """
     import re
-    convert = lambda text: int(text) if text.isdigit() else text 
+    convert = lambda text: int(text) if text.isdigit() else text
     return [convert(c) for c in re.split('([0-9]+)', s)]
 
 

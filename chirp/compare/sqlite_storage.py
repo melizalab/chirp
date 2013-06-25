@@ -8,7 +8,9 @@ as a backend.
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org> Created
 2011-10-05
 """
-import os,sqlite3,glob
+import os
+import sqlite3
+import glob
 from .base_storage import base_storage as _base_storage
 from ..common import _tools
 
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS %s (
 PRIMARY KEY (`id` ASC AUTOINCREMENT))
 """
 
+
 class sqlite_storage(_base_storage):
     _descr = "sqlite database (LOCATION: file[:table])"
     _preferred_extension = ".db"
@@ -46,7 +49,7 @@ class sqlite_storage(_base_storage):
         """
         _base_storage.__init__(self, comparator)
         if location is None:
-            raise ValueError, "must specify a database file"
+            raise ValueError("must specify a database file")
         locparts = location.split(':')
         self.location = locparts[0]
         if len(locparts) > 1:
@@ -71,14 +74,13 @@ class sqlite_storage(_base_storage):
             if not self.restrict:
                 con.executemany("INSERT OR IGNORE INTO %s (filename) VALUES (?)" % self.signal_table,
                                 ((os.path.splitext(os.path.split(x)[1])[0],) for x in files))
-            cursor = con.execute("SELECT id,filename FROM %s ORDER BY id" % self.signal_table)
-            self.signals = [(i,os.path.join(signal_dir,f+self.file_pattern)) for i,f in cursor.fetchall() \
-                                if os.path.join(signal_dir, f+self.file_pattern) in files]
-
+            cursor = con.execute("SELECT id, filename FROM %s ORDER BY id" % self.signal_table)
+            self.signals = [(i, os.path.join(signal_dir, f + self.file_pattern)) for i, f in cursor.fetchall()
+                            if os.path.join(signal_dir, f + self.file_pattern) in files]
 
     def _create_target_table(self, con, values):
-        sql_columns = ",\n".join("`%s` %s" % (name,sqlite_type(val)) for \
-                                   name,val in zip(self.compare_stat_fields, values[2:]))
+        sql_columns = ",\n".join("`%s` %s" % (name, sqlite_type(val)) for
+                                 name, val in zip(self.compare_stat_fields, values[2:]))
         sql = sql_create_target % (self.table_name, self.signal_table, self.signal_table, sql_columns)
         if not self.skip:
             con.execute("DROP TABLE IF EXISTS %s" % self.table_name)
@@ -88,15 +90,15 @@ class sqlite_storage(_base_storage):
         if self.skip:
             try:
                 con = sqlite3.connect(self.location)
-                cur = con.execute("SELECT ref,tgt FROM %s" % self.table_name)
-                done = [(r,t) for r,t in cur.fetchall()]
-                for k1,k2 in _base_storage.pairs(self):
-                    if (k1,k2) not in done: yield k1,k2
+                cur = con.execute("SELECT ref, tgt FROM %s" % self.table_name)
+                done = [(r, t) for r, t in cur.fetchall()]
+                for k1, k2 in _base_storage.pairs(self):
+                    if (k1, k2) not in done: yield k1, k2
                 return
             except sqlite3.OperationalError:
                 # table probably doesn't exist; go to fallback
                 pass
-        for k1,k2 in _base_storage.pairs(self): yield k1,k2
+        for k1, k2 in _base_storage.pairs(self): yield k1, k2
 
     def output_signals(self):
         """
@@ -114,25 +116,25 @@ class sqlite_storage(_base_storage):
         and recreated.
         """
         # create table using types of first yielded result
-        cols = ("ref","tgt") + tuple(self.compare_stat_fields)
-        sql1 =  "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
-                                                    ",".join(cols),
-                                                    ",".join("?" for x in cols))
-        cols = ("tgt","ref") + tuple(self.compare_stat_fields)
-        sql2 =  "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
-                                                    ",".join(cols),
-                                                    ",".join("?" for x in cols))
+        cols = ("ref", "tgt") + tuple(self.compare_stat_fields)
+        sql1 = "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
+                                                              ",".join(cols),
+                                                              ",".join("?" for x in cols))
+        cols = ("tgt", "ref") + tuple(self.compare_stat_fields)
+        sql2 = "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (self.table_name,
+                                                              ",".join(cols),
+                                                              ",".join("?" for x in cols))
         con = sqlite3.connect(self.location)
         with con:
             try:
                 result = yield
                 self._create_target_table(con, result)
-                con.execute(sql1,result)
-                if self.symmetric and result[0]!=result[1]: con.execute(sql2,result)
+                con.execute(sql1, result)
+                if self.symmetric and result[0] != result[1]: con.execute(sql2, result)
                 while 1:
                     result = yield
-                    con.execute(sql1,result)
-                    if self.symmetric and result[0]!=result[1]: con.execute(sql2,result)
+                    con.execute(sql1, result)
+                    if self.symmetric and result[0] != result[1]: con.execute(sql2, result)
             except GeneratorExit:
                 pass
 
@@ -155,19 +157,23 @@ class sqlite_storage(_base_storage):
 
 # register some sqlite converters
 import numpy
+
+
 def adapt_numpy(val):
     return val.tolist()
-sqlite3.register_adapter(numpy.int32,adapt_numpy)
-sqlite3.register_adapter(numpy.int64,adapt_numpy)
-sqlite3.register_adapter(numpy.float32,adapt_numpy)
-sqlite3.register_adapter(numpy.float64,adapt_numpy)
+
+sqlite3.register_adapter(numpy.int32, adapt_numpy)
+sqlite3.register_adapter(numpy.int64, adapt_numpy)
+sqlite3.register_adapter(numpy.float32, adapt_numpy)
+sqlite3.register_adapter(numpy.float64, adapt_numpy)
+
 
 def sqlite_type(value):
-    if isinstance(value,basestring):
+    if isinstance(value, basestring):
         return 'TEXT'
-    elif isinstance(value,float):
+    elif isinstance(value, float):
         return 'REAL'
-    elif isinstance(value,(long,int)):
+    elif isinstance(value, (long, int)):
         return 'INTEGER'
     else:
-        raise TypeError, "Can't match type (%s) with sqlite type" % type(value)
+        raise TypeError("Can't match type (%s) with sqlite type" % type(value))

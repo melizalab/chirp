@@ -16,6 +16,7 @@ Created 2012-02-17
 """
 from __future__ import absolute_import
 
+
 class consumer(object):
     """
     Base class for consuming objects from a queue. Methods to
@@ -48,7 +49,7 @@ class consumer(object):
             if v is None:
                 nworkers -= 1
             else:
-                self.process(i,v)
+                self.process(i, v)
                 if gen: gen.send(v)
                 i += 1
         self.finish(i)
@@ -62,17 +63,18 @@ class consumer(object):
         pass
 
 try:
-    from progressbar import ProgressBar,Percentage,Bar,Counter
+    from progressbar import ProgressBar, Percentage, Bar, Counter
+
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title=''):
+        def __init__(self, title=''):
             self.title = title
 
         def start(self, queue, nworkers, stop_signal, njobs=None, gen=None):
             if njobs is not None:
-                self.pbar = ProgressBar(widgets=[self.title,Percentage(),Bar()], maxval=njobs)
+                self.pbar = ProgressBar(widgets=[self.title, Percentage(), Bar()], maxval=njobs)
             else:
-                self.pbar = ProgressBar(widgets=[self.title,Counter])
+                self.pbar = ProgressBar(widgets=[self.title, Counter])
             self.pbar.start()
             consumer.start(self, queue, nworkers, stop_signal, njobs, gen)
 
@@ -84,9 +86,10 @@ try:
 
 except ImportError:
     import sys
+
     class progressbar(consumer):
         """ Provides a text-based progress bar """
-        def __init__(self,title=''):
+        def __init__(self, title=''):
             self.title = title
 
         def start(self, queue, nworkers, stop_signal, njobs=None, gen=None):
@@ -94,10 +97,10 @@ except ImportError:
             consumer.start(self, queue, nworkers, stop_signal, njobs, gen)
 
         def process(self, index, value):
-            if index % 10 == 0: sys.stderr.write("\r[ %s completed %d ]" % (self.title,index+1))
+            if index % 10 == 0: sys.stderr.write("\r[ %s completed %d ]" % (self.title, index + 1))
 
         def finish(self, index):
-            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title,index,index))
+            sys.stderr.write("\r[ %s completed %d/%d ]\n" % (self.title, index, index))
 
 
 

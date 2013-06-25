@@ -8,20 +8,22 @@ Created 2011-08-30
 """
 from .config import _configurable
 
+
 class Error(Exception):
     pass
+
 
 class spectrogram(_configurable):
     """ Computes spectrograms of signals. """
 
-    options = dict(spec_method = 'tfr',
-                   window_len = 12.0,  # in ms
-                   window_shift = 0.7,  # also in ms
-                   tfr_order = 5,
-                   tfr_tm = 6.0,
-                   tfr_flock = 0.01,
-                   tfr_tlock = 5,
-                   mtm_nw = 2.5)
+    options = dict(spec_method='tfr',
+                   window_len=12.0,  # in ms
+                   window_shift=0.7,  # also in ms
+                   tfr_order=5,
+                   tfr_tm=6.0,
+                   tfr_flock=0.01,
+                   tfr_tlock=5,
+                   mtm_nw=2.5)
     config_sections = ('spectrogram',)
 
     def __init__(self, configfile=None, **kwargs):
@@ -35,28 +37,28 @@ class spectrogram(_configurable):
         shift = int(self.options['window_shift'] * Fs)
         if not nfft:
             Np = int(Fs * self.options['window_len'])
-            nfft = int(2**nx.ceil(nx.log2(Np)))
+            nfft = int(2 ** nx.ceil(nx.log2(Np)))
         else:
             Np = nfft
-        if self.options['spec_method']=='tfr':
+        if self.options['spec_method'] == 'tfr':
             S = tfr_spec(signal, nfft, shift, Np,
                          K=self.options['tfr_order'], tm=self.options['tfr_tm'],
                          flock=self.options['tfr_flock'], tlock=self.options['tfr_tlock'])
         else:
             try:
-                wfun = getattr(nx,self.options['spec_method'])
+                wfun = getattr(nx, self.options['spec_method'])
                 w = wfun(Np)
             except Exception, e:
-                raise Error, "invalid window function %s: %s" % (self.options['spec_method'], e)
+                raise Error("invalid window function {}: {}".format(self.options['spec_method'], e))
             S = stft(signal, w, shift, nfft)
-        t = tgrid(S, Fs, shift) # [:S.shape[1]]
+        t = tgrid(S, Fs, shift)   # [:S.shape[1]]
         extent = (0, t[-1], 0, Fs / 2)
-        return S,extent
+        return S, extent
 
     def dbspect(self, signal, Fs, dBrange=96, *args, **kwargs):
         from numpy import log10
         from libtfr import dynamic_range
-        S,extent = self.linspect(signal, Fs, *args, **kwargs)
+        S, extent = self.linspect(signal, Fs, *args, **kwargs)
         return log10(dynamic_range(S, dBrange)), extent
 
 

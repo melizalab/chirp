@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 from ..common import plg, geom, postfilter
 from ..pitch import tracker as ptracker
 
+
 class PitchOverlayMixin(object):
     """
     Provides functions for overplotting pitch traces in an axes.  Use
@@ -50,8 +51,8 @@ class PitchOverlayMixin(object):
             f = pest['p.mmse']
         ind = self.filter(pest)
         self.remove_trace()
-        self.add_trace(t[ind],f[ind])
-        self.add_trace(t[~ind],f[~ind], color='k')
+        self.add_trace(t[ind], f[ind])
+        self.add_trace(t[~ind], f[~ind], color='k')
 
     def plot_calcd_pitch(self, signal, Fs, masks=None):
         """
@@ -60,26 +61,26 @@ class PitchOverlayMixin(object):
         """
         from numpy import sqrt, maximum
         self.remove_trace()
-        pt = ptracker.tracker(configfile=self.configfile, samplerate=Fs*1000)
-        spec,tgrid,fgrid = pt.matched_spectrogram(signal,Fs)
+        pt = ptracker.tracker(configfile=self.configfile, samplerate=Fs * 1000)
+        spec, tgrid, fgrid = pt.matched_spectrogram(signal, Fs)
 
-        def _plot(t,var,est):
-            ind = self.filter({'p.sd' : sqrt(maximum(0,var)) * Fs})
+        def _plot(t, var, est):
+            ind = self.filter({'p.sd': sqrt(maximum(0, var)) * Fs})
             for i in xrange(est.shape[1]):
-                self.add_trace(t[ind[:,i]], est[ind[:,i],i])
-                self.add_trace(t[~ind[:,i]], est[~ind[:,i],i], color='k')
+                self.add_trace(t[ind[:, i]], est[ind[:, i], i])
+                self.add_trace(t[~ind[:, i]], est[~ind[:, i], i], color='k')
         if masks is not None:
             for startcol, mspec, imask in self.masker.split(spec, masks, tgrid, fgrid):
-                startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(mspec, mask=imask)
+                startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, mask=imask)
                 startframe += startcol
-                t = tgrid[startframe:startframe+pitch_mmse.shape[0]]
+                t = tgrid[startframe:startframe + pitch_mmse.shape[0]]
                 if pitch_map is not None:
                     _plot(t, pitch_var, pitch_map * Fs)
                 else:
                     _plot(t, pitch_var, pitch_mmse * Fs)
         else:
-            startframe, pitch_mmse, pitch_var, pitch_map, stats= pt.track(spec)
-            t = tgrid[startframe:startframe+pitch_mmse.shape[0]]
+            startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(spec)
+            t = tgrid[startframe:startframe + pitch_mmse.shape[0]]
             if pitch_map is not None:
                 _plot(t, pitch_var, pitch_map * Fs)
             else:

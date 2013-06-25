@@ -7,8 +7,10 @@ Copyright (C) 2012 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2012-02-14
 """
 
-import os, multiprocessing
-from . import tracker
+import os
+import multiprocessing
+from chirp.pitch import tracker
+
 
 def run(files, consumer, config=None, workers=1, mask=True, skip=True):
     """
@@ -18,14 +20,14 @@ def run(files, consumer, config=None, workers=1, mask=True, skip=True):
     from ctypes import c_bool
 
     if config is not None and not os.path.exists(config):
-        raise ValueError, "Configuration file doesn't exist"
+        raise ValueError("Configuration file doesn't exist")
 
     task_queue  = multiprocessing.Queue()
     done_queue  = multiprocessing.Queue()
-    stop_signal = multiprocessing.Value(c_bool,False)
+    stop_signal = multiprocessing.Value(c_bool, False)
 
     def _job():
-        for fname in iter(task_queue.get,None):
+        for fname in iter(task_queue.get, None):
             if stop_signal.value: break
             basename = os.path.splitext(fname)[0]
             tname = basename + ".plg"
@@ -38,12 +40,12 @@ def run(files, consumer, config=None, workers=1, mask=True, skip=True):
                     continue
             argv = []
             if config is not None:
-                argv.extend(('-c',config))
+                argv.extend(('-c', config))
             if mask and os.path.exists(mname):
-                argv.extend(('-m',mname))
+                argv.extend(('-m', mname))
             argv.append(fname)
-            ofp = open(tname,'wt')
-            rv = tracker.cpitch(argv=argv,cout=ofp)
+            ofp = open(tname, 'wt')
+            rv = tracker.cpitch(argv=argv, cout=ofp)
             done_queue.put(fname)
         done_queue.put(None)
 

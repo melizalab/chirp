@@ -12,6 +12,7 @@ Copyright (C) 2012 Daniel Meliza <dmeliza@dylan.uchicago.edu>
 Created 2012-02-16
 """
 
+
 class base_storage(object):
 
     def __init__(self, comparator):
@@ -27,12 +28,12 @@ class base_storage(object):
     def pairs(self):
         """ Yields the keys for the pairs of signals to be compared """
         from itertools import product
-        items = [k for k,v in self.signals]
+        items = [k for k, v in self.signals]
         if self.symmetric:
-            for i,v1 in enumerate(items):
-                for v2 in items[i:]: yield v1,v2
+            for i, v1 in enumerate(items):
+                for v2 in items[i:]: yield v1, v2
         else:
-            for v1,v2 in product(items,items): yield v1,v2
+            for v1, v2 in product(items, items): yield v1, v2
 
 # Variables:
 # End:

@@ -16,16 +16,15 @@ from ..common.plg import pitchtrace
 from ..common.config import _configurable
 from ..common.math import nandecibels
 
-_scriptdoc = """\
-
+_scriptdoc = """
 Usage: cpitch [-c <config.cfg>] [-m <mask.ebl>] <signal.wav>
 
 Calculates pitch of <signal.wav>, with optional masking by
 <mask.ebl>. Output is to stdout.  See documentation for
 configuration file details. """
 
-
 base_seed = 3653268
+
 
 class tracker(_configurable):
     """
@@ -73,8 +72,8 @@ class tracker(_configurable):
                    tfr_tm=6.0,
                    tfr_flock=0.01,
                    tfr_tlock=5,
-                   freq_range=(0.01,0.4),
-                   pitch_range=(0.02,0.25),
+                   freq_range=(0.01, 0.4),
+                   pitch_range=(0.02, 0.25),
                    lobes=7,
                    lobe_decay=0.85,
                    neg_ampl=0.35,
@@ -88,7 +87,7 @@ class tracker(_configurable):
                    chains=5,
                    btrace=False,
                    min_loglike=-100)
-    config_sections = ('spectrogram','cpitch')
+    config_sections = ('spectrogram', 'cpitch')
 
     def __init__(self, configfile=None, samplerate=None, **kwargs):
         """
@@ -107,9 +106,8 @@ class tracker(_configurable):
             self.options['freq_range'] = hz2rel(self.options['freq_range'], samplerate)
             self.options['pitch_range'] = hz2rel(self.options['pitch_range'], samplerate)
         except TypeError:
-            raise ValueError, "A frequency value was specified in Hz: samplerate is required"
+            raise ValueError("A frequency value was specified in Hz: samplerate is required")
         self.template = template.harmonic(**self.options)
-
 
     def track(self, signal, mask=None, cout=None, raw=False, **kwargs):
         """
@@ -135,32 +133,32 @@ class tracker(_configurable):
         """
         options = self.options.copy()
         options.update(kwargs)
-        btrace = options.get('btrace',False)
-        chains = options.get('chains',1)
+        btrace = options.get('btrace', False)
+        chains = options.get('chains', 1)
 
-        if signal.ndim==1:
+        if signal.ndim == 1:
             spec = self.matched_spectrogram(signal)
-        elif signal.ndim==2:
+        elif signal.ndim == 2:
             spec = signal
         else:
-            raise ValueError, "Can't process arrays with more than 2 dimensions"
+            raise ValueError("Can't process arrays with more than 2 dimensions")
 
-        specpow,spec,starttime = specprocess(spec, **options)
+        specpow, spec, starttime = specprocess(spec, **options)
         like = self.template.xcorr(spec, **options)
         if options['remask_likelihood'] and mask is not None:
             # the pgrid is a subset of the fgrid, so we can use this
             # relationship to pull out the rows we need
-            assert mask.shape[0]==spec.shape[0], "Mask must have same # rows as spectrogram"
+            assert mask.shape[0] == spec.shape[0], "Mask must have same # rows as spectrogram"
             rows = (self.template.fgrid >= self.template.pgrid[0]) & \
                 (self.template.fgrid <= self.template.pgrid[-1])
-            like[~mask[rows,starttime:starttime+spec.shape[1]]] = 0
+            like[~mask[rows, starttime:starttime + spec.shape[1]]] = 0
 
         proposal = template.frame_xcorr(spec, **options)
 
-        pitch_mmse = nx.zeros((spec.shape[1],chains))
-        pitch_var = nx.zeros((spec.shape[1],chains))
-        f_mean = lambda x : self.template.pgrid[x]
-        f_msq  = lambda x : self.template.pgrid[x]**2
+        pitch_mmse = nx.zeros((spec.shape[1], chains))
+        pitch_var = nx.zeros((spec.shape[1], chains))
+        f_mean = lambda x: self.template.pgrid[x]
+        f_msq  = lambda x: self.template.pgrid[x] ** 2
         if btrace:
             pitch_map = []
         for chain in xrange(chains):
@@ -168,12 +166,12 @@ class tracker(_configurable):
             if cout: cout.write("+ Chain %d: forward particle filter\n" % chain)
             pfilt = particle.smc(like, proposal, **options)
             pfilt.initialize(nparticles=options['particles'], seed=base_seed + chain * 1000)
-            pitch_mmse[0,chain] = pfilt.integrate(func=f_mean)
-            pitch_var[0,chain] = pfilt.integrate(func=f_msq)
+            pitch_mmse[0, chain] = pfilt.integrate(func=f_mean)
+            pitch_var[0, chain] = pfilt.integrate(func=f_msq)
 
-            for f,p,w in pfilt.iterate(rwalk_scale=options['rwalk_scale'], keep_history=btrace or raw):
-                pitch_mmse[f,chain] = pfilt.integrate(func=f_mean)
-                pitch_var[f,chain] = pfilt.integrate(func=f_msq)
+            for f, p, w in pfilt.iterate(rwalk_scale=options['rwalk_scale'], keep_history=btrace or raw):
+                pitch_mmse[f, chain] = pfilt.integrate(func=f_mean)
+                pitch_var[f, chain] = pfilt.integrate(func=f_msq)
 
             if raw:
                 return nx.column_stack(pfilt.particle_history), pfilt.loglike, proposal
@@ -188,8 +186,8 @@ class tracker(_configurable):
         else:
             pitch_map = None
 
-        pitch_var -= pitch_mmse**2
-        return starttime, pitch_mmse, pitch_var, pitch_map, {'stim.pow' : nandecibels(specpow)}
+        pitch_var -= pitch_mmse ** 2
+        return starttime, pitch_mmse, pitch_var, pitch_map, {'stim.pow': nandecibels(specpow)}
 
     def matched_spectrogram(self, signal, Fs):
         """
@@ -202,7 +200,6 @@ class tracker(_configurable):
                                options['tfr_tlock'], fgrid=self.template.fgrid)
         return spec, libtfr.tgrid(spec, Fs, options['shift']), self.template.fgrid * Fs
 
-
     def spectrogram_options_str(self):
         out = """\
 * Spectrogram Parameters:
@@ -213,7 +210,6 @@ class tracker(_configurable):
 ** Frequency locking = %(tfr_flock)f
 ** Time locking = %(tfr_tlock)f""" % self.options
         return out
-
 
     def particle_options_str(self):
         """ Print parameters that affect particle tracker """
@@ -237,7 +233,7 @@ class tracker(_configurable):
 ** Negative lobe width = %(neg_width)f
 ** Remask likelihood = %(remask_likelihood)s
 ** Frequency range: %(freq_range)s (rel)""" % self.options
-        out += "\n** Pitch range: (%.3f, %.3f) (rel)" % (self.template.pgrid[0],self.template.pgrid[-1])
+        out += "\n** Pitch range: (%.3f, %.3f) (rel)" % (self.template.pgrid[0], self.template.pgrid[-1])
         out += "\n** Candidate pitch count: %d" % self.template.pgrid.size
         return out
 
@@ -255,21 +251,22 @@ def specprocess(spec, pow_thresh=1e3, row_thresh=0.02, **kwargs):
 
     Returns reduced spectrogram, index of first column kept
     """
-    psd = spec**2
+    psd = spec ** 2
     specpow = nx.sqrt(psd.sum(0))
     nrows = (psd > 0).sum(0)
     ind = (specpow > pow_thresh) & (nrows > (row_thresh * psd.shape[0]))
     ind = nx.nonzero(ind)[0]
-    if ind.size<2:
-        raise ValueError, "Spectrogram is entirely below power threshold"
-    return specpow[ind[0]:ind[-1]+1], spec[:,ind[0]:ind[-1]+1], ind[0]
+    if ind.size < 2:
+        raise ValueError("Spectrogram is entirely below power threshold")
+    return specpow[ind[0]:ind[-1] + 1], spec[:, ind[0]:ind[-1] + 1], ind[0]
+
 
 def hz2rel(freqs, samplerate):
     """
     Convert frequency values to relative units, if needed.  Inputs are
     considered to be Hz if they're greater than 1.0
     """
-    fun = lambda x : float(x)/samplerate if x > 1.0 else x
+    fun = lambda x: float(x) / samplerate if x > 1.0 else x
     return tuple(fun(f) for f in freqs)
 
 
@@ -290,9 +287,9 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
 
     maskfile = None
 
-    opts,args = getopt.getopt(argv, 'hvc:m:')
+    opts, args = getopt.getopt(argv, 'hvc:m:')
 
-    for o,a in opts:
+    for o, a in opts:
         if o == '-h':
             print _scriptdoc
             return -1
@@ -329,11 +326,11 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     print >> cout, "** Samples:", pcm.size
     print >> cout, "** Samplerate: %.2f (kHz)" % samplerate
 
-    pt = tracker(configfile=config, samplerate=samplerate*1000, **kwargs)
+    pt = tracker(configfile=config, samplerate=samplerate * 1000, **kwargs)
     print >> cout, pt.spectrogram_options_str()
     print >> cout, pt.template_options_str()
     print >> cout, "* DLFT spectrogram:"
-    spec,tgrid,fgrid = pt.matched_spectrogram(pcm, samplerate)
+    spec, tgrid, fgrid = pt.matched_spectrogram(pcm, samplerate)
     print >> cout, "** Dimensions:", spec.shape
 
     print >> cout, pt.particle_options_str()
@@ -347,7 +344,7 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
             try:
                 startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(mspec, cout=cout, mask=imask)
                 stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
-                T = tgrid[startframe+startcol:startframe+startcol+pitch_mmse.shape[0]]
+                T = tgrid[startframe + startcol:startframe + startcol + pitch_mmse.shape[0]]
                 # + tracker.options['winsize'] / (samplerate * 1000) ??
                 ptrace = pitchtrace(T, pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
                                     **stats)
@@ -359,11 +356,11 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
 
     else:
         print >> cout, "* No mask file; calculating pitch for entire signal"
-        print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0],tgrid[-1])
+        print >> cout, "** Element 0, interval (%.2f, %.2f)" % (tgrid[0], tgrid[-1])
         try:
             startframe, pitch_mmse, pitch_var, pitch_map, stats = pt.track(spec, cout=cout)
             stats['p.map'] = None if pitch_map is None else pitch_map * samplerate
-            T = tgrid[startframe:startframe+pitch_mmse.shape[0]]
+            T = tgrid[startframe:startframe + pitch_mmse.shape[0]]
             ptrace = pitchtrace(T, pitch_mmse * samplerate, pitch_var * samplerate * samplerate,
                                 **stats)
             print >> cout, "*** Pitch calculations:"

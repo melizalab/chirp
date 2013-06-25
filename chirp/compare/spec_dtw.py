@@ -10,6 +10,7 @@ import os.path
 from .feat_dtw import feat_dtw
 from .spcc import spcc
 
+
 class spec_dtw(feat_dtw, spcc):
     """
     Compute pairwise distances between signals using a dynamic
@@ -24,7 +25,7 @@ class spec_dtw(feat_dtw, spcc):
     options = dict(feat_dtw.options,
                    metric='cosine',
                    **spcc.options)
-    config_sections = ('spectrogram','dtw','spcc','spec_dtw',)
+    config_sections = ('spectrogram', 'dtw', 'spcc', 'spec_dtw',)
 
     def __init__(self, configfile=None, **kwargs):
         self.readconfig(configfile)
@@ -34,7 +35,6 @@ class spec_dtw(feat_dtw, spcc):
         return spcc.load_signal(self, locator, *args, **kwargs).T
 
     # compare will resolve to feat_dtw
-    
     def options_str(self):
         return spcc.options_str(self) + "\n" + feat_dtw.options_str(self)
 
