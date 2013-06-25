@@ -10,8 +10,8 @@ Created 2011-07-29
 """
 import numpy as nx
 import os
+import libtfr
 from . import template, particle, vitterbi
-from ..common import libtfr
 from ..common.plg import pitchtrace
 from ..common.config import _configurable
 from ..common.math import nandecibels

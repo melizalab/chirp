@@ -48,8 +48,8 @@ class spcc(base_comparison, _configurable):
                requirements.
         """
         from ewave import wavfile
+        from libtfr import fgrid, dynamic_range
         from ..common.signal import spectrogram
-        from ..common.libtfr import fgrid, dynamic_range
         from ..common.geom import elementlist, masker
         from numpy import linspace, log10
 

@@ -31,7 +31,7 @@ class spectrogram(_configurable):
     def linspect(self, signal, Fs, nfft=None):
         """ Calculate the spectrogram on a linear power scale.  """
         import numpy as nx
-        from .libtfr import stft, tfr_spec, tgrid
+        from libtfr import stft, tfr_spec, tgrid
         shift = int(self.options['window_shift'] * Fs)
         if not nfft:
             Np = int(Fs * self.options['window_len'])
@@ -49,7 +49,7 @@ class spectrogram(_configurable):
             except Exception, e:
                 raise Error, "invalid window function %s: %s" % (self.options['spec_method'], e)
             S = stft(signal, w, shift, nfft)
-        t = tgrid(S, Fs, shift)
+        t = tgrid(S, Fs, shift) # [:S.shape[1]]
         extent = (0, t[-1], 0, Fs / 2)
         return S,extent
 

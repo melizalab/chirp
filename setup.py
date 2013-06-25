@@ -80,9 +80,6 @@ else:
 _vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
 _dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],
                  extra_compile_args=['-std=c99'])
-_libtfr = Extension('chirp.common._libtfr',sources=['libtfr/libtfr.c','libtfr/tfr.c','libtfr/mtm.c'],
-                    libraries=ext_libs, extra_compile_args=['-DNO_LAPACK -std=c99'], include_dirs=ext_incl)
-
 
 setup(
     name = 'chirp',
@@ -97,7 +94,7 @@ setup(
     url = 'https://dmeliza.github.io/chirp',
     download_url = 'https://github.com/dmeliza/chirp',
     packages = find_packages(exclude=["*test*"]),
-    ext_modules = [_vitterbi,_dtw,_libtfr],
+    ext_modules = [_vitterbi,_dtw],
     entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',
                                          'cplotpitch = chirp.misc.plotpitch:main',
                                          'ccompare = chirp.compare.ccompare:main',
