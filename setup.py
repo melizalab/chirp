@@ -96,8 +96,8 @@ setup(
                                          'cplotpitch = chirp.misc.plotpitch:main',
                                          'ccompare = chirp.compare.ccompare:main',
                                          'csplit = chirp.split.csplit:main',
-                                         'cpitchstats = chirp.misc.pitchstats:main'],
-                    'gui_scripts' : ['chirp = chirp.gui.chirpgui:main'],},
+                                         'cpitchstats = chirp.misc.pitchstats:main',],
+                    'gui_scripts': ['chirp = chirp.gui.chirpgui:main'],},
     **app_options
 )
 

@@ -7,7 +7,7 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-07-29
 """
 import numpy as nx
-from ..common import libtfr
+import libtfr
 
 
 class harmonic(object):
