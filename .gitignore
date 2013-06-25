@@ -3,9 +3,9 @@
 *.so
 _*.c
 .#*
-build/
-dist/
-chirp.egg-info
-examples/
+/build/
+/dist/
+/chirp.egg-info/
+/examples/
 /wiki/
-/chirp_env/
+/env/

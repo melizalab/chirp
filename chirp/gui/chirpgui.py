@@ -9,7 +9,6 @@ chirp [-c chirp.cfg] [<input.wav>]
 from __future__ import division
 import os,sys
 import wx
-import numpy as nx
 from ..common import geom, audio, config, plg
 from . import wxgeom, HelpWindow
 from .TSViewer import XRubberbandPainter
@@ -18,9 +17,6 @@ from .DrawMask import DrawMask, PolygonPainter
 from .PitchOverlayMixin import PitchOverlayMixin
 
 from matplotlib.figure import Figure
-from matplotlib import cm
-
-from glob import glob
 
 spec_methods = ['hanning','tfr']
 colormaps = ['jet','Greys','hot']
@@ -371,7 +367,7 @@ class ChirpGui(wx.Frame):
                 self.spec.plot_plg(fname)
                 self.status.SetStatusText("Loaded pitch data from %s" % fname)
             except Exception, e:
-                self.status.SetStatusText("Error reading pitch data from %s" % fname)
+                self.status.SetStatusText("Error reading pitch data from {}: {}".format(fname, e))
         elif file_type==_config_ext:
             self.load_params(fname)
         else:
@@ -663,9 +659,6 @@ class ChirpApp(wx.App):
         self.SetTopWindow(self.frame)
         self.frame.Show()
         return True
-
-    def MacOpenFile(self, filename):
-        self.frame.load_file(filename)
 
     def MacReopenApp(self):
         """Called when the doc icon is clicked, and ???"""
