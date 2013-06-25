@@ -38,9 +38,10 @@ class defaultstack(deque):
 
 
 class FigCanvas(FigureCanvasWxAgg):
-    """
-    Define a basic figure canvas with a single axes. Contains
-    some basic functionality and a few monkey patches
+    """Define a basic figure canvas with a single axes. Contains some basic
+    functionality and a few monkey patches to catch some event types unsupported
+    in matplotlib.
+
     """
     def __init__(self, parent, id, figure=None, size=(7.0, 3.0), dpi=100):
         if figure==None:
@@ -60,9 +61,11 @@ class FigCanvas(FigureCanvasWxAgg):
         self.mpl_connect('figure_enter_event', self.figure_enter_event)
 
         # keep a collection of painters
-        self.painters = []
+        # self.painters = []
         # keep a track of the current selection mode
-        self.selector = None
+        self.painter = None
+        # painters draw on an overlay
+        # self.overlay = wx.Overlay()
 
     def _xypos(self, evt):
         return evt.GetX(), evt.GetY()
@@ -102,37 +105,38 @@ class FigCanvas(FigureCanvasWxAgg):
         if self.HasCapture(): self.ReleaseMouse()
         super(FigCanvas,self).button_release_event(x, y, 2, guiEvent=evt)
 
-    # handle draw and paint events by calling .draw() on all the painters
+    # handle paint events
     def _onPaint(self, evt):
-        # call super to draw figure
+        # call super to draw matplotlib figure
         self.insideOnPaint = True
         super(FigCanvas, self)._onPaint(evt)
         self.insideOnPaint = False
         dc = wx.PaintDC(self)
-        for painter in self.painters:
-            painter.draw(dc)
+        # odc = wx.DCOverlay(self.overlay, dc)
+        # odc.Clear()
+        # for painter in self.painters:
+        if self.painter is not None:
+            self.painter.draw(dc)
 
-    def clear_painters(self):
-        """ Clear all registered painters, prior to trying to draw something new """
-        for painter in self.painters:
-            if painter.selector: painter.clear()
-        self.selector = None
-        self.draw()
+    def getDC(self):
+        """ Return a client DC for drawing on the figure """
+        return wx.ClientDC(self)
 
-    @property
-    def selected(self):
-        """ Return the first selector with a non-null value, or None if there is no active selection """
-        for painter in self.painters:
-            if painter.value: return painter
-        return None
+    def set_painter(self, painter=None):
+        """ Set an active painter. Clears any currently active painter. """
+        if self.painter is not None:
+            self.painter.reset()
+        self.painter = painter
+        self.draw()             # triggers a repaint
+
 
 # borrowed from wxmpl
 class Painter(object):
-    """
-    Painters encapsulate the mechanics of drawing values in a canvas. The only
-    method subclasses need to implement is draw(), which is called whenever
-    the object needs to be repainted. Default implementation stores current and previous
-    values, and erases the previous value whenever a new value is supplied.
+    """Painters encapsulate the mechanics of drawing values in a canvas. Subclasses
+     must implement drawValue(), which is called whenever the object needs to be
+     repainted, and clearValue(), which is called when the painter is cleared.
+     Default implementation stores current and previous values, and erases the
+     previous value whenever a new value is supplied.
 
     @cvar PEN: C{wx.Pen} to use (defaults to C{wx.BLACK_PEN})
     @cvar BRUSH: C{wx.Brush} to use (defaults to C{wx.TRANSPARENT_BRUSH})
@@ -140,6 +144,7 @@ class Painter(object):
     @cvar FONT: C{wx.Font} to use (defaults to C{wx.NORMAL_FONT})
     @cvar TEXT_FOREGROUND: C{wx.Colour} to use (defaults to C{wx.BLACK})
     @cvar TEXT_BACKGROUND: C{wx.Colour} to use (defaults to C{wx.WHITE})
+
     """
 
     PEN = wx.BLACK_PEN
@@ -159,7 +164,8 @@ class Painter(object):
         self.value = value
         self.draw()
 
-    def clear(self):
+    def reset(self):
+        """Reset the stored values of the painter"""
         self.lastValue = self.value = None
 
     def draw(self, dc=None):
@@ -174,6 +180,7 @@ class Painter(object):
         dc.SetLogicalFunction(self.FUNCTION)
         dc.BeginDrawing()
 
+        print self.lastValue, self.value
         if self.lastValue is not None:
             self.clearValue(dc, self.lastValue)
             self.lastValue = None

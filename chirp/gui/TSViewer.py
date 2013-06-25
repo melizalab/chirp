@@ -11,50 +11,74 @@ Copyright (C) 2009 Daniel Meliza <dan // meliza.org>
 Created 2009-07-06
 """
 import wx
-from .wxcommon import Painter,FigCanvas,defaultstack
-from ..common.config import _configurable
+from chirp.gui.wxcommon import FigCanvas,defaultstack
+from chirp.common.config import _configurable
 
-class RubberbandPainter(Painter):
+class RubberbandPainter(object):
     PEN = wx.WHITE_PEN
-    FUNCTION = wx.XOR
-    selector = True
 
-    def clearValue(self, dc, value):
-        self.drawValue(dc,value)
+    def __init__(self, canvas):
+        self.view = canvas
+        self.overlay = wx.Overlay()
+        self.reset()
 
-class XRubberbandPainter(RubberbandPainter):
-    """ Draws a vertical selection rubberband (for selecting x ranges). """
+    def reset(self):
+        self.last = None
+        self.curr = None
+        self.mode = None
+        self.overlay.Reset()
 
-    def set(self, value):
-        # axis coordinates
-        if value!=None:
-            value = [self.view.transform_data((x,0))[0] for x in value]
-        Painter.set(self, value)
+    def set(self, value, mode):
+        """Set the corners of the rubberband.
 
-    def drawValue(self, dc, value):
-        # transform to figure coordinates
-        x1,x2 = [self.view.transform_canvas((x,0))[0] for x in value]
-        height = self.view.figure.bbox.height
-        y1,y2 = [height-y for y in self.view.axes.bbox.intervaly]
-        dc.DrawLine(x1,y1,x1,y2)
-        dc.DrawLine(x2,y1,x2,y2)
+        value is a tuple: ((x0, y0), (x1, y1)), in canvas coordinates
+
+        mode can be 'x', for x-rubberband (vertical lines), or 'y', for
+        y-rubberband (horizontal lines)
+
+        """
+        self.last = self.curr
+        self.curr = tuple(self.view.transform_data(p) for p in value)
+        self.mode = mode
+
+    def draw(self, dc):
+        """Redraw the rubberbands """
+        odc = wx.DCOverlay(self.overlay, dc)
+        odc.Clear()
+        if 'wxMac' in wx.PlatformInfo:
+            dc.SetBrush(wx.Brush(wx.Colour(0xC0, 0xC0, 0xC0, 0x80)))
+        else:
+            dc.SetBrush(wx.TRANSPARENT_BRUSH)
+
+        points = (self.view.transform_canvas(p) for p in self.curr)
+        if self.mode=='x':
+            height = self.view.figure.bbox.height
+            x1,x2 = (x for x,y in points)
+            y1,y2 = (height-y for y in self.view.axes.bbox.intervaly)
+            dc.DrawLine(x1,y1,x1,y2)
+            dc.DrawLine(x2,y1,x2,y2)
+        elif self.mode=='y':
+            x1,x2 = self.view.axes.bbox.intervalx
+            y1,y2 = (y for x,y in points)
+            dc.DrawLine(x1,y1,x2,y1)
+            dc.DrawLine(x1,y2,x2,y2)
+
+    @property
+    def xvalues(self):
+        """The current x values (axis coordinates), or Nones if the selection mode is not x-based"""
+        if self.mode != 'x':
+            return None,None
+        else:
+            return tuple(x for x,y in self.curr)
 
 
-class YRubberbandPainter(RubberbandPainter):
-    """ Draws a horizontal selection rubberband (for selecting y ranges). """
-
-    def set(self, value):
-        # axis coordinates
-        if value!=None:
-            value = [self.view.transform_data((0,y))[1] for y in value]
-        Painter.set(self, value)
-
-    def drawValue(self, dc, value):
-        # transform to figure coordinates
-        y1,y2 = [self.view.transform_canvas((0,y))[1] for y in value]
-        x1,x2 = self.view.axes.bbox.intervalx
-        dc.DrawLine(x1,y1,x2,y1)
-        dc.DrawLine(x1,y2,x2,y2)
+    @property
+    def yvalues(self):
+        """The current y (axis coordinates), or Nones if the selection mode is not y-based"""
+        if self.mode != 'y':
+            return None,None
+        else:
+            return tuple(y for x,y in self.curr)
 
 
 class TSDataHandler(object):
@@ -117,6 +141,7 @@ class TSDataHandler(object):
         adjust endpoints if they overstep the data bounds.
         """
         t1,t2 = self._check_limits(*(value + self.xdatalim))
+        print self.axes.get_xlim(), t1, t2
         self.axes.set_xlim(t1,t2)
         self.draw()
     tlim = property(get_xlim, set_xlim)
@@ -164,10 +189,7 @@ class TSViewer(FigCanvas, _configurable):
 
         # 1D rubberband
         self.select_start = None
-        self.xrubberband = XRubberbandPainter(self)
-        self.painters.append(self.xrubberband)
-        self.yrubberband = YRubberbandPainter(self)
-        self.painters.append(self.yrubberband)
+        self.rubberband = RubberbandPainter(self)
 
         # keep track of viewports
         self.tlims = defaultstack()
@@ -189,10 +211,10 @@ class TSViewer(FigCanvas, _configurable):
         position is still in the old region, or to a region centered
         around the current position.
         """
-        if value==1 and self.xrubberband.value:
-            t1,t2 = self.xrubberband.value
+        t1,t2 = self.rubberband.xvalues
+        if value==1 and t1:
             self.tlims.append(self.handler.tlim)
-            self.xrubberband.clear()
+            self.rubberband.reset()
             self.handler.tlim = t1,t2
         elif value==-1:
             prev = self.tlims.pop()
@@ -214,10 +236,10 @@ class TSViewer(FigCanvas, _configurable):
         the data limit.  Also, because panning is unsupported, we
         don't have to check current location
         """
-        if value==1 and self.yrubberband.value:
-            y1,y2 = self.yrubberband.value
+        y1,y2 = self.rubberband.yvalues
+        if value==1 and y1:
             self.ylims.append(self.handler.ylim)
-            self.yrubberband.clear()
+            self.rubberband.reset()
             self.handler.ylim = y1,y2
         elif value==-1:
             prev = self.ylims.pop()
@@ -234,6 +256,7 @@ class TSViewer(FigCanvas, _configurable):
         positive for right.
         """
         x1,x2 = self.handler.xdatalim
+        self.rubberband.reset()
         curr = self.handler.tlim
         if curr[0] >= x1 and curr[1] <= x2:
             xext = curr[1] - curr[0]
@@ -242,51 +265,40 @@ class TSViewer(FigCanvas, _configurable):
 
     # Event dispatching
     def _onMiddleButtonDown(self, evt):
-        x,y = self._xypos(evt)
-        if self._inaxes(x,y) and self.selector is None:
-            self.clear_painters()
-            self.selector = self.xrubberband
-            self.select_start = x
+        p = self._xypos(evt)
+        if self._inaxes(*p):
+            self.set_painter(self.rubberband)
+            self.select_start = p
             self.CaptureMouse()
 
     def _onMiddleButtonUp(self, evt):
         x,y = self._xypos(evt)
         if self.HasCapture():
             self.ReleaseMouse()
-            if self.select_start==x: self.xrubberband.clear()
+            if self.select_start==(x,y): self.rubberband.reset()
             self.select_start = None
-            self.selector = None
 
-    def _onRightButtonDown(self, evt):
-        x,y = self._xypos(evt)
-        if self._inaxes(x,y) and self.selector is None:
-            self.clear_painters()
-            self.selector = self.yrubberband
-            self.select_start = y
-            self.CaptureMouse()
+    _onRightButtonDown = _onMiddleButtonDown
 
     def _onRightButtonUp(self, evt):
-        x,y = self._xypos(evt)
+        p = self._xypos(evt)
         if self.HasCapture():
             self.ReleaseMouse()
-            if self.select_start==y: self.yrubberband.clear()
+            if self.select_start==p: self.rubberband.reset()
             self.select_start = None
-            self.selector = None
             self.yzoom_viewport(1)
 
+    def _onRightButtonDClick(self, evt):
+        self.yzoom_viewport(-1)
 
     def onMotion(self, evt):
-        if evt.Dragging() and self.select_start!=None:
-            if self.selector == self.xrubberband:
-                x0 = self.select_start
-                x,y = self._xypos(evt)
-                if self._inaxes(x,y):
-                    self.xrubberband.set((x0,x))
-            elif self.selector == self.yrubberband:
-                y0 = self.select_start
-                x,y = self._xypos(evt)
-                if self._inaxes(x,y):
-                    self.yrubberband.set((y0,y))
+        p = self._xypos(evt)
+        if evt.Dragging() and self.select_start!=None and self._inaxes(*p):
+            if evt.MiddleIsDown():
+                self.rubberband.set((self.select_start, p), 'x')
+            elif evt.RightIsDown():
+                self.rubberband.set((self.select_start, p), 'y')
+            self.rubberband.draw(wx.ClientDC(self))
         else:
             evt.Skip()
 

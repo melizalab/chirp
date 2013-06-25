@@ -9,12 +9,11 @@ chirp [-c chirp.cfg] [<input.wav>]
 from __future__ import division
 import os,sys
 import wx
-from ..common import geom, audio, config, plg
-from . import wxgeom, HelpWindow
-from .TSViewer import XRubberbandPainter
-from .SpecViewer import SpecViewer, SpecHandler
-from .DrawMask import DrawMask, PolygonPainter
-from .PitchOverlayMixin import PitchOverlayMixin
+from chirp.common import geom, audio, config, plg
+from chirp.gui import wxgeom, HelpWindow
+from chirp.gui.SpecViewer import SpecViewer, SpecHandler
+from chirp.gui.DrawMask import DrawMask
+from chirp.gui.PitchOverlayMixin import PitchOverlayMixin
 
 from matplotlib.figure import Figure
 
@@ -80,46 +79,49 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         'a': merge current region with all polygons
         """
         key = event.GetKeyCode()
+        ptr = self.painter
+        if hasattr(ptr, "xvalues") and ptr.xvalues[0] is not None:
+            val = ptr.xvalues
+        elif hasattr(ptr, "vertices") and len(ptr.vertices) > 0:
+            val = geom.vertices_to_polygon(ptr.vertices)
+        else:
+            val = None
+
         if key > 255:
             event.Skip()
         elif chr(key)=='s':
-            painter = self.selected
-            if isinstance(painter, XRubberbandPainter):
-                self.add_geometry(painter.value)
-            elif isinstance(painter, PolygonPainter):
-                self.add_geometry(geom.vertices_to_polygon(painter.value))
-        elif chr(key)=='p' and self.handler.signal is not None and hasattr(audio,'play_wave'):
-            if isinstance(self.selected, XRubberbandPainter):
-                tlim = self.selected.value
-            else:
+            self.add_geometry(val)
+        elif chr(key)=='p' and self.handler.signal is not None:
+            if not hasattr(audio,'play_wave'):
+                print "chirp requires pyaudio to play audio"
+                return
+            if isinstance(val, geom.Polygon):
                 tlim = self.axes.get_xlim()
+            else:
+                tlim = val
             i0,i1 = (int(x*self.handler.Fs) for x in tlim)
             audio.play_wave(self.handler.signal[i0:i1], self.handler.Fs)
         elif chr(key)=='x':
-            painter = self.selected
-            if not isinstance(painter, PolygonPainter): return
-            p1 = geom.vertices_to_polygon(painter.value)
+            if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
-                p2 = wxgeom.path_to_poly(p).difference(p1)
+                p2 = wxgeom.path_to_poly(p).difference(val)
                 if not p2.is_empty: newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
         elif chr(key)=='a':
-            painter = self.selected
-            if not isinstance(painter, PolygonPainter): return
-            p1 = geom.vertices_to_polygon(painter.value)
+            if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
                 p2 = wxgeom.path_to_poly(p)
-                if p2.intersects(p1):
-                    p2 = p2.union(p1)
+                if p2.intersects(val):
+                    p2 = p2.union(val)
                     newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
-
         else:
             event.Skip()
+
 
     def add_geometry(self, obj):
         """  Add a geometry (polygon or interval) to the spectrogram """
@@ -178,7 +180,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         self.selections = []
         self.remove_trace()
         self.axes.clear()
-        self.clear_painters()
+        self.set_painter()
         self.handler.image = None
 
 
@@ -499,7 +501,7 @@ class ChirpGui(wx.Frame):
             self.load_file(infile)
 
     def _next_file(self, step=1):
-        from ..common import _tools
+        from chirp.common import _tools
         if self.filename is None: return
         pn,fn = os.path.split(self.filename)
         # glob is very slow for large directories
@@ -609,19 +611,19 @@ class ChirpGui(wx.Frame):
         self.spec.remove_trace()
 
     def on_batch_pitch(self, event):
-        from .BatchPitch import BatchPitch
+        from chirp.gui.BatchPitch import BatchPitch
         dlg = BatchPitch(self)
         dlg.config.SetPath(self.configfile.filename)
         dlg.Show()
 
     def on_batch_stats(self, event):
-        from .BatchStats import BatchStats
+        from chirp.gui.BatchStats import BatchStats
         dlg = BatchStats(self)
         dlg.config.SetPath(self.configfile.filename)
         dlg.Show()
 
     def on_batch_compare(self, event):
-        from .BatchCompare import BatchCompare
+        from chirp.gui.BatchCompare import BatchCompare
         dlg = BatchCompare(self)
         dlg.config.SetPath(self.configfile.filename)
         dlg.Show()

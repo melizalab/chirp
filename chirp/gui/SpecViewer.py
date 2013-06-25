@@ -11,10 +11,10 @@ from __future__ import division
 import wx
 from . import TSViewer
 
-import numpy as nx
-from ..common.signal import spectrogram
-from ..common.config import _configurable
+from chirp.common.signal import spectrogram
+from chirp.common.config import _configurable
 from matplotlib import cm
+
 
 class SpecHandler(TSViewer.TSDataHandler, _configurable):
     """
