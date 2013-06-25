@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- mode: python -*-
 
-version = "1.2.0"
+version = "1.2.1"
 
 
 def lib_versions():

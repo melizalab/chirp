@@ -14,10 +14,9 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
-cls_txt = \
-"""
+cls_txt = """
 Development Status :: 5 - Production/Stable
 Intended Audience :: Science/Research
 License :: OSI Approved :: GNU General Public License (GPL)
@@ -31,9 +30,7 @@ Natural Language :: English
 
 short_desc = "Analyze and compare bioacoustic recordings"
 
-long_desc = \
-"""
-Chirp provides a number of related tools for analyzing and comparing
+long_desc = """Chirp provides a number of related tools for analyzing and comparing
 bioacoustic recordings.  It can operate on recordings stored in
 standard wave files, with the option of restricting analyses to
 specific spectrotemporal regions of the recording.  Regions are
