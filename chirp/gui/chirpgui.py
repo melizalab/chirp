@@ -7,7 +7,9 @@ Define spectrographic elements of acoustic signals
 chirp [-c chirp.cfg] [<input.wav>]
 """
 from __future__ import division
-import os,sys
+import os
+import sys
+import ewave
 import wx
 from chirp.common import geom, audio, config, plg
 from chirp.gui import wxgeom, HelpWindow
@@ -370,18 +372,18 @@ class ChirpGui(wx.Frame):
                 self.status.SetStatusText("Loaded pitch data from %s" % fname)
             except Exception, e:
                 self.status.SetStatusText("Error reading pitch data from {}: {}".format(fname, e))
-        elif file_type==_config_ext:
+        elif file_type == _config_ext:
             self.load_params(fname)
         else:
-            fp = audio.wavfile(fname)
-            sig,Fs = fp.read(), fp.sampling_rate / 1000
+            fp = ewave.wavfile(fname)
+            sig, Fs = fp.read(), fp.sampling_rate / 1000
             self.filename = fname
             self.SetTitle(fname)
             self.spec.clear()
             self.list.DeleteAllItems()
             self.spec.plot_data(sig, Fs)
             el = self.load_elements(fname)
-            if self.configfile.getboolean('gui','auto_load_plg',True):
+            if self.configfile.getboolean('gui', 'auto_load_plg', True):
                 pitchfile = os.path.splitext(fname)[0] + _pitch_ext
                 try:
                     self.spec.plot_plg(pitchfile)

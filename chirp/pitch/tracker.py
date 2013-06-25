@@ -314,7 +314,7 @@ def cpitch(argv=None, cout=None, cerr=None, **kwargs):
     print >> cout, "** Version: %s" % version
     print >> cout, "* Input: %s" % args[0]
 
-    from ..common.audio import wavfile
+    from ewave import wavfile
     try:
         fp = wavfile(args[0])
     except IOError:

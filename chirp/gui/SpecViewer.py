@@ -112,7 +112,7 @@ class SpecViewer(TSViewer.TSViewer):
 
 def test(soundfile):
 
-    from ..common.audio import wavfile
+    from ewave import wavfile
     fp = wavfile(soundfile)
     signal,Fs = fp.read(), fp.sampling_rate
 

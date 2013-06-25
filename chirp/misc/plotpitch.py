@@ -45,7 +45,7 @@ def load_data(basename, filterer=None, pitchdir=None):
     Load data from wav and plg files. If filterer is not None, filters
     pitch trace.
     """
-    from ..common.audio import wavfile
+    from ewave import wavfile
     from ..common import plg
     fp = wavfile(basename + ".wav")
     signal,Fs = fp.read(), fp.sampling_rate

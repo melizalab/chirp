@@ -6,9 +6,10 @@ script for splitting wav files into component elements
 Copyright (C) 2012 Dan Meliza <dmeliza@gmail.com>
 Created 2012-04-23
 """
-from ..common.config import _configurable
-from ..common import audio, geom
-from . import intervalsplit
+import ewave
+from chirp.common.config import _configurable
+from chirp.common import geom
+from chirp.split import intervalsplit
 
 _scriptname = "csplit"
 _scriptdoc = """\
@@ -45,7 +46,7 @@ class splitter(_configurable):
             else:
                 raise NotImplementedError, "merging polygons not implemented"
 
-        with audio.wavfile(wavfile,'r') as fp:
+        with ewave.wavfile(wavfile, 'r') as fp:
             signal, Fs = fp.read(), fp.sampling_rate / 1000.
             for i,elem in enumerate(elems):
                 if geom.elementlist.element_type(elem)=='interval':
@@ -114,7 +115,7 @@ def main(argv=None, cout=None, cerr=None, **kwargs):
     for i, signal, Fs in splt.splitfile(wavfile, maskfile, cout=cout):
         outfile = "%s_e%03d.wav" % (os.path.split(basename)[1], i)
         print "** Writing extracted signal to %s" % outfile
-        fp = audio.wavfile(outfile, 'w', sampling_rate=Fs * 1000)
+        fp = ewave.wavfile(outfile, 'w', sampling_rate=Fs * 1000)
         fp.write(signal)
 
 # Variables:

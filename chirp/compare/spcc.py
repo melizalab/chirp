@@ -47,7 +47,7 @@ class spcc(base_comparison, _configurable):
                single-precision floats if needed to reduce storage
                requirements.
         """
-        from ..common.audio import wavfile
+        from ewave import wavfile
         from ..common.signal import spectrogram
         from ..common.libtfr import fgrid, dynamic_range
         from ..common.geom import elementlist, masker
