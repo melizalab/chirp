@@ -6,7 +6,6 @@ compare signals using time-warped spectrograms
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
-import os.path
 from chirp.compare.feat_dtw import feat_dtw
 from chirp.compare.spcc import spcc
 

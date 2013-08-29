@@ -8,7 +8,6 @@ Created 2011-08-31
 """
 from matplotlib.patches import Rectangle, Polygon, PathPatch
 from matplotlib.path import Path
-from matplotlib.patches import PathPatch
 from numpy import asarray
 from chirp.common import geom
 
@@ -52,6 +51,7 @@ def poly_to_path(poly, **kwargs):
 
 def patch_to_poly(patch):
     """ Convert simple polygon patch to geometry """
+    from shapely import geometry
     trans = patch.get_data_transform().inverted()
     v = patch.get_verts()
     return geometry.Polygon([(x, y) for x, y in trans.transform(v)])

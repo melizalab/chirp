@@ -11,7 +11,7 @@ Created 2011-07-29
 import numpy as nx
 import os
 import libtfr
-from chirp import template, particle, vitterbi
+from chirp.pitch import template, particle, vitterbi
 from chirp.common.plg import pitchtrace
 from chirp.common.config import _configurable
 from chirp.common.math import nandecibels

@@ -7,7 +7,6 @@ Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
 
-
 class _entrypoint(object):
     def __init__(self, name, cls):
         self.name = name
@@ -25,7 +24,6 @@ class pluginset(object):
         self.defaults = defaults or tuple()
 
     def iter_entry_points(self):
-        from . import pitch_dtw, spcc
         from pkg_resources import iter_entry_points as iep
         for ep in iep(self.entry_point_name):
             yield ep

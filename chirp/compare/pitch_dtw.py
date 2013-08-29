@@ -6,7 +6,6 @@ compare signals using dynamic time warping (or CC) of pitch traces
 Copyright (C) 2011 Daniel Meliza <dan // meliza.org>
 Created 2011-08-30
 """
-import numpy as nx
 from chirp.common import postfilter
 from chirp.common.config import _configurable
 from chirp.compare.base_comparison import base_comparison

@@ -212,7 +212,10 @@ class BatchPitch(wx.Frame):
     def _enable_interface(self):
         self.btn_cancel.SetLabel("Close")
         self.btn_cancel.Enable()
-        wx.EndBusyCursor()
+        try:
+            wx.EndBusyCursor()
+        except:
+            pass
         for ctrl in self._inactive_controls:
             getattr(self, ctrl).Enable()
 

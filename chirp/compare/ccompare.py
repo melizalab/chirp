@@ -10,7 +10,6 @@ Created 2011-08-30
 from chirp.compare.plugins import methods, storage
 from chirp.common.progress import progressbar
 import multiprocessing
-import sys
 
 _scriptdoc = """
 ccompare.py [-c <config.cfg>] [-j workers] [-m METHOD]

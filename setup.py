@@ -7,9 +7,9 @@ try:
     from numpy.distutils.core import setup,Extension
 except:
     pass
-import sys, os, glob
+import sys
 
-ext_libs = ['fftw3']
+ext_libs = ['fftw3', 'lapack']
 ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------

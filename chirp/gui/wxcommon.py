@@ -172,8 +172,9 @@ class Painter(object):
         self.lastValue = self.value = None
 
     def draw(self, dc=None):
+        print dc
         if dc is None:
-            dc = wx.ClientDC(self.view)
+            dc = wx.BufferedDC(self.view)
 
         dc.SetPen(self.PEN)
         dc.SetBrush(self.BRUSH)
