@@ -374,11 +374,23 @@ class ChirpGui(wx.Frame):
                 self.spec.plot_plg(fname)
                 self.status.SetStatusText("Loaded pitch data from %s" % fname)
             except Exception, e:
-                self.status.SetStatusText("Error reading pitch data from {}: {}".format(fname, e))
+                dlg = wx.MessageDialog(self,
+                                       str(e),
+                                       "Error reading pitch data from {}".format(fname),
+                                       style=wx.OK | wx.ICON_ERROR)
+                dlg.ShowModal()
         elif file_type == _config_ext:
             self.load_params(fname)
         else:
-            fp = ewave.wavfile(fname)
+            try:
+                fp = ewave.wavfile(fname)
+            except Exception, e:
+                dlg = wx.MessageDialog(self,
+                                       str(e),
+                                       "Error reading {}".format(fname),
+                                       style=wx.OK | wx.ICON_ERROR)
+                dlg.ShowModal()
+                return
             sig, Fs = fp.read(), fp.sampling_rate / 1000
             self.filename = fname
             self.SetTitle(fname)
@@ -392,8 +404,10 @@ class ChirpGui(wx.Frame):
                     self.spec.plot_plg(pitchfile)
                 except:
                     pass
-            if el: self.status.SetStatusText("Opened file %s; loaded %d elements" % (fname, len(el)))
-            else: self.status.SetStatusText("Opened file %s" % fname)
+            if el:
+                self.status.SetStatusText("Opened file %s; loaded %d elements" % (fname, len(el)))
+            else:
+                self.status.SetStatusText("Opened file %s" % fname)
 
     def load_elements(self, fname):
         el = None
