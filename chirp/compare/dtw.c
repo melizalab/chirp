@@ -41,10 +41,11 @@ dtw_forward(double const * M, double const * C, double * D, int * S,
 
 	double v = M[0];
 	int beststep = 1;
-	for (int i = 0; i < nrow; ++i) {
-		for (int j = 0; j < ncol; ++j) {
+      int i,j,k;
+	for (i = 0; i < nrow; ++i) {
+		for (j = 0; j < ncol; ++j) {
 			double d1 = M[i*ncol+j];
-			for (int k = 0; k < ncost; ++k) {
+			for (k = 0; k < ncost; ++k) {
 				int stepi = (int)C[k*3+0];
 				int stepj = (int)C[k*3+1];
 				double weight = C[k*3+2];

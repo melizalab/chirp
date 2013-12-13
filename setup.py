@@ -14,7 +14,7 @@ ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 
 cls_txt = """
 Development Status :: 5 - Production/Stable
@@ -73,10 +73,8 @@ elif sys.platform=='win32':
 else:
     app_options=dict()
 
-
-_vitterbi = Extension('chirp.pitch._vitterbi',sources=['chirp/pitch/vitterbi.pyf','chirp/pitch/vitterbi.c'])
-_dtw = Extension('chirp.compare._dtw',sources=['chirp/compare/dtw.pyf','chirp/compare/dtw.c'],
-                 extra_compile_args=['-std=c99'])
+_vitterbi = Extension('chirp.pitch._vitterbi', sources=['chirp/pitch/vitterbi.pyf', 'chirp/pitch/vitterbi.c'])
+_dtw = Extension('chirp.compare._dtw', sources=['chirp/compare/dtw.pyf', 'chirp/compare/dtw.c'])
 
 setup(
     name = 'chirp',
