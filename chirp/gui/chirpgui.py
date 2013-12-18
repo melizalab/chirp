@@ -4,7 +4,6 @@
 """
 Define spectrographic elements of acoustic signals
 
-chirp [-c chirp.cfg] [<input.wav>]
 """
 from __future__ import division
 import os
@@ -73,7 +72,8 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         self.selections = []
         self.trace_h = []
         self.set_colormap(self.handler.colormap)
-        self.Bind(wx.EVT_CHAR, self.keyhandler)
+        #self.Bind(wx.EVT_CHAR, self.keyhandler)
+        self.mpl_connect('key_press_event', self.keyhandler)
 
     def keyhandler(self, event):
         """
@@ -82,7 +82,8 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         'x': subtract current region from all polygons
         'a': merge current region with all polygons
         """
-        key = event.GetKeyCode()
+        #key = event.GetKeyCode()
+        key = event.key
         ptr = self.painter
         if hasattr(ptr, "xvalues") and ptr.xvalues[0] is not None:
             val = ptr.xvalues
@@ -91,11 +92,9 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
         else:
             val = None
 
-        if key > 255:
-            event.Skip()
-        elif chr(key) == 's':
+        if key == 's':
             self.add_geometry(val)
-        elif chr(key) == 'p' and self.handler.signal is not None:
+        elif key == 'p' and self.handler.signal is not None:
             if not hasattr(audio, 'play_wave'):
                 print "chirp requires pyaudio to play audio"
                 return
@@ -105,7 +104,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 tlim = val
             i0, i1 = (int(x * self.handler.Fs) for x in tlim)
             audio.play_wave(self.handler.signal[i0:i1], self.handler.Fs)
-        elif chr(key) == 'x':
+        elif key == 'x':
             if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
@@ -113,7 +112,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
                 if not p2.is_empty: newgeoms.extend(geom.polygon_components(p2))
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
-        elif chr(key) == 'a':
+        elif key == 'a':
             if not isinstance(val, geom.Polygon): return
             newgeoms = []
             for p in self.selections:
@@ -124,7 +123,7 @@ class SpecPicker(SpecViewer, DrawMask, PitchOverlayMixin):
             self.delete_selections()
             for p in newgeoms: self.add_geometry(p)
         else:
-            event.Skip()
+            pass # event.Skip()
 
     def add_geometry(self, obj):
         """  Add a geometry (polygon or interval) to the spectrogram """
@@ -660,23 +659,12 @@ class ChirpGui(wx.Frame):
 
 class ChirpApp(wx.App):
 
+    def __init__(self, configfile=None, *args, **kwargs):
+        self.configfile = configfile
+        wx.App.__init__(self, *args, **kwargs)
+
     def OnInit(self):
-        import sys
-        import getopt
-        argv = sys.argv[1:]
-
-        configfile = os.path.join(os.getcwd(), "chirp.cfg")  # load in current directory if it exists
-        opts, args = getopt.getopt(argv, 'hc:')
-        for o, a in opts:
-            if o == '-h':
-                print __doc__
-                return 0
-            elif o == '-c':
-                configfile = a
-
-        self.frame = ChirpGui(configfile=configfile)
-        if len(args) > 0:
-            self.frame.load_file(args[0])
+        self.frame = ChirpGui(configfile=self.configfile)
         self.SetTopWindow(self.frame)
         self.frame.Show()
         return True
@@ -687,9 +675,22 @@ class ChirpApp(wx.App):
 
 
 def main(argv=None):
-    app = ChirpApp(redirect=False)
+    import argparse
+
+    p = argparse.ArgumentParser(description="plot and mark spectrograms of sound files")
+    p.add_argument('-c','--config',
+                   default=os.path.join(os.getcwd(), "chirp.cfg"),
+                   help="specify an alternative config file to use (default=%(default)s")
+    p.add_argument('wavfile', nargs='?', help="wave file to load on startup")
+
+    opts, args = p.parse_known_args()
+
+    app = ChirpApp(redirect=False, configfile=opts.config)
+        # if len(args) > 0:
+        #     self.frame.load_file(args[0])
     app.MainLoop()
     return 0
+
 
 # Variables:
 # End:

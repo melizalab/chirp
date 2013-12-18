@@ -96,6 +96,7 @@ setup(
                                          'csplit = chirp.split.csplit:main',
                                          'cpitchstats = chirp.misc.pitchstats:main',],
                     'gui_scripts': ['chirp = chirp.gui.chirpgui:main'],},
+    zip_safe= False,
     **app_options
 )
 
