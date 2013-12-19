@@ -4,13 +4,10 @@
 from setuptools import setup, find_packages
 from distutils.extension import Extension
 try:
-    from numpy.distutils.core import setup,Extension
+    from numpy.distutils.core import setup, Extension
 except:
     pass
 import sys
-
-ext_libs = ['fftw3', 'lapack']
-ext_incl = []
 
 # --- Distutils setup and metadata --------------------------------------------
 
@@ -25,6 +22,7 @@ Topic :: Scientific/Engineering
 Operating System :: Unix
 Operating System :: POSIX :: Linux
 Operating System :: MacOS :: MacOS X
+Operating System :: Microsoft :: Windows :: Windows XP
 Natural Language :: English
 """
 
@@ -44,10 +42,11 @@ of the following programs:
 
 # --- customization for different platforms
 
+app_options=dict()
 if sys.platform=='darwin':
     ext_incl.append('/opt/local/include')
-    app_options=dict(app=['chirp.py'],
-                     options=dict(py2app=dict(plist=dict(
+    app_options.update(app=['chirp.py'],
+                       options=dict(py2app=dict(plist=dict(
                                                 CFBundleName = "chirp",
                                                 CFBundleShortVersionString = VERSION,
                                                 CFBundleGetInfoString = "Chirp %s" % VERSION,
@@ -69,9 +68,13 @@ if sys.platform=='darwin':
 
                 )
 elif sys.platform=='win32':
-    app_options=dict(app=['chirp.py'])
-else:
-    app_options=dict()
+    pass
+    # try:
+    #     import py2exe
+    # except ImportError:
+    #     pass
+    # else:
+    #     app_options.update(windows=['chirp.py'])
 
 _vitterbi = Extension('chirp.pitch._vitterbi', sources=['chirp/pitch/vitterbi.pyf', 'chirp/pitch/vitterbi.c'])
 _dtw = Extension('chirp.compare._dtw', sources=['chirp/compare/dtw.pyf', 'chirp/compare/dtw.c'])
@@ -87,7 +90,7 @@ setup(
     maintainer = 'C Daniel Meliza',
     maintainer_email = '"dan" at the domain "meliza.org"',
     url = 'https://dmeliza.github.io/chirp',
-    download_url = 'https://github.com/dmeliza/chirp',
+    download_url = 'https://github.com/downloads/dmeliza/chirp',
     packages = find_packages(exclude=["*test*"]),
     ext_modules = [_vitterbi,_dtw],
     entry_points = {'console_scripts' : ['cpitch = chirp.pitch.tracker:cpitch',

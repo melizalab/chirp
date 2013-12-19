@@ -16,5 +16,6 @@ A graphical user interface for examining recordings and creating masks. This
 program can run batch pitch analyses and perform pairwise comparisons using
 pitch and other methods for large sets of recordings.
 
-For more information, visit the project website at
-http://dmeliza.github.com/chirp/
+For more information, visit the project website (http://dmeliza.github.com/chirp/)
+
+Installation and use instructions can be found on the wiki (https://github.com/melizalab/chirp/wiki)
