@@ -1,2 +1,3 @@
 include chirp.cfg COPYING
+recursive-include src *.c *.pyf
 recursive-include examples *.wav *.ebl SConstruct

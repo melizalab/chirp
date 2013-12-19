@@ -9,6 +9,8 @@ except:
     pass
 import sys
 
+ext_incl = []
+
 # --- Distutils setup and metadata --------------------------------------------
 
 VERSION = '1.2.2'
@@ -76,8 +78,10 @@ elif sys.platform=='win32':
     # else:
     #     app_options.update(windows=['chirp.py'])
 
-_vitterbi = Extension('chirp.pitch._vitterbi', sources=['chirp/pitch/vitterbi.pyf', 'chirp/pitch/vitterbi.c'])
-_dtw = Extension('chirp.compare._dtw', sources=['chirp/compare/dtw.pyf', 'chirp/compare/dtw.c'])
+_vitterbi = Extension('chirp.pitch._vitterbi',
+                      sources=['src/vitterbi.pyf', 'src/vitterbi.c'])
+_dtw = Extension('chirp.compare._dtw',
+                 sources=['src/dtw.pyf', 'src/dtw.c'])
 
 setup(
     name = 'chirp',
