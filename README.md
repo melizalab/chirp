@@ -1,4 +1,6 @@
-Chirp is a set of related tools for analyzing and comparing bioacoustic
+# chirp
+
+chirp is a set of related tools for analyzing and comparing bioacoustic
 recordings. It includes the following components:
 
 A pitch-detection algorithm that tracks the pitch of a signal as a function of
@@ -16,6 +18,6 @@ A graphical user interface for examining recordings and creating masks. This
 program can run batch pitch analyses and perform pairwise comparisons using
 pitch and other methods for large sets of recordings.
 
-For more information, visit the project website (http://dmeliza.github.com/chirp/)
+For more information, visit the [project website](http://melizalab.github.com/chirp/)
 
-Installation and use instructions can be found on the wiki (https://github.com/melizalab/chirp/wiki)
+Installation and use instructions can be found on the [wiki](https://github.com/melizalab/chirp/wiki)
