@@ -1,5 +1,7 @@
 # chirp
 
+[![DOI](https://zenodo.org/badge/3432685.svg)](https://zenodo.org/badge/latestdoi/3432685)
+
 chirp is a set of related tools for analyzing and comparing bioacoustic
 recordings. It includes the following components:
 
